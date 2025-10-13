@@ -1,10 +1,21 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import styles from './page.module.css'
 
 export default function Home() {
   return (
     <main className={styles.main}>
       <div className={styles.container}>
+        <div className={styles.logoContainer}>
+          <Image 
+            src="/logo.png" 
+            alt="Le Grimoire Logo" 
+            width={200} 
+            height={200}
+            className={styles.logo}
+            priority
+          />
+        </div>
         <h1 className={styles.title}>Le Grimoire</h1>
         <p className={styles.description}>
           Extraire, sauvegarder et partager des recettes de cuisine grâce à l'OCR
