@@ -6,46 +6,53 @@ export default function Home() {
   return (
     <main className={styles.main}>
       <div className={styles.container}>
-        <div className={styles.logoContainer}>
-          <Image 
-            src="/logo.png" 
-            alt="Le Grimoire Logo" 
-            width={200} 
-            height={200}
-            className={styles.logo}
-            priority
-          />
-        </div>
-        <h1 className={styles.title}>Le Grimoire</h1>
-        <p className={styles.description}>
-          Extraire, sauvegarder et partager des recettes de cuisine grâce à l'OCR
-        </p>
-        
-        <div className={styles.features}>
-          <div className={styles.feature}>
-            <h2>📸 OCR de recettes</h2>
-            <p>Téléchargez des images de recettes et extrayez automatiquement le texte</p>
+        <header className={styles.header}>
+          <div className={styles.logoContainer}>
+            <Image 
+              src="/logo.png" 
+              alt="Le Grimoire" 
+              width={80} 
+              height={80}
+              className={styles.logo}
+              priority
+            />
+            <span className={styles.logoText}>Le Grimoire</span>
           </div>
           
-          <div className={styles.feature}>
-            <h2>🛒 Listes d'achats intelligentes</h2>
-            <p>Générez des listes d'achats avec les spéciaux d'IGA et Metro</p>
-          </div>
+          <nav className={styles.nav}>
+            <Link href="/recipes" className={styles.navLink}>
+              📚 Recettes
+            </Link>
+            <Link href="/ingredients" className={styles.navLink}>
+              🥕 Ingrédients
+            </Link>
+            <Link href="/shopping-list" className={styles.navLink}>
+              � Liste d'Épicerie
+            </Link>
+            <Link href="/admin" className={styles.navLink}>
+              ⚙️ Admin
+            </Link>
+          </nav>
+        </header>
+        
+        <div className={styles.hero}>
+          <h1 className={styles.title}>
+            Votre Bibliothèque de<br />Recettes Personnelle
+          </h1>
+          <p className={styles.subtitle}>
+            Organisez, partagez et découvrez vos recettes préférées en toute simplicité
+          </p>
           
-          <div className={styles.feature}>
-            <h2>📚 Bibliothèque de recettes</h2>
-            <p>Consultez et sauvegardez vos recettes préférées</p>
+          <div className={styles.actions}>
+            <Link href="/recipes" className={styles.button}>
+              🍽️ Explorer les Recettes
+            </Link>
+            <Link href="/upload" className={styles.buttonSecondary}>
+              ➕ Ajouter une Recette
+            </Link>
           </div>
         </div>
         
-        <div className={styles.actions}>
-          <Link href="/recipes" className={styles.button}>
-            Voir les recettes
-          </Link>
-          <Link href="/upload" className={styles.buttonSecondary}>
-            Télécharger une recette
-          </Link>
-        </div>
       </div>
     </main>
   )

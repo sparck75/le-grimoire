@@ -16,6 +16,13 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  padding-top: 70px; /* Space for fixed top navigation */
+}
+
+@media (max-width: 768px) {
+  body {
+    padding-top: 0; /* No top padding on mobile */
+  }
 }
 
 a {

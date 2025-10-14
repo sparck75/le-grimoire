@@ -22,7 +22,8 @@ class ShoppingListItem(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     shopping_list_id = Column(UUID(as_uuid=True), ForeignKey("shopping_lists.id", ondelete="CASCADE"), nullable=False)
     recipe_id = Column(UUID(as_uuid=True), ForeignKey("recipes.id", ondelete="SET NULL"))
-    ingredient_name = Column(String(500), nullable=False)
+    ingredient_off_id = Column(String(255), nullable=True)  # References MongoDB Ingredient.off_id (e.g., "en:tomato")
+    ingredient_name = Column(String(500), nullable=False)  # Kept for backward compatibility and custom items
     quantity = Column(Numeric(10, 2))
     unit = Column(String(50))
     is_purchased = Column(Boolean, default=False)

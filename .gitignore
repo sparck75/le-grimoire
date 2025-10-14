@@ -72,3 +72,6 @@ Thumbs.db
 # SSL certificates
 nginx/ssl/
 /logo
+/backend/recettes
+/data
+/recettes

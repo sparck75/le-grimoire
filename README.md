@@ -1,205 +1,170 @@
 # Le Grimoire 📚
 
-Un outil pour extraire, sauvegarder et partager des recettes de cuisine à partir d'images grâce à l'OCR (Reconnaissance Optique de Caractères).
+Application web moderne de gestion de recettes avec reconnaissance OCR, intégration d'ingrédients OpenFoodFacts (5,942 ingrédients), et génération de listes de courses intelligentes.
 
-## Stack Technologique
+## ✨ Fonctionnalités principales
 
-- **Frontend**: Next.js 14 avec TypeScript
-- **Backend**: FastAPI (Python)
-- **Base de données**: PostgreSQL 15
-- **Cache/Queue**: Redis
-- **Conteneurisation**: Docker & Docker Compose
-- **Authentification**: OAuth 2.0 (Google et Apple)
-- **OCR**: Tesseract OCR
-- **Web Scraping**: BeautifulSoup4, Selenium
+- 🔍 **Bibliothèque de recettes** - Parcourez, recherchez et filtrez des recettes avec interface moderne
+- 🥕 **Ingrédients OpenFoodFacts** - 5,942 ingrédients multilingues (50+ langues) avec autocomplete
+- 📝 **Éditeur avancé** - Créez et modifiez des recettes avec liaison optionnelle aux ingrédients
+- 📊 **Tableau de bord admin** - Statistiques, filtres multiples, sélection et suppression en masse
+- 🛒 **Listes de courses** - Génération automatique avec intégration des spéciaux IGA/Metro
+- 📷 **OCR** - Extraction automatique de recettes à partir d'images
+- 🌍 **Multilingue** - Interface en français, ingrédients en 50+ langues
 
-## Fonctionnalités
-
-### ✨ Fonctionnalités principales
-
-- **Extraction OCR de recettes** : Téléchargez des images de recettes et extrayez automatiquement le texte
-- **Bibliothèque de recettes** : Consultez et recherchez des recettes publiques sans authentification
-- **Listes d'achats intelligentes** : Générez des listes d'achats avec les spéciaux actuels d'IGA et Metro
-- **Authentification OAuth** : Connexion sécurisée avec Google ou Apple pour soumettre des recettes
-- **Scraping automatique** : Récupération quotidienne des spéciaux d'épiceries
-
-## Architecture
-
-```
-le-grimoire/
-├── frontend/           # Application Next.js
-│   ├── src/
-│   │   ├── app/       # Pages et routes
-│   │   ├── components/# Composants réutilisables
-│   │   └── lib/       # Utilitaires et configuration
-│   └── Dockerfile
-├── backend/            # API FastAPI
-│   ├── app/
-│   │   ├── api/       # Routes API
-│   │   ├── models/    # Modèles SQLAlchemy
-│   │   ├── services/  # Services (OCR, scraper)
-│   │   └── core/      # Configuration et sécurité
-│   ├── scripts/       # Scripts utilitaires
-│   └── Dockerfile
-├── database/          # Scripts SQL d'initialisation
-└── docker-compose.yml # Configuration Docker
-
-```
-
-## Installation et Configuration
-
-### Prérequis
-
-- Docker et Docker Compose
-- Git
-
-### Étapes d'installation
-
-1. **Cloner le dépôt**
+## 🚀 Démarrage rapide
 
 ```bash
 git clone https://github.com/sparck75/le-grimoire.git
 cd le-grimoire
-```
-
-2. **Configurer les variables d'environnement**
-
-Copiez le fichier `.env.example` et configurez vos valeurs :
-
-```bash
-cp .env.example .env
-```
-
-Modifiez le fichier `.env` avec vos propres valeurs, notamment :
-- Les clés OAuth Google et Apple
-- Le secret JWT pour la sécurité
-- Les URLs de connexion
-
-3. **Démarrer les services avec Docker Compose**
-
-```bash
 docker-compose up -d
 ```
 
-Cela démarrera :
-- PostgreSQL sur le port 5432
-- Redis sur le port 6379
-- Backend FastAPI sur le port 8000
-- Frontend Next.js sur le port 3000
+**Accès** :
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:8000
+- API Docs: http://localhost:8000/docs
 
-4. **Accéder à l'application**
+📖 **[Guide complet de démarrage](docs/getting-started/QUICKSTART.md)**
 
-- Frontend : http://localhost:3000
-- API Backend : http://localhost:8000
-- Documentation API : http://localhost:8000/docs
+## 🏗️ Stack technologique
 
-## Configuration OAuth
+- **Frontend**: Next.js 14 (TypeScript, React 18)
+- **Backend**: FastAPI (Python 3.11)
+- **Base de données**: MongoDB avec Beanie ODM
+- **Ingrédients**: OpenFoodFacts Taxonomy (5,942 items)
+- **OCR**: Tesseract
+- **Conteneurisation**: Docker & Docker Compose
+- **Web Scraping**: BeautifulSoup4, Selenium
 
-### Google OAuth
+## 📁 Structure du projet
 
-1. Allez sur [Google Cloud Console](https://console.cloud.google.com/)
-2. Créez un nouveau projet
-3. Activez l'API Google+ 
-4. Créez des identifiants OAuth 2.0
-5. Ajoutez `http://localhost:3000` comme origine autorisée
-6. Ajoutez `http://localhost:3000/api/auth/callback/google` comme URI de redirection
-7. Copiez le Client ID et Client Secret dans votre `.env`
+```
+le-grimoire/
+├── backend/              # API FastAPI
+│   ├── app/
+│   │   ├── api/         # Endpoints REST
+│   │   ├── models/      # Modèles MongoDB (Beanie)
+│   │   ├── services/    # OCR, Scraper
+│   │   └── core/        # Config, Database, Security
+│   └── scripts/         # Import OpenFoodFacts, etc.
+├── frontend/            # Application Next.js
+│   └── src/app/         # Pages et composants
+├── docs/                # Documentation complète
+│   ├── getting-started/ # Guides de démarrage
+│   ├── architecture/    # Architecture et API
+│   ├── development/     # Guides dev
+│   ├── features/        # Documentation fonctionnalités
+│   └── migrations/      # Historique migrations
+├── docker-compose.yml   # Configuration Docker
+└── .env.example         # Variables d'environnement
 
-### Apple OAuth
-
-1. Allez sur [Apple Developer](https://developer.apple.com/)
-2. Configurez Sign in with Apple
-3. Créez un Service ID
-4. Configurez les domaines et URLs de redirection
-5. Copiez les identifiants dans votre `.env`
-
-## Développement
-
-### Backend (FastAPI)
-
-```bash
-# Installer les dépendances
-cd backend
-pip install -r requirements.txt
-
-# Lancer le serveur de développement
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-### Frontend (Next.js)
+## 📚 Documentation
+
+### Pour commencer
+- 📖 [Guide de démarrage rapide](docs/getting-started/QUICKSTART.md)
+- 🏗️ [Architecture du système](docs/architecture/OVERVIEW.md)
+- 👨‍💻 [Guide de développement](docs/development/DEVELOPMENT.md)
+- 🤝 [Guide de contribution](docs/getting-started/CONTRIBUTING.md)
+
+### Fonctionnalités
+- 🥕 [Système d'ingrédients](docs/development/INGREDIENTS.md)
+- 📊 [API Reference](docs/architecture/API_REFERENCE.md)
+- 🌍 [Localisation française](docs/features/FRENCH_LOCALIZATION.md)
+- 📈 [Statut du projet](docs/PROJECT_STATUS.md)
+
+## 🛠️ Commandes utiles
 
 ```bash
-# Installer les dépendances
+# Démarrer l'application
+docker-compose up -d
+
+# Voir les logs
+docker-compose logs -f
+
+# Arrêter l'application
+docker-compose down
+
+# Redémarrer un service
+docker-compose restart backend
+
+# Accéder à MongoDB
+docker-compose exec mongodb mongosh le_grimoire
+
+# Compter les ingrédients
+docker-compose exec mongodb mongosh --eval "use le_grimoire; db.ingredients.countDocuments()"
+```
+
+## � Développement local
+
+### Backend
+
+```bash
+cd backend
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+```
+
+### Frontend
+
+```bash
 cd frontend
 npm install
-
-# Lancer le serveur de développement
 npm run dev
 ```
 
-### Exécuter le scraper manuellement
+**Voir le [Guide de développement](docs/development/DEVELOPMENT.md) pour plus de détails.**
 
-```bash
-cd backend
-python scripts/scrape_specials.py
-```
+## 📊 Collections MongoDB
 
-## Structure de la Base de Données
+- **ingredients** (5,942) - Taxonomie OpenFoodFacts avec noms multilingues
+- **recipes** - Recettes avec ingrédients et instructions
+- **users** - Utilisateurs authentifiés (OAuth)
+- **shopping_lists** - Listes de courses
+- **ocr_jobs** - Tâches OCR
 
-### Tables principales
+## 🔌 API Endpoints principaux
 
-- **users** : Utilisateurs authentifiés via OAuth
-- **recipes** : Recettes avec ingrédients et instructions
-- **recipe_tags** : Tags pour catégoriser les recettes
-- **grocery_stores** : Magasins d'épiceries (IGA, Metro)
-- **grocery_specials** : Spéciaux actuels des épiceries
-- **shopping_lists** : Listes d'achats des utilisateurs
-- **shopping_list_items** : Articles individuels avec correspondance aux spéciaux
-- **ocr_jobs** : Suivi des tâches OCR
-- **favorites** : Recettes favorites des utilisateurs
+**v2 API**:
+- `GET /api/v2/recipes/` - Liste et recherche de recettes
+- `GET /api/v2/ingredients/?search={term}&language={lang}` - Recherche d'ingrédients
+- `POST /api/v2/recipes/` - Créer une recette
+- `GET /api/stats/dashboard` - Statistiques
 
-## API Endpoints
+**Documentation interactive** : http://localhost:8000/docs
 
-### Authentification
-- `POST /api/auth/oauth/login` - Connexion OAuth
-- `GET /api/auth/me` - Informations utilisateur actuel
+## 🤝 Contribution
 
-### Recettes
-- `GET /api/recipes/` - Liste des recettes publiques
-- `GET /api/recipes/{id}` - Détails d'une recette
+Les contributions sont les bienvenues! Consultez le [Guide de contribution](docs/getting-started/CONTRIBUTING.md).
 
-### OCR
-- `POST /api/ocr/upload` - Télécharger une image de recette
-- `GET /api/ocr/jobs/{id}` - Statut d'une tâche OCR
+### Processus de contribution
+1. Fork le projet
+2. Créez une branche (`git checkout -b feature/ma-fonctionnalite`)
+3. Committez vos changements (`git commit -m 'Ajout de ma fonctionnalité'`)
+4. Push vers la branche (`git push origin feature/ma-fonctionnalite`)
+5. Ouvrez une Pull Request
 
-### Épiceries
-- `GET /api/grocery/stores` - Liste des magasins
-- `GET /api/grocery/specials` - Spéciaux actuels
+## 📄 License
 
-### Listes d'achats
-- `GET /api/shopping-lists/` - Listes de l'utilisateur
-- `POST /api/shopping-lists/generate` - Générer une liste
+Ce projet est sous license MIT. Voir le fichier [LICENSE](LICENSE) pour plus de détails.
 
-Documentation complète disponible sur : http://localhost:8000/docs
+## 🙏 Remerciements
 
-## Scripts utilitaires
+- [OpenFoodFacts](https://world.openfoodfacts.org/) pour la taxonomie d'ingrédients
+- [Next.js](https://nextjs.org/) et [FastAPI](https://fastapi.tiangolo.com/) pour les frameworks
+- Tous les contributeurs du projet
 
-### Scraper de spéciaux d'épiceries
+## 📞 Support
 
-Le script `backend/scripts/scrape_specials.py` peut être exécuté manuellement ou configuré comme tâche cron :
+- 📖 [Documentation complète](docs/README.md)
+- 🐛 [Signaler un bug](https://github.com/sparck75/le-grimoire/issues)
+- 💡 [Proposer une fonctionnalité](https://github.com/sparck75/le-grimoire/issues)
 
-```bash
-# Exécution manuelle
-cd backend
-python scripts/scrape_specials.py
+---
 
-# Ajouter au crontab pour exécution quotidienne à 6h
-0 6 * * * cd /path/to/le-grimoire/backend && python scripts/scrape_specials.py
-```
-
-## Licence
-
-MIT
+**Le Grimoire** - Votre compagnon culinaire numérique 👨‍🍳
 
 ## Contribution
 

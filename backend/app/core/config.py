@@ -11,8 +11,12 @@ class Settings(BaseSettings):
     APP_NAME: str = "Le Grimoire"
     DEBUG: bool = False
     
-    # Database
+    # Database - PostgreSQL (legacy)
     DATABASE_URL: str = "postgresql://grimoire:grimoire_password@db:5432/le_grimoire"
+    
+    # Database - MongoDB
+    MONGODB_URL: str = "mongodb://legrimoire:grimoire_mongo_password@mongodb:27017/"
+    MONGODB_DB_NAME: str = "legrimoire"
     
     # Security
     SECRET_KEY: str = "your-secret-key-change-in-production"
@@ -44,6 +48,13 @@ class Settings(BaseSettings):
     # Scraper
     SCRAPER_USER_AGENT: str = "Mozilla/5.0 (compatible; LeGrimoire/1.0)"
     SCRAPER_RATE_LIMIT_SECONDS: int = 2
+    
+    # Unsplash API
+    UNSPLASH_ACCESS_KEY: str = ""
+    UNSPLASH_SECRET: str = ""
+    
+    # Pexels API
+    PEXELS_API_KEY: str = ""
     
     class Config:
         env_file = ".env"

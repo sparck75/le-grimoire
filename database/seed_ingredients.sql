@@ -1,0 +1,90 @@
+-- Seed data for ingredient system
+-- Run after running the ingredient_system migration
+
+-- Insert ingredient categories
+INSERT INTO ingredient_categories (name, display_order) VALUES ('Produits Laitiers', 1) ON CONFLICT (name) DO NOTHING;
+INSERT INTO ingredient_categories (name, display_order, parent_category_id) VALUES ('Fromages', 2, (SELECT id FROM ingredient_categories WHERE name = 'Produits Laitiers')) ON CONFLICT (name) DO NOTHING;
+INSERT INTO ingredient_categories (name, display_order) VALUES ('Viandes', 3) ON CONFLICT (name) DO NOTHING;
+INSERT INTO ingredient_categories (name, display_order, parent_category_id) VALUES ('Viandes Hachees', 4, (SELECT id FROM ingredient_categories WHERE name = 'Viandes')) ON CONFLICT (name) DO NOTHING;
+INSERT INTO ingredient_categories (name, display_order) VALUES ('Legumes', 5) ON CONFLICT (name) DO NOTHING;
+INSERT INTO ingredient_categories (name, display_order) VALUES ('Fruits', 6) ON CONFLICT (name) DO NOTHING;
+INSERT INTO ingredient_categories (name, display_order) VALUES ('Fruits de Mer', 7) ON CONFLICT (name) DO NOTHING;
+INSERT INTO ingredient_categories (name, display_order) VALUES ('Oeufs', 8) ON CONFLICT (name) DO NOTHING;
+INSERT INTO ingredient_categories (name, display_order) VALUES ('Noix et Graines', 9) ON CONFLICT (name) DO NOTHING;
+INSERT INTO ingredient_categories (name, display_order) VALUES ('Condiments', 10) ON CONFLICT (name) DO NOTHING;
+INSERT INTO ingredient_categories (name, display_order) VALUES ('Epices et Aromates', 11) ON CONFLICT (name) DO NOTHING;
+INSERT INTO ingredient_categories (name, display_order) VALUES ('Produits de Base', 12) ON CONFLICT (name) DO NOTHING;
+INSERT INTO ingredient_categories (name, display_order, parent_category_id) VALUES ('Farines et Feculents', 13, (SELECT id FROM ingredient_categories WHERE name = 'Produits de Base')) ON CONFLICT (name) DO NOTHING;
+INSERT INTO ingredient_categories (name, display_order, parent_category_id) VALUES ('Sucres et Edulcorants', 14, (SELECT id FROM ingredient_categories WHERE name = 'Produits de Base')) ON CONFLICT (name) DO NOTHING;
+INSERT INTO ingredient_categories (name, display_order) VALUES ('Huiles et Matieres Grasses', 15) ON CONFLICT (name) DO NOTHING;
+INSERT INTO ingredient_categories (name, display_order) VALUES ('Pates et Produits de Boulangerie', 16) ON CONFLICT (name) DO NOTHING;
+INSERT INTO ingredient_categories (name, display_order) VALUES ('Sirops', 17) ON CONFLICT (name) DO NOTHING;
+
+-- Insert units
+INSERT INTO units (name, abbreviation, type, system, conversion_to_base, base_unit) VALUES ('millilitre', 'ml', 'volume', 'metric', 1.0, 'ml') ON CONFLICT (name) DO NOTHING;
+INSERT INTO units (name, abbreviation, type, system, conversion_to_base, base_unit) VALUES ('litre', 'l', 'volume', 'metric', 1000.0, 'ml') ON CONFLICT (name) DO NOTHING;
+INSERT INTO units (name, abbreviation, type, system, conversion_to_base, base_unit) VALUES ('centilitre', 'cl', 'volume', 'metric', 10.0, 'ml') ON CONFLICT (name) DO NOTHING;
+INSERT INTO units (name, abbreviation, type, system, conversion_to_base, base_unit) VALUES ('decilitre', 'dl', 'volume', 'metric', 100.0, 'ml') ON CONFLICT (name) DO NOTHING;
+INSERT INTO units (name, abbreviation, type, system, conversion_to_base, base_unit) VALUES ('tasse', 'tasse', 'volume', 'imperial', 250.0, 'ml') ON CONFLICT (name) DO NOTHING;
+INSERT INTO units (name, abbreviation, type, system, conversion_to_base, base_unit) VALUES ('cup', 'cup', 'volume', 'imperial', 236.588, 'ml') ON CONFLICT (name) DO NOTHING;
+INSERT INTO units (name, abbreviation, type, system, conversion_to_base, base_unit) VALUES ('cuillere a soupe', 'c. a soupe', 'volume', 'imperial', 15.0, 'ml') ON CONFLICT (name) DO NOTHING;
+INSERT INTO units (name, abbreviation, type, system, conversion_to_base, base_unit) VALUES ('tablespoon', 'tbsp', 'volume', 'imperial', 14.787, 'ml') ON CONFLICT (name) DO NOTHING;
+INSERT INTO units (name, abbreviation, type, system, conversion_to_base, base_unit) VALUES ('cuillere a the', 'c. a the', 'volume', 'imperial', 5.0, 'ml') ON CONFLICT (name) DO NOTHING;
+INSERT INTO units (name, abbreviation, type, system, conversion_to_base, base_unit) VALUES ('teaspoon', 'tsp', 'volume', 'imperial', 4.929, 'ml') ON CONFLICT (name) DO NOTHING;
+INSERT INTO units (name, abbreviation, type, system, conversion_to_base, base_unit) VALUES ('cuillere a table', 'c. a table', 'volume', 'imperial', 15.0, 'ml') ON CONFLICT (name) DO NOTHING;
+INSERT INTO units (name, abbreviation, type, system, conversion_to_base, base_unit) VALUES ('pinte', 'pinte', 'volume', 'imperial', 1136.5, 'ml') ON CONFLICT (name) DO NOTHING;
+INSERT INTO units (name, abbreviation, type, system, conversion_to_base, base_unit) VALUES ('gallon', 'gal', 'volume', 'imperial', 3785.41, 'ml') ON CONFLICT (name) DO NOTHING;
+INSERT INTO units (name, abbreviation, type, system, conversion_to_base, base_unit) VALUES ('once liquide', 'fl oz', 'volume', 'imperial', 29.574, 'ml') ON CONFLICT (name) DO NOTHING;
+INSERT INTO units (name, abbreviation, type, system, conversion_to_base, base_unit) VALUES ('gramme', 'g', 'weight', 'metric', 1.0, 'g') ON CONFLICT (name) DO NOTHING;
+INSERT INTO units (name, abbreviation, type, system, conversion_to_base, base_unit) VALUES ('kilogramme', 'kg', 'weight', 'metric', 1000.0, 'g') ON CONFLICT (name) DO NOTHING;
+INSERT INTO units (name, abbreviation, type, system, conversion_to_base, base_unit) VALUES ('milligramme', 'mg', 'weight', 'metric', 0.001, 'g') ON CONFLICT (name) DO NOTHING;
+INSERT INTO units (name, abbreviation, type, system, conversion_to_base, base_unit) VALUES ('livre', 'lb', 'weight', 'imperial', 453.592, 'g') ON CONFLICT (name) DO NOTHING;
+INSERT INTO units (name, abbreviation, type, system, conversion_to_base, base_unit) VALUES ('once', 'oz', 'weight', 'imperial', 28.3495, 'g') ON CONFLICT (name) DO NOTHING;
+INSERT INTO units (name, abbreviation, type, system, conversion_to_base, base_unit) VALUES ('unite', 'unite', 'unit', 'both', 1.0, NULL) ON CONFLICT (name) DO NOTHING;
+INSERT INTO units (name, abbreviation, type, system, conversion_to_base, base_unit) VALUES ('piece', 'piece', 'unit', 'both', 1.0, NULL) ON CONFLICT (name) DO NOTHING;
+INSERT INTO units (name, abbreviation, type, system, conversion_to_base, base_unit) VALUES ('portion', 'portion', 'unit', 'both', 1.0, NULL) ON CONFLICT (name) DO NOTHING;
+INSERT INTO units (name, abbreviation, type, system, conversion_to_base, base_unit) VALUES ('boite', 'boite', 'unit', 'both', 1.0, NULL) ON CONFLICT (name) DO NOTHING;
+INSERT INTO units (name, abbreviation, type, system, conversion_to_base, base_unit) VALUES ('paquet', 'paquet', 'unit', 'both', 1.0, NULL) ON CONFLICT (name) DO NOTHING;
+INSERT INTO units (name, abbreviation, type, system, conversion_to_base, base_unit) VALUES ('botte', 'botte', 'unit', 'both', 1.0, NULL) ON CONFLICT (name) DO NOTHING;
+INSERT INTO units (name, abbreviation, type, system, conversion_to_base, base_unit) VALUES ('pincee', 'pincee', 'unit', 'both', 1.0, NULL) ON CONFLICT (name) DO NOTHING;
+INSERT INTO units (name, abbreviation, type, system, conversion_to_base, base_unit) VALUES ('Celsius', '°C', 'temperature', 'metric', 1.0, 'C') ON CONFLICT (name) DO NOTHING;
+INSERT INTO units (name, abbreviation, type, system, conversion_to_base, base_unit) VALUES ('Fahrenheit', '°F', 'temperature', 'imperial', 1.0, 'F') ON CONFLICT (name) DO NOTHING;
+
+-- Insert initial ingredients
+INSERT INTO ingredients (name, category_id, default_unit, aliases) VALUES ('lait', (SELECT id FROM ingredient_categories WHERE name = 'Produits Laitiers'), 'ml', ARRAY['lait 2%', 'lait entier']) ON CONFLICT (name) DO NOTHING;
+INSERT INTO ingredients (name, category_id, default_unit, aliases) VALUES ('beurre', (SELECT id FROM ingredient_categories WHERE name = 'Huiles et Matieres Grasses'), 'g', ARRAY[]::text[]) ON CONFLICT (name) DO NOTHING;
+INSERT INTO ingredients (name, category_id, default_unit, aliases) VALUES ('margarine', (SELECT id FROM ingredient_categories WHERE name = 'Huiles et Matieres Grasses'), 'g', ARRAY[]::text[]) ON CONFLICT (name) DO NOTHING;
+INSERT INTO ingredients (name, category_id, default_unit, aliases) VALUES ('brie', (SELECT id FROM ingredient_categories WHERE name = 'Fromages'), 'g', ARRAY[]::text[]) ON CONFLICT (name) DO NOTHING;
+INSERT INTO ingredients (name, category_id, default_unit, aliases) VALUES ('mozzarella', (SELECT id FROM ingredient_categories WHERE name = 'Fromages'), 'g', ARRAY['mozzarella rapee']) ON CONFLICT (name) DO NOTHING;
+INSERT INTO ingredients (name, category_id, default_unit, aliases) VALUES ('cheddar', (SELECT id FROM ingredient_categories WHERE name = 'Fromages'), 'g', ARRAY['cheddar doux', 'cheddar rape']) ON CONFLICT (name) DO NOTHING;
+INSERT INTO ingredients (name, category_id, default_unit, aliases) VALUES ('veau hache', (SELECT id FROM ingredient_categories WHERE name = 'Viandes Hachees'), 'g', ARRAY['veau']) ON CONFLICT (name) DO NOTHING;
+INSERT INTO ingredients (name, category_id, default_unit, aliases) VALUES ('porc hache', (SELECT id FROM ingredient_categories WHERE name = 'Viandes Hachees'), 'g', ARRAY['porc']) ON CONFLICT (name) DO NOTHING;
+INSERT INTO ingredients (name, category_id, default_unit, aliases) VALUES ('oignon', (SELECT id FROM ingredient_categories WHERE name = 'Legumes'), 'unite', ARRAY['oignons']) ON CONFLICT (name) DO NOTHING;
+INSERT INTO ingredients (name, category_id, default_unit, aliases) VALUES ('echalote', (SELECT id FROM ingredient_categories WHERE name = 'Legumes'), 'unite', ARRAY['echalotes']) ON CONFLICT (name) DO NOTHING;
+INSERT INTO ingredients (name, category_id, default_unit, aliases) VALUES ('celeri', (SELECT id FROM ingredient_categories WHERE name = 'Legumes'), 'g', ARRAY[]::text[]) ON CONFLICT (name) DO NOTHING;
+INSERT INTO ingredients (name, category_id, default_unit, aliases) VALUES ('piment vert', (SELECT id FROM ingredient_categories WHERE name = 'Legumes'), 'unite', ARRAY['piment']) ON CONFLICT (name) DO NOTHING;
+INSERT INTO ingredients (name, category_id, default_unit, aliases) VALUES ('poivron vert', (SELECT id FROM ingredient_categories WHERE name = 'Legumes'), 'unite', ARRAY['poivron']) ON CONFLICT (name) DO NOTHING;
+INSERT INTO ingredients (name, category_id, default_unit, aliases) VALUES ('piment rouge', (SELECT id FROM ingredient_categories WHERE name = 'Legumes'), 'unite', ARRAY[]::text[]) ON CONFLICT (name) DO NOTHING;
+INSERT INTO ingredients (name, category_id, default_unit, aliases) VALUES ('tomate verte', (SELECT id FROM ingredient_categories WHERE name = 'Legumes'), 'g', ARRAY['tomates vertes']) ON CONFLICT (name) DO NOTHING;
+INSERT INTO ingredients (name, category_id, default_unit, aliases) VALUES ('epinard', (SELECT id FROM ingredient_categories WHERE name = 'Legumes'), 'g', ARRAY['epinards', 'epinards haches']) ON CONFLICT (name) DO NOTHING;
+INSERT INTO ingredients (name, category_id, default_unit, aliases) VALUES ('poire', (SELECT id FROM ingredient_categories WHERE name = 'Fruits'), 'unite', ARRAY['poires']) ON CONFLICT (name) DO NOTHING;
+INSERT INTO ingredients (name, category_id, default_unit, aliases) VALUES ('pomme', (SELECT id FROM ingredient_categories WHERE name = 'Fruits'), 'unite', ARRAY['pommes']) ON CONFLICT (name) DO NOTHING;
+INSERT INTO ingredients (name, category_id, default_unit, aliases) VALUES ('crevette', (SELECT id FROM ingredient_categories WHERE name = 'Fruits de Mer'), 'g', ARRAY['crevettes']) ON CONFLICT (name) DO NOTHING;
+INSERT INTO ingredients (name, category_id, default_unit, aliases) VALUES ('crabe', (SELECT id FROM ingredient_categories WHERE name = 'Fruits de Mer'), 'g', ARRAY[]::text[]) ON CONFLICT (name) DO NOTHING;
+INSERT INTO ingredients (name, category_id, default_unit, aliases) VALUES ('petoncle', (SELECT id FROM ingredient_categories WHERE name = 'Fruits de Mer'), 'g', ARRAY['petoncles']) ON CONFLICT (name) DO NOTHING;
+INSERT INTO ingredients (name, category_id, default_unit, aliases) VALUES ('oeuf', (SELECT id FROM ingredient_categories WHERE name = 'Oeufs'), 'unite', ARRAY['oeufs']) ON CONFLICT (name) DO NOTHING;
+INSERT INTO ingredients (name, category_id, default_unit, aliases) VALUES ('pacane', (SELECT id FROM ingredient_categories WHERE name = 'Noix et Graines'), 'g', ARRAY['pacanes']) ON CONFLICT (name) DO NOTHING;
+INSERT INTO ingredients (name, category_id, default_unit, aliases) VALUES ('ketchup', (SELECT id FROM ingredient_categories WHERE name = 'Condiments'), 'ml', ARRAY[]::text[]) ON CONFLICT (name) DO NOTHING;
+INSERT INTO ingredients (name, category_id, default_unit, aliases) VALUES ('mayonnaise', (SELECT id FROM ingredient_categories WHERE name = 'Condiments'), 'ml', ARRAY[]::text[]) ON CONFLICT (name) DO NOTHING;
+INSERT INTO ingredients (name, category_id, default_unit, aliases) VALUES ('relish verte', (SELECT id FROM ingredient_categories WHERE name = 'Condiments'), 'ml', ARRAY['relish']) ON CONFLICT (name) DO NOTHING;
+INSERT INTO ingredients (name, category_id, default_unit, aliases) VALUES ('sauce chili', (SELECT id FROM ingredient_categories WHERE name = 'Condiments'), 'ml', ARRAY[]::text[]) ON CONFLICT (name) DO NOTHING;
+INSERT INTO ingredients (name, category_id, default_unit, aliases) VALUES ('vinaigre', (SELECT id FROM ingredient_categories WHERE name = 'Condiments'), 'ml', ARRAY[]::text[]) ON CONFLICT (name) DO NOTHING;
+INSERT INTO ingredients (name, category_id, default_unit, aliases) VALUES ('sel', (SELECT id FROM ingredient_categories WHERE name = 'Epices et Aromates'), 'g', ARRAY['gros sel']) ON CONFLICT (name) DO NOTHING;
+INSERT INTO ingredients (name, category_id, default_unit, aliases) VALUES ('poivre', (SELECT id FROM ingredient_categories WHERE name = 'Epices et Aromates'), 'g', ARRAY[]::text[]) ON CONFLICT (name) DO NOTHING;
+INSERT INTO ingredients (name, category_id, default_unit, aliases) VALUES ('epices a marinades', (SELECT id FROM ingredient_categories WHERE name = 'Epices et Aromates'), 'g', ARRAY[]::text[]) ON CONFLICT (name) DO NOTHING;
+INSERT INTO ingredients (name, category_id, default_unit, aliases) VALUES ('farine tout usage', (SELECT id FROM ingredient_categories WHERE name = 'Farines et Feculents'), 'g', ARRAY['farine']) ON CONFLICT (name) DO NOTHING;
+INSERT INTO ingredients (name, category_id, default_unit, aliases) VALUES ('sucre', (SELECT id FROM ingredient_categories WHERE name = 'Sucres et Edulcorants'), 'g', ARRAY['sucre blanc']) ON CONFLICT (name) DO NOTHING;
+INSERT INTO ingredients (name, category_id, default_unit, aliases) VALUES ('sirop d''erable', (SELECT id FROM ingredient_categories WHERE name = 'Sirops'), 'ml', ARRAY[]::text[]) ON CONFLICT (name) DO NOTHING;
+INSERT INTO ingredients (name, category_id, default_unit, aliases) VALUES ('baguette', (SELECT id FROM ingredient_categories WHERE name = 'Pates et Produits de Boulangerie'), 'unite', ARRAY[]::text[]) ON CONFLICT (name) DO NOTHING;
+INSERT INTO ingredients (name, category_id, default_unit, aliases) VALUES ('abaisse de pate', (SELECT id FROM ingredient_categories WHERE name = 'Pates et Produits de Boulangerie'), 'unite', ARRAY['abaisse', 'pate']) ON CONFLICT (name) DO NOTHING;
+INSERT INTO ingredients (name, category_id, default_unit, aliases) VALUES ('croute a tarte', (SELECT id FROM ingredient_categories WHERE name = 'Pates et Produits de Boulangerie'), 'unite', ARRAY['croute']) ON CONFLICT (name) DO NOTHING;

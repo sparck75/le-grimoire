@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import Navigation from './components/Navigation'
+import { LanguageProvider } from './context/LanguageContext'
 
 export const metadata: Metadata = {
   title: 'Le Grimoire - Vos recettes de cuisine',
@@ -13,7 +15,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="fr">
-      <body>{children}</body>
+      <body>
+        <LanguageProvider>
+          <Navigation />
+          {children}
+        </LanguageProvider>
+      </body>
     </html>
   )
 }

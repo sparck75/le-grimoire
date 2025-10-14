@@ -21,6 +21,10 @@ class Recipe(Base):
     total_time = Column(Integer)  # in minutes
     category = Column(String(100))
     cuisine = Column(String(100))
+    difficulty_level = Column(String(50))  # easy, medium, hard
+    temperature = Column(Integer)  # cooking temperature
+    temperature_unit = Column(String(10))  # C or F
+    notes = Column(Text)  # additional notes
     image_url = Column(Text)
     original_image_url = Column(Text)
     source = Column(String(255))
