@@ -23,7 +23,7 @@ export default function UnitsPage() {
   async function fetchUnits() {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:8000/api/admin/ingredients/units');
+      const response = await fetch('/api/admin/ingredients/units');
       
       if (!response.ok) {
         throw new Error('Failed to fetch units');

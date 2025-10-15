@@ -78,7 +78,7 @@ export default function NewIngredientPage() {
 
     try {
       const response = await fetch(
-        'http://localhost:8000/api/admin/ingredients/ingredients',
+        '/api/admin/ingredients/ingredients',
         {
           method: 'POST',
           headers: {

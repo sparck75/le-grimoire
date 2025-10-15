@@ -28,7 +28,7 @@ interface IngredientDetailProps {
 
 async function getIngredientDetails(off_id: string): Promise<Ingredient | null> {
   try {
-    const url = `http://localhost:8000/api/admin/ingredients/${encodeURIComponent(off_id)}`;
+    const url = `/api/admin/ingredients/${encodeURIComponent(off_id)}`;
     console.log(`Fetching ingredient from: ${url}`);
     
     const response = await fetch(url, { cache: 'no-store' });
@@ -51,7 +51,7 @@ async function getParentIngredients(parentIds: string[]): Promise<Ingredient[]> 
   try {
     const parentPromises = parentIds.map(async (parentId) => {
       const response = await fetch(
-        `http://localhost:8000/api/admin/ingredients/${encodeURIComponent(parentId)}`,
+        `/api/admin/ingredients/${encodeURIComponent(parentId)}`,
         { cache: 'no-store' }
       );
       if (response.ok) {
@@ -72,7 +72,7 @@ async function getChildIngredients(childIds: string[]): Promise<Ingredient[]> {
   try {
     const childPromises = childIds.map(async (childId) => {
       const response = await fetch(
-        `http://localhost:8000/api/admin/ingredients/${encodeURIComponent(childId)}`,
+        `/api/admin/ingredients/${encodeURIComponent(childId)}`,
         { cache: 'no-store' }
       );
       if (response.ok) {
