@@ -418,6 +418,14 @@
 }
 
 @media (max-width: 768px) {
+  .container {
+    padding-bottom: 80px;
+  }
+
+  .headerContent {
+    padding: 0 1rem;
+  }
+
   .titleSection h1 {
     font-size: 2rem;
   }
@@ -426,15 +434,65 @@
     font-size: 1.1rem;
   }
 
+  .languageToggle {
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .langButton,
+  .langButtonActive {
+    padding: 0.4rem 0.8rem;
+    font-size: 1rem;
+  }
+
+  .content {
+    padding: 2rem 1rem;
+    gap: 1.5rem;
+  }
+
   .card {
     padding: 1.5rem;
   }
 
+  .card h2 {
+    font-size: 1.5rem;
+  }
+
   .infoGrid {
     grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .ingredientList {
+    gap: 0.5rem;
+  }
+
+  .ingredientChip {
+    padding: 0.6rem 1rem;
+    font-size: 0.875rem;
   }
 
   .namesList {
     grid-template-columns: 1fr;
+    max-height: 300px;
+  }
+
+  .externalLink {
+    padding: 0.875rem 1.25rem;
+    font-size: 0.95rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .titleSection h1 {
+    font-size: 1.5rem;
+  }
+
+  .altName {
+    font-size: 1rem;
+  }
+
+  .card h2 {
+    font-size: 1.25rem;
   }
 }

@@ -367,13 +367,30 @@
 }
 
 @media (max-width: 768px) {
+  .container {
+    padding-bottom: 80px;
+  }
+
+  .headerContent {
+    padding: 0 1rem;
+  }
+
   .headerContent h1 {
     font-size: 2rem;
+  }
+
+  .headerContent p {
+    font-size: 1rem;
+  }
+
+  .content {
+    padding: 2rem 1rem;
   }
 
   .actions {
     flex-direction: column;
     align-items: stretch;
+    padding: 1rem;
   }
 
   .stats,
@@ -382,14 +399,45 @@
     flex-direction: column;
   }
 
+  .statBadge,
+  .statBadgeChecked {
+    text-align: center;
+  }
+
   .clearCheckedButton,
   .clearButton {
     width: 100%;
     text-align: center;
   }
 
+  .recipeGroup {
+    padding: 1rem;
+  }
+
+  .recipeTitle {
+    font-size: 1rem;
+  }
+
   .itemContent {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .itemName {
+    font-size: 0.9rem;
+  }
+
+  .itemQuantity {
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .headerContent h1 {
+    font-size: 1.5rem;
+  }
+
+  .sectionTitle {
+    font-size: 1.5rem;
   }
 }
