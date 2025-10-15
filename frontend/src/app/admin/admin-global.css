@@ -21,6 +21,57 @@
   z-index: 0;
 }
 
+/* Mobile Menu Button */
+.admin-mobile-menu-btn {
+  display: none;
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+  z-index: 1000;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.admin-mobile-menu-btn:hover {
+  background: rgba(0, 0, 0, 0.7);
+  transform: scale(1.05);
+}
+
+.admin-mobile-menu-btn:active {
+  transform: scale(0.95);
+}
+
+.menu-icon,
+.menu-icon-open {
+  display: block;
+  transition: transform 0.3s ease;
+}
+
+.menu-icon-open {
+  transform: rotate(90deg);
+}
+
+/* Sidebar Overlay for Mobile */
+.admin-sidebar-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+}
+
 .admin-sidebar {
   width: 280px;
   background: rgba(0, 0, 0, 0.3);
@@ -533,10 +584,32 @@
 }
 
 @media (max-width: 768px) {
+  /* Show mobile menu button */
+  .admin-mobile-menu-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Show overlay when sidebar is open */
+  .admin-sidebar-overlay {
+    display: block;
+  }
+
+  /* Sidebar hidden by default on mobile */
   .admin-sidebar {
     position: fixed;
+    left: 0;
+    top: 0;
     transform: translateX(-100%);
     transition: transform 0.3s ease;
+    z-index: 1000;
+    width: 280px;
+  }
+
+  /* Sidebar visible when open */
+  .admin-sidebar.sidebar-open {
+    transform: translateX(0);
   }
 
   @media (max-width: 768px) and (prefers-reduced-motion: reduce) {
@@ -545,9 +618,14 @@
     }
   }
   
+  /* Main content takes full width on mobile */
   .admin-main {
     margin-left: 0;
     padding: 1rem;
+    padding-top: 4rem; /* Space for mobile menu button */
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
   }
   
   .admin-header {
@@ -562,5 +640,17 @@
   
   .admin-stats {
     grid-template-columns: 1fr;
+  }
+
+  /* Ensure cards don't overflow on mobile */
+  .admin-card {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  /* Fix table overflow on mobile */
+  .table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
 }
