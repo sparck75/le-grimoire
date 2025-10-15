@@ -52,13 +52,13 @@ export default function IngredientsPage() {
           page: page.toString(),
           limit: limit.toString(),
         });
-        url = `http://localhost:8000/api/admin/ingredients/search?${params}`;
+        url = `/api/admin/ingredients/search?${params}`;
       } else {
         const params = new URLSearchParams({
           page: page.toString(),
           limit: limit.toString(),
         });
-        url = `http://localhost:8000/api/admin/ingredients?${params}`;
+        url = `/api/admin/ingredients?${params}`;
       }
 
       const response = await fetch(url);
@@ -91,7 +91,7 @@ export default function IngredientsPage() {
 
     try {
       const response = await fetch(
-        `http://localhost:8000/api/admin/ingredients/ingredients/${id}`,
+        `/api/admin/ingredients/ingredients/${id}`,
         { method: 'DELETE' }
       );
 

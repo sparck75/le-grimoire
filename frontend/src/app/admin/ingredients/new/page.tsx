@@ -43,7 +43,7 @@ export default function NewIngredientPage() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const response = await fetch('http://localhost:8000/api/admin/ingredients/categories');
+        const response = await fetch('/api/admin/ingredients/categories');
         const categoriesData = await response.json();
         setCategories(categoriesData);
       } catch (err) {
@@ -78,7 +78,7 @@ export default function NewIngredientPage() {
 
     try {
       const response = await fetch(
-        'http://localhost:8000/api/admin/ingredients/ingredients',
+        '/api/admin/ingredients/ingredients',
         {
           method: 'POST',
           headers: {
