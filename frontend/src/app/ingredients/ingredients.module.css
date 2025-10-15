@@ -489,8 +489,28 @@
 }
 
 @media (max-width: 768px) {
+  .container {
+    padding-bottom: 80px;
+  }
+
+  .headerContent {
+    padding: 0 1rem;
+  }
+
   .headerContent h1 {
     font-size: 2rem;
+  }
+
+  .headerContent p {
+    font-size: 1rem;
+  }
+
+  .content {
+    padding: 2rem 1rem;
+  }
+
+  .filters {
+    padding: 1.5rem;
   }
 
   .languageToggle {
@@ -503,8 +523,58 @@
     text-align: center;
   }
 
+  .categoryFilter {
+    gap: 0.5rem;
+  }
+
+  .categoryButton,
+  .categoryButtonActive {
+    padding: 0.6rem 1rem;
+    font-size: 0.875rem;
+  }
+
+  .categoryGroup {
+    padding: 1.5rem;
+  }
+
+  .categoryTitle {
+    font-size: 1.5rem;
+  }
+
   .ingredientGrid {
     grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
     gap: 0.5rem;
+    padding: 1rem;
+  }
+
+  .ingredientCard {
+    border-width: 1px;
+  }
+
+  .ingredientInfo {
+    padding: 0.5rem;
+    min-height: 50px;
+  }
+
+  .ingredientName {
+    font-size: 0.85rem;
+  }
+
+  .ingredientNameEn {
+    font-size: 0.7rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .headerContent h1 {
+    font-size: 1.5rem;
+  }
+
+  .categoryTitle {
+    font-size: 1.25rem;
+  }
+
+  .ingredientGrid {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
   }
 }

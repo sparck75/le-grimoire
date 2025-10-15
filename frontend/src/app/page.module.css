@@ -229,6 +229,10 @@
 }
 
 @media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+  }
+
   .title {
     font-size: 2.5rem;
   }
@@ -244,5 +248,43 @@
   .header {
     flex-direction: column;
     gap: 2rem;
+    padding: 0.5rem 0 2rem;
+  }
+
+  .hero {
+    padding: 2rem 0;
+  }
+
+  .button,
+  .buttonSecondary {
+    padding: 1rem 2rem;
+    font-size: 1rem;
+  }
+
+  .features {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .feature {
+    padding: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .title {
+    font-size: 2rem;
+  }
+
+  .subtitle {
+    font-size: 1rem;
+  }
+
+  .logoText {
+    font-size: 1.5rem;
+  }
+
+  .feature h2 {
+    font-size: 1.5rem;
   }
 }

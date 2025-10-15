@@ -189,3 +189,32 @@
 .info li {
   margin-bottom: 0.5rem;
 }
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .header h1 {
+    font-size: 1.75rem;
+  }
+
+  .card {
+    padding: 1.5rem;
+  }
+
+  .uploadArea {
+    padding: 1.5rem;
+  }
+
+  .uploadIcon {
+    font-size: 2rem;
+  }
+}

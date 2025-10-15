@@ -499,18 +499,45 @@
 }
 
 @media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+    padding-bottom: 80px;
+  }
+
+  .pageHeader h1 {
+    font-size: 2rem;
+  }
+
+  .headerTop {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .backButton {
+    padding: 0.6rem 1.25rem;
+    font-size: 0.9rem;
+  }
+
   .toolbar {
     flex-direction: column;
     align-items: stretch;
+    gap: 0.75rem;
   }
 
   .searchBox {
     width: 100%;
   }
 
+  .searchInput {
+    padding: 0.65rem 2rem 0.65rem 1rem;
+    font-size: 0.95rem;
+  }
+
   .filters {
     width: 100%;
     flex-direction: column;
+    gap: 0.5rem;
   }
 
   .select {
@@ -521,6 +548,20 @@
     justify-content: space-between;
     width: 100%;
     margin-left: 0;
+  }
+
+  .buttonGroup {
+    flex: 1;
+  }
+
+  .sizeButton,
+  .viewButton {
+    padding: 0.65rem 0.75rem;
+    font-size: 0.875rem;
+  }
+
+  .recipeGrid {
+    gap: 1rem;
   }
 
   .recipeGrid.view-list .recipeCard {
@@ -535,5 +576,36 @@
   .recipeGrid.grid-medium,
   .recipeGrid.grid-large {
     grid-template-columns: 1fr;
+  }
+
+  .cardContent {
+    padding: 1.25rem;
+  }
+
+  .cardTitle {
+    font-size: 1.25rem;
+  }
+
+  .cardInfo {
+    font-size: 0.8rem;
+  }
+
+  .viewLink {
+    padding: 0.65rem 1.25rem;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .pageHeader h1 {
+    font-size: 1.5rem;
+  }
+
+  .recipeCount {
+    font-size: 0.875rem;
+  }
+
+  .cardTitle {
+    font-size: 1.1rem;
   }
 }
