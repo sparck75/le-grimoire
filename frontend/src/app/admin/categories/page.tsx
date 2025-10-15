@@ -34,7 +34,7 @@ export default function CategoriesPage() {
         limit: limit.toString()
       });
       
-      const response = await fetch(`http://localhost:8000/api/admin/ingredients/categories?${params}`);
+      const response = await fetch(`/api/admin/ingredients/categories?${params}`);
       
       if (!response.ok) {
         throw new Error('Failed to fetch categories');

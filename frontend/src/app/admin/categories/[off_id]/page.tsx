@@ -24,8 +24,7 @@ interface CategoryDetailProps {
 
 async function getCategoryDetails(off_id: string): Promise<Category | null> {
   try {
-    // Client component always uses localhost
-    const url = `http://localhost:8000/api/admin/ingredients/categories/${encodeURIComponent(off_id)}`;
+    const url = `/api/admin/ingredients/categories/${encodeURIComponent(off_id)}`;
     console.log(`Fetching category from: ${url}`);
     
     const response = await fetch(url, { cache: 'no-store' });
@@ -51,7 +50,7 @@ async function getParentCategories(parentIds: string[]): Promise<Category[]> {
   try {
     const parentPromises = parentIds.map(async (parentId) => {
       const response = await fetch(
-        `http://localhost:8000/api/admin/ingredients/categories/${encodeURIComponent(parentId)}`,
+        `/api/admin/ingredients/categories/${encodeURIComponent(parentId)}`,
         { cache: 'no-store' }
       );
       if (response.ok) {
@@ -72,7 +71,7 @@ async function getChildCategories(childIds: string[]): Promise<Category[]> {
   try {
     const childPromises = childIds.map(async (childId) => {
       const response = await fetch(
-        `http://localhost:8000/api/admin/ingredients/categories/${encodeURIComponent(childId)}`,
+        `/api/admin/ingredients/categories/${encodeURIComponent(childId)}`,
         { cache: 'no-store' }
       );
       if (response.ok) {
