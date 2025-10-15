@@ -24,7 +24,7 @@ interface PaginatedResponse {
   pages: number;
 }
 
-export default function IngredientsPage() {
+export default function AdminIngredientsPage() {
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

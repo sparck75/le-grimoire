@@ -19,7 +19,7 @@ export default function AdminDashboard() {
         // Fetch stats from various endpoints
         const [statsRes, recipesRes] = await Promise.all([
           fetch('http://localhost:8000/api/admin/ingredients/stats/summary'),
-          fetch('http://localhost:8000/api/admin/recipes'),
+          fetch('/api/admin/recipes'),
         ]);
 
         const statsData = await statsRes.json();

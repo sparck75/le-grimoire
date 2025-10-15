@@ -13,10 +13,12 @@ if (-not (Test-Path "backend")) {
 
 # Step 1: Run Alembic migration
 Write-Host "Step 1: Running database migration..." -ForegroundColor Yellow
-docker-compose exec backend alembic upgrade head
+$alembicResult = docker-compose exec backend alembic upgrade head 2>&1
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "`nError: Migration failed!" -ForegroundColor Red
+    Write-Host "Details:" -ForegroundColor Red
+    Write-Host $alembicResult
     exit 1
 }
 
@@ -24,10 +26,12 @@ Write-Host "`n✓ Migration completed successfully!" -ForegroundColor Green
 
 # Step 2: Run seeding script
 Write-Host "`nStep 2: Seeding ingredients from CSV files..." -ForegroundColor Yellow
-docker-compose exec backend python scripts/seed_ingredients_from_csv.py
+$seedResult = docker-compose exec backend python scripts/seed_ingredients_from_csv.py 2>&1
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "`nError: Seeding failed!" -ForegroundColor Red
+    Write-Host "Details:" -ForegroundColor Red
+    Write-Host $seedResult
     exit 1
 }
 

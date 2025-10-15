@@ -38,97 +38,82 @@ interface Ingredient {
 }
 
 // Ingredient Search Component with autocomplete (memoized to prevent unnecessary re-renders)
-const IngredientSearch = memo(function IngredientSearch({ value, ingredientName, preparationNotes, onChange, onTextChange, triggerSearch }: {
+const IngredientSearch = memo(function IngredientSearch({ value, ingredientName, preparationNotes, onChange }: {
   value: string;
   ingredientName: string;
   preparationNotes?: string;
   onChange: (offId: string, name: string) => void;
-  onTextChange?: (text: string) => void;
-  triggerSearch?: boolean;
 }) {
-  // Initialize with preparation_notes if no ingredient is linked, otherwise show the linked ingredient name
   const initialSearchTerm = ingredientName || preparationNotes || '';
   const [searchTerm, setSearchTerm] = useState(initialSearchTerm);
   const [searchResults, setSearchResults] = useState<Ingredient[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  
-  // DEBUG: Track component lifecycle
-  useEffect(() => {
-    console.log('🔵 IngredientSearch MOUNTED for:', value || 'new');
-    return () => console.log('🔴 IngredientSearch UNMOUNTED for:', value || 'new');
-  }, []);
-  
-  // DEBUG: Track showDropdown changes
-  useEffect(() => {
-    console.log('🟢 showDropdown changed to:', showDropdown, 'searchResults:', searchResults.length);
-  }, [showDropdown]);
 
-  // Update search term only when ingredient value/name changes (not preparation_notes)
   useEffect(() => {
-    // Only update if the linked ingredient changed (value changed)
     if (ingredientName) {
-      console.log('🔗 Ingredient linked, updating searchTerm to:', ingredientName);
       setSearchTerm(ingredientName);
-      console.log('❌ Setting showDropdown = FALSE (ingredient name changed in effect)');
-      setShowDropdown(false); // Close dropdown when ingredient is selected
+      setShowDropdown(false);
     }
-  }, [ingredientName, value]);
-
-  // Track if user is actively typing
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔵 IngredientSearch MOUNTED for:', value || 'new');
+    }
+    return () => {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔴 IngredientSearch UNMOUNTED for:', value || 'new');
+      }
+    };
   const [userIsTyping, setUserIsTyping] = useState(false);
   const [shouldSearch, setShouldSearch] = useState(false);
 
   useEffect(() => {
-    const delayDebounce = setTimeout(async () => {
-      // Search if user is typing OR if shouldSearch is true (for focus events)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🟢 showDropdown changed to:', showDropdown, 'searchResults:', searchResults.length);
+    }
       if (searchTerm.length >= 2 && (userIsTyping || shouldSearch)) {
         setIsSearching(true);
         try {
           const response = await fetch(`/api/v2/ingredients/?search=${encodeURIComponent(searchTerm)}&language=fr&limit=20`);
           if (response.ok) {
             const data = await response.json();
-            console.log('🔍 Ingredient search results for "' + searchTerm + '":', data?.length || 0, 'results');
             setSearchResults(data || []);
-            if (data && data.length > 0) {
-              console.log('✅ Setting showDropdown = TRUE (from search results)');
-              setShowDropdown(true);
-            } else {
-              console.log('❌ Setting showDropdown = FALSE (no results)');
-              setShowDropdown(false);
-            }
-          }
-        } catch (error) {
-          console.error('Error searching ingredients:', error);
+            setShowDropdown(data && data.length > 0);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('❌ Setting showDropdown = FALSE (ingredient name changed in effect)');
+      }
+      setShowDropdown(false); // Close dropdown when ingredient is selected
+          // Optionally handle error
         } finally {
           setIsSearching(false);
-          setShouldSearch(false); // Reset after search
+          setShouldSearch(false);
         }
       } else if (searchTerm.length < 2) {
         setSearchResults([]);
-        console.log('❌ Setting showDropdown = FALSE (search term < 2)');
         setShowDropdown(false);
       }
-    }, 150); // Reduced from 300ms to 150ms for faster response
+    }, 150);
 
     return () => clearTimeout(delayDebounce);
   }, [searchTerm, userIsTyping, shouldSearch]);
 
   const selectIngredient = (ingredient: Ingredient) => {
-    // Link to selected ingredient
     onChange(ingredient.off_id, ingredient.name);
-    setSearchTerm(ingredient.name); // Show the selected ingredient name
-    console.log('❌ Setting showDropdown = FALSE (ingredient selected)');
-    setShowDropdown(false);
-    setUserIsTyping(false);
-  };
-
-  // Simple dropdown style - use absolute positioning relative to parent
-  const dropdownStyle = {
-    position: 'absolute' as const,
-    top: '100%',  // Position right below the input
-    left: '0',
+            if (process.env.NODE_ENV === 'development') {
+              console.log('🔍 Ingredient search results for "' + searchTerm + '":', data?.length || 0, 'results');
+            }
+            setSearchResults(data || []);
+            if (data && data.length > 0) {
+              if (process.env.NODE_ENV === 'development') {
+                console.log('✅ Setting showDropdown = TRUE (from search results)');
+              }
+              setShowDropdown(true);
+            } else {
+              if (process.env.NODE_ENV === 'development') {
+                console.log('❌ Setting showDropdown = FALSE (no results)');
+              }
+              setShowDropdown(false);
+            }
     right: '0',
     marginTop: '4px',
     maxHeight: '250px',
@@ -137,9 +122,11 @@ const IngredientSearch = memo(function IngredientSearch({ value, ingredientName,
     border: '2px solid #667eea',
     borderRadius: '8px',
     boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-    zIndex: 1000
-  };
-
+        setSearchResults([]);
+        if (process.env.NODE_ENV === 'development') {
+          console.log('❌ Setting showDropdown = FALSE (search term < 2)');
+        }
+        setShowDropdown(false);
   return (
     <div style={{ position: 'relative', width: '100%' }}>
       <input
@@ -148,36 +135,27 @@ const IngredientSearch = memo(function IngredientSearch({ value, ingredientName,
         value={searchTerm}
         onChange={(e) => {
           setUserIsTyping(true);
-          setSearchTerm(e.target.value);
-        }}
-        onFocus={() => {
-          console.log('🎯 onFocus triggered - searchTerm:', searchTerm, 'results:', searchResults.length);
-          // Trigger search on focus if there's text but no results yet
-          if (searchTerm.length >= 2 && searchResults.length === 0) {
-            console.log('🔄 Triggering search from focus');
-            setShouldSearch(true);
+    onChange(ingredient.off_id, ingredient.name);
+    setSearchTerm(ingredient.name); // Show the selected ingredient name
+    if (process.env.NODE_ENV === 'development') {
+      console.log('❌ Setting showDropdown = FALSE (ingredient selected)');
+    }
+    setShowDropdown(false);
+    setUserIsTyping(false);
           }
-          // Show dropdown if there are already results
           if (searchResults.length > 0 && searchTerm.length >= 2) {
-            console.log('✅ Setting showDropdown = TRUE (from focus)');
             setShowDropdown(true);
           }
         }}
         onBlur={(e) => {
-          console.log('👋 onBlur triggered');
-          // Don't close if user is interacting with the dropdown
-          // The dropdown will handle closing itself when an item is selected
           const relatedTarget = e.relatedTarget as HTMLElement;
           if (relatedTarget && relatedTarget.closest('[data-dropdown]')) {
-            console.log('⏸️ Not closing - clicking within dropdown');
-            return; // Don't close if clicking within dropdown
+            return;
           }
-          // Close dropdown after a short delay (to allow clicking on items)
           setTimeout(() => {
-            console.log('❌ Setting showDropdown = FALSE (from blur timeout)');
             setShowDropdown(false);
             setUserIsTyping(false);
-          }, 300); // Increased from 200ms to 300ms
+          }, 300);
         }}
         placeholder="Rechercher pour lier à un ingrédient..."
         style={{ width: '100%', paddingRight: searchTerm ? '35px' : '10px' }}
@@ -186,73 +164,82 @@ const IngredientSearch = memo(function IngredientSearch({ value, ingredientName,
         <button
           type="button"
           onMouseDown={(e) => {
-            e.preventDefault(); // Prevent input blur
-            console.log('🗑️ Clear button clicked');
+            e.preventDefault();
             setSearchTerm('');
-            onChange('', ''); // Clear the ingredient link
+            onChange('', '');
             setSearchResults([]);
-            console.log('❌ Setting showDropdown = FALSE (clear button)');
             setShowDropdown(false);
             setUserIsTyping(false);
-          }}
-          style={{
-            position: 'absolute',
-            right: '8px',
-            top: '50%',
-            transform: 'translateY(-50%)',
-            background: 'none',
-            border: 'none',
-            color: '#999',
-            cursor: 'pointer',
-            fontSize: '1.2rem',
-            padding: '0 4px',
-            lineHeight: '1',
-            transition: 'color 0.2s'
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.color = '#ff4444'}
-          onMouseLeave={(e) => e.currentTarget.style.color = '#999'}
-          title="Effacer"
-        >
-          ×
-        </button>
-      )}
-      {isSearching && (
-        <span style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)' }}>
-          🔄
-        </span>
-      )}
-      {showDropdown && searchResults.length > 0 ? (
-        <div style={dropdownStyle} data-dropdown="true">
-          {console.log('🎨 Rendering dropdown with', searchResults.length, 'results')}
+        onFocus={() => {
+          if (process.env.NODE_ENV === 'development') {
+            console.log('🎯 onFocus triggered - searchTerm:', searchTerm, 'results:', searchResults.length);
+          }
+          // Trigger search on focus if there's text but no results yet
+          if (searchTerm.length >= 2 && searchResults.length === 0) {
+            if (process.env.NODE_ENV === 'development') {
+              console.log('🔄 Triggering search from focus');
+            }
+            setShouldSearch(true);
+          }
+          // Show dropdown if there are already results
+          if (searchResults.length > 0 && searchTerm.length >= 2) {
+            if (process.env.NODE_ENV === 'development') {
+              console.log('✅ Setting showDropdown = TRUE (from focus)');
+            }
+            setShowDropdown(true);
+          }
+        }}
+        onBlur={(e) => {
+          if (process.env.NODE_ENV === 'development') {
+            console.log('👋 onBlur triggered');
+          }
+          // Don't close if user is interacting with the dropdown
+          // The dropdown will handle closing itself when an item is selected
+          const relatedTarget = e.relatedTarget as HTMLElement;
+          if (relatedTarget && relatedTarget.closest('[data-dropdown]')) {
+            if (process.env.NODE_ENV === 'development') {
+              console.log('⏸️ Not closing - clicking within dropdown');
+            }
+            return; // Don't close if clicking within dropdown
+          }
+          // Close dropdown after a short delay (to allow clicking on items)
+          setTimeout(() => {
+            if (process.env.NODE_ENV === 'development') {
+              console.log('❌ Setting showDropdown = FALSE (from blur timeout)');
+            }
+            setShowDropdown(false);
+            setUserIsTyping(false);
+          }, 300); // Increased from 200ms to 300ms
+        }}
           {searchResults.map((ing) => (
             <div
               key={ing.id}
               onMouseDown={(e) => {
-                e.preventDefault(); // Prevent input blur
+                e.preventDefault();
                 selectIngredient(ing);
-              }}
-              style={{
-                padding: '10px 15px',
-                cursor: 'pointer',
-                borderBottom: '1px solid #eee',
-                transition: 'background-color 0.2s'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f5f5f5'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
-            >
+          onMouseDown={(e) => {
+            e.preventDefault(); // Prevent input blur
+            if (process.env.NODE_ENV === 'development') {
+              console.log('🗑️ Clear button clicked');
+            }
+            setSearchTerm('');
+            onChange('', ''); // Clear the ingredient link
+            setSearchResults([]);
+            if (process.env.NODE_ENV === 'development') {
+              console.log('❌ Setting showDropdown = FALSE (clear button)');
+            }
+            setShowDropdown(false);
+            setUserIsTyping(false);
+          }}
               <div style={{ fontWeight: '500' }}>{ing.name}</div>
               <div style={{ fontSize: '0.85em', color: '#666' }}>{ing.off_id}</div>
             </div>
           ))}
         </div>
-      ) : (
-        searchTerm.length >= 2 && !isSearching && console.log('Dropdown NOT showing - showDropdown:', showDropdown, 'results:', searchResults.length)
       )}
     </div>
   );
 }, (prevProps, nextProps) => {
-  // Custom comparison: only re-render if value or ingredientName changes
-  // Ignore preparationNotes changes to prevent re-rendering while typing
   return prevProps.value === nextProps.value && 
          prevProps.ingredientName === nextProps.ingredientName;
 });
@@ -272,8 +259,8 @@ export default function AdminRecipeEditPage() {
     title: '',
     description: '',
     ingredients: [],
-    instructions: '',
-    servings: null,
+          {process.env.NODE_ENV === 'development' && console.log('🎨 Rendering dropdown with', searchResults.length, 'results')}
+          {searchResults.map((ing) => (
     prep_time: null,
     cook_time: null,
     total_time: null,
@@ -295,7 +282,7 @@ export default function AdminRecipeEditPage() {
     // Auto-calculate total time
     const prep = recipe.prep_time || 0;
     const cook = recipe.cook_time || 0;
-    const total = prep + cook;
+        searchTerm.length >= 2 && !isSearching && process.env.NODE_ENV === 'development' && console.log('Dropdown NOT showing - showDropdown:', showDropdown, 'results:', searchResults.length)
     if (total > 0 && total !== recipe.total_time) {
       setRecipe(prev => ({ ...prev, total_time: total }));
     }
@@ -632,10 +619,7 @@ export default function AdminRecipeEditPage() {
                         onChange={(offId, name) => {
                           updateIngredient(index, 'ingredient_off_id', offId);
                           updateIngredient(index, 'ingredient_name', name);
-                          setTriggerSearchIndex(null);
                         }}
-                        onTextChange={() => {}}
-                        triggerSearch={triggerSearchIndex === index}
                       />
                       {ingredient.ingredient_name && (
                         <small style={{ display: 'block', marginTop: '0.25rem', color: '#4CAF50', fontSize: '0.8rem', fontStyle: 'italic' }}>

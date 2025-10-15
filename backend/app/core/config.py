@@ -37,7 +37,11 @@ class Settings(BaseSettings):
     ALLOWED_ORIGINS: List[str] = [
         "http://localhost:3000",
         "http://localhost:8000",
-        "http://frontend:3000"
+        "http://localhost",
+        "http://frontend:3000",
+        "http://192.168.1.133",
+        "http://192.168.1.133:80",
+        "*"  # Allow all origins for development
     ]
     
     # OCR
