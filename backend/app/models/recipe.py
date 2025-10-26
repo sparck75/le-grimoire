@@ -14,6 +14,7 @@ class Recipe(Base):
     title = Column(String(500), nullable=False)
     description = Column(Text)
     ingredients = Column(ARRAY(Text), nullable=False)
+    equipment = Column(ARRAY(Text))  # cooking equipment/utensils needed
     instructions = Column(Text, nullable=False)
     servings = Column(Integer)
     prep_time = Column(Integer)  # in minutes

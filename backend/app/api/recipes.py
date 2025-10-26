@@ -17,6 +17,7 @@ class RecipeResponse(BaseModel):
     title: str
     description: Optional[str]
     ingredients: List[str]
+    equipment: Optional[List[str]] = None
     instructions: str
     servings: Optional[int]
     prep_time: Optional[int]
@@ -36,6 +37,7 @@ class RecipeCreate(BaseModel):
     title: str
     description: Optional[str] = None
     ingredients: List[str]
+    equipment: Optional[List[str]] = None
     instructions: str
     servings: Optional[int] = None
     prep_time: Optional[int] = None
@@ -45,6 +47,23 @@ class RecipeCreate(BaseModel):
     cuisine: Optional[str] = None
     image_url: Optional[str] = None
     is_public: bool = True
+
+
+class RecipeUpdate(BaseModel):
+    """Recipe update request"""
+    title: Optional[str] = None
+    description: Optional[str] = None
+    ingredients: Optional[List[str]] = None
+    equipment: Optional[List[str]] = None
+    instructions: Optional[str] = None
+    servings: Optional[int] = None
+    prep_time: Optional[int] = None
+    cook_time: Optional[int] = None
+    total_time: Optional[int] = None
+    category: Optional[str] = None
+    cuisine: Optional[str] = None
+    image_url: Optional[str] = None
+    is_public: Optional[bool] = None
 
 @router.get("/", response_model=List[RecipeResponse])
 async def list_recipes(
@@ -75,6 +94,7 @@ async def list_recipes(
             title=recipe.title,
             description=recipe.description,
             ingredients=recipe.ingredients,
+            equipment=recipe.equipment,
             instructions=recipe.instructions,
             servings=recipe.servings,
             prep_time=recipe.prep_time,
@@ -106,6 +126,7 @@ async def get_recipe(recipe_id: UUID, db: Session = Depends(get_db)):
         title=recipe.title,
         description=recipe.description,
         ingredients=recipe.ingredients,
+        equipment=recipe.equipment,
         instructions=recipe.instructions,
         servings=recipe.servings,
         prep_time=recipe.prep_time,
@@ -131,6 +152,7 @@ async def create_recipe(
         title=recipe_data.title,
         description=recipe_data.description,
         ingredients=recipe_data.ingredients,
+        equipment=recipe_data.equipment,
         instructions=recipe_data.instructions,
         servings=recipe_data.servings,
         prep_time=recipe_data.prep_time,
@@ -151,6 +173,7 @@ async def create_recipe(
         title=recipe.title,
         description=recipe.description,
         ingredients=recipe.ingredients,
+        equipment=recipe.equipment,
         instructions=recipe.instructions,
         servings=recipe.servings,
         prep_time=recipe.prep_time,
@@ -161,3 +184,61 @@ async def create_recipe(
         image_url=recipe.image_url,
         is_public=recipe.is_public
     )
+
+
+@router.put("/{recipe_id}", response_model=RecipeResponse)
+async def update_recipe(
+    recipe_id: UUID,
+    recipe_data: RecipeUpdate,
+    db: Session = Depends(get_db)
+):
+    """
+    Update an existing recipe
+    """
+    recipe = db.query(Recipe).filter(Recipe.id == recipe_id).first()
+    
+    if not recipe:
+        raise HTTPException(status_code=404, detail="Recipe not found")
+    
+    # Update only provided fields
+    update_data = recipe_data.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(recipe, field, value)
+    
+    db.commit()
+    db.refresh(recipe)
+    
+    return RecipeResponse(
+        id=str(recipe.id),
+        title=recipe.title,
+        description=recipe.description,
+        ingredients=recipe.ingredients,
+        instructions=recipe.instructions,
+        servings=recipe.servings,
+        prep_time=recipe.prep_time,
+        cook_time=recipe.cook_time,
+        total_time=recipe.total_time,
+        category=recipe.category,
+        cuisine=recipe.cuisine,
+        image_url=recipe.image_url,
+        is_public=recipe.is_public
+    )
+
+
+@router.delete("/{recipe_id}")
+async def delete_recipe(
+    recipe_id: UUID,
+    db: Session = Depends(get_db)
+):
+    """
+    Delete a recipe
+    """
+    recipe = db.query(Recipe).filter(Recipe.id == recipe_id).first()
+    
+    if not recipe:
+        raise HTTPException(status_code=404, detail="Recipe not found")
+    
+    db.delete(recipe)
+    db.commit()
+    
+    return {"message": "Recipe deleted successfully", "id": str(recipe_id)}

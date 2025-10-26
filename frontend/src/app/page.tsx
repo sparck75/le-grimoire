@@ -18,21 +18,6 @@ export default function Home() {
             />
             <span className={styles.logoText}>Le Grimoire</span>
           </div>
-          
-          <nav className={styles.nav}>
-            <Link href="/recipes" className={styles.navLink}>
-              📚 Recettes
-            </Link>
-            <Link href="/ingredients" className={styles.navLink}>
-              🥕 Ingrédients
-            </Link>
-            <Link href="/shopping-list" className={styles.navLink}>
-              � Liste d'Épicerie
-            </Link>
-            <Link href="/admin" className={styles.navLink}>
-              ⚙️ Admin
-            </Link>
-          </nav>
         </header>
         
         <div className={styles.hero}>

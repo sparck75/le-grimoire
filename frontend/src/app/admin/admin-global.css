@@ -1,12 +1,14 @@
-/* Admin Global Styles - Applies purple gradient theme */
+/* Admin Global Styles - Applies brown gradient theme */
 
 .admin-container {
   display: flex;
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #8B5A3C 0%, #A67C52 100%);
   position: relative;
   overflow-x: hidden;
   width: 100%;
+  margin-top: -70px; /* Offset the body padding-top from globals.css */
+  padding-top: 0;
 }
 
 .admin-container::before {
@@ -206,14 +208,14 @@
   font-size: 0.875rem;
   text-transform: uppercase;
   letter-spacing: 1px;
-  color: #667eea;
+  color: #8B5A3C;
   font-weight: 600;
 }
 
 .stat-value {
   font-size: 3rem;
   font-weight: 700;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #8B5A3C 0%, #A67C52 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -243,7 +245,7 @@
 .card-header h2 {
   margin: 0;
   font-size: 1.25rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #8B5A3C 0%, #A67C52 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -270,7 +272,7 @@
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #8B5A3C 0%, #A67C52 100%);
   color: white;
 }
 
@@ -281,8 +283,8 @@
 
 .btn-secondary {
   background: rgba(255, 255, 255, 0.9);
-  color: #667eea;
-  border: 2px solid #667eea;
+  color: #8B5A3C;
+  border: 2px solid #8B5A3C;
 }
 
 .btn-secondary:hover {
@@ -353,7 +355,7 @@
 }
 
 .data-table th {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #8B5A3C 0%, #A67C52 100%);
   font-weight: 600;
   color: white;
   font-size: 0.875rem;
@@ -378,7 +380,7 @@
   border-radius: 12px;
   font-size: 0.75rem;
   font-weight: 600;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #8B5A3C 0%, #A67C52 100%);
   color: white;
   white-space: nowrap;
 }
@@ -436,13 +438,13 @@
   border-radius: 50px;
   cursor: pointer;
   transition: all 0.3s ease;
-  color: #667eea;
+  color: #8B5A3C;
   font-weight: 600;
 }
 
 .pagination button:hover:not(:disabled) {
   background: rgba(255, 255, 255, 1);
-  border-color: #667eea;
+  border-color: #8B5A3C;
   transform: translateY(-2px);
 }
 
@@ -496,7 +498,7 @@
 .form-group textarea:focus,
 .form-group select:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: #8B5A3C;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
@@ -552,7 +554,7 @@
 .ingredient-row input:focus,
 .ingredient-row select:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: #8B5A3C;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
@@ -594,6 +596,11 @@
   /* Show overlay when sidebar is open */
   .admin-sidebar-overlay {
     display: block;
+  }
+
+  /* Admin container: no offset on mobile since body padding-top is 0 */
+  .admin-container {
+    margin-top: 0;
   }
 
   /* Sidebar hidden by default on mobile */

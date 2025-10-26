@@ -2,7 +2,7 @@
 
 .container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #8B5A3C 0%, #A67C52 100%);
   position: relative;
 }
 
@@ -118,7 +118,7 @@
 
 .searchInput:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: #8B5A3C;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
@@ -128,7 +128,7 @@
   width: 20px;
   height: 20px;
   border: 3px solid #e0e0e0;
-  border-top-color: #667eea;
+  border-top-color: #8B5A3C;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -151,14 +151,14 @@
 }
 
 .langButton:hover {
-  border-color: #667eea;
+  border-color: #8B5A3C;
   background: rgba(102, 126, 234, 0.05);
 }
 
 .langButtonActive {
   padding: 0.6rem 1.25rem;
-  border: 2px solid #667eea;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: 2px solid #8B5A3C;
+  background: linear-gradient(135deg, #8B5A3C 0%, #A67C52 100%);
   border-radius: 50px;
   font-size: 0.9rem;
   font-weight: 600;
@@ -176,7 +176,7 @@
 
 .searchInfo p {
   margin: 0;
-  color: #667eea;
+  color: #8B5A3C;
   font-weight: 600;
   font-size: 0.95rem;
 }
@@ -200,15 +200,15 @@
 }
 
 .categoryButton:hover {
-  border-color: #667eea;
+  border-color: #8B5A3C;
   background: rgba(102, 126, 234, 0.1);
   transform: translateY(-2px);
 }
 
 .categoryButtonActive {
   padding: 0.75rem 1.5rem;
-  border: 2px solid #667eea;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: 2px solid #8B5A3C;
+  background: linear-gradient(135deg, #8B5A3C 0%, #A67C52 100%);
   border-radius: 50px;
   font-size: 0.95rem;
   font-weight: 600;
@@ -234,7 +234,7 @@
 .categoryTitle {
   font-size: 2rem;
   font-weight: 700;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #8B5A3C 0%, #A67C52 100%);
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -272,7 +272,7 @@
 .ingredientCard:hover {
   transform: translateY(-3px);
   box-shadow: 0 8px 20px rgba(102, 126, 234, 0.25);
-  border-color: #667eea;
+  border-color: #8B5A3C;
 }
 
 .ingredientImageWrapper {
@@ -412,7 +412,7 @@
 }
 
 .empty p {
-  color: #667eea;
+  color: #8B5A3C;
   font-size: 1.25rem;
   font-weight: 600;
   margin-bottom: 1.5rem;
@@ -420,7 +420,7 @@
 
 .clearButton {
   padding: 0.75rem 2rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #8B5A3C 0%, #A67C52 100%);
   color: white;
   border: none;
   border-radius: 50px;
@@ -448,7 +448,7 @@
 .loadMoreButton {
   padding: 1rem 3rem;
   background: rgba(255, 255, 255, 0.95);
-  color: #667eea;
+  color: #8B5A3C;
   border: 2px solid rgba(102, 126, 234, 0.3);
   border-radius: 50px;
   font-size: 1.1rem;
@@ -465,7 +465,7 @@
   background: white;
   transform: translateY(-3px);
   box-shadow: 0 8px 30px rgba(102, 126, 234, 0.3);
-  border-color: #667eea;
+  border-color: #8B5A3C;
 }
 
 .loadMoreButton:disabled {
@@ -483,7 +483,7 @@
   width: 16px;
   height: 16px;
   border: 2px solid rgba(102, 126, 234, 0.2);
-  border-top-color: #667eea;
+  border-top-color: #8B5A3C;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }

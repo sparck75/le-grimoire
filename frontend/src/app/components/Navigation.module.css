@@ -5,7 +5,7 @@
   right: 2rem;
   width: 60px;
   height: 60px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #8B5A3C 0%, #A67C52 100%);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -59,7 +59,7 @@
   right: 1.5rem;
   width: 50px;
   height: 50px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #8B5A3C 0%, #A67C52 100%);
   border: none;
   border-radius: 12px;
   color: white;
@@ -118,7 +118,7 @@
   text-decoration: none;
   font-weight: 700;
   font-size: 1.25rem;
-  color: #667eea;
+  color: #8B5A3C;
   transition: all 0.3s ease;
   padding: 0.5rem 1rem;
   border-radius: 10px;
@@ -135,7 +135,7 @@
 }
 
 .logoText {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #8B5A3C 0%, #A67C52 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -179,7 +179,7 @@
 
 .langButtonActive {
   background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%);
-  border-color: #667eea;
+  border-color: #8B5A3C;
   box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
 }
 
@@ -201,13 +201,13 @@
 
 .navLink:hover {
   background: rgba(102, 126, 234, 0.1);
-  color: #667eea;
+  color: #8B5A3C;
   transform: translateY(-2px);
 }
 
 .navLinkActive {
   background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%);
-  color: #667eea;
+  color: #8B5A3C;
   box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
 }
 
@@ -306,7 +306,7 @@
   }
 
   .navLinkActive {
-    border-left: 4px solid #667eea;
+    border-left: 4px solid #8B5A3C;
     padding-left: 1.5rem;
   }
 

@@ -9,6 +9,7 @@ interface Recipe {
   title: string;
   description: string;
   ingredients: string[];
+  equipment: string[];
   instructions: string;
   servings: number | null;
   prep_time: number | null;
@@ -32,6 +33,7 @@ export default function AdminRecipeEditPage() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [ingredients, setIngredients] = useState<string[]>(['']);
+  const [equipment, setEquipment] = useState<string[]>(['']);
   const [instructions, setInstructions] = useState('');
   const [servings, setServings] = useState<number | null>(null);
   const [prepTime, setPrepTime] = useState<number | null>(null);
@@ -57,6 +59,7 @@ export default function AdminRecipeEditPage() {
         setTitle(data.title || '');
         setDescription(data.description || '');
         setIngredients(data.ingredients?.length > 0 ? data.ingredients : ['']);
+        setEquipment(data.equipment?.length > 0 ? data.equipment : ['']);
         setInstructions(data.instructions || '');
         setServings(data.servings);
         setPrepTime(data.prep_time);
@@ -90,6 +93,21 @@ export default function AdminRecipeEditPage() {
     setIngredients(newIngredients);
   };
 
+  const handleAddEquipment = () => {
+    setEquipment([...equipment, '']);
+  };
+
+  const handleRemoveEquipment = (index: number) => {
+    const newEquipment = equipment.filter((_, i) => i !== index);
+    setEquipment(newEquipment.length > 0 ? newEquipment : ['']);
+  };
+
+  const handleEquipmentChange = (index: number, value: string) => {
+    const newEquipment = [...equipment];
+    newEquipment[index] = value;
+    setEquipment(newEquipment);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
@@ -102,6 +120,7 @@ export default function AdminRecipeEditPage() {
         title,
         description,
         ingredients: ingredients.filter(ing => ing.trim() !== ''),
+        equipment: equipment.filter(eq => eq.trim() !== ''),
         instructions,
         servings,
         prep_time: prepTime,
@@ -222,6 +241,27 @@ export default function AdminRecipeEditPage() {
           <button type="button" onClick={handleAddIngredient}
             style={{ marginTop: '0.5rem', padding: '0.5rem 1rem', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
             + Ajouter un ingrédient
+          </button>
+        </div>
+
+        <div style={{ marginBottom: '1.5rem' }}>
+          <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>Équipement</label>
+          {equipment.map((item, index) => (
+            <div key={index} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+              <input type="text" value={item} onChange={(e) => handleEquipmentChange(index, e.target.value)}
+                placeholder="Ex: Fouet, Casserole, Four"
+                style={{ flex: 1, padding: '0.5rem', fontSize: '1rem', border: '1px solid #ccc', borderRadius: '4px' }} />
+              {equipment.length > 1 && (
+                <button type="button" onClick={() => handleRemoveEquipment(index)}
+                  style={{ padding: '0.5rem 1rem', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+                  ✕
+                </button>
+              )}
+            </div>
+          ))}
+          <button type="button" onClick={handleAddEquipment}
+            style={{ marginTop: '0.5rem', padding: '0.5rem 1rem', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+            + Ajouter un équipement
           </button>
         </div>
 

@@ -392,7 +392,7 @@ export default function RecipesAdmin() {
                       </td>
                       <td>
                         {recipe.cuisine ? (
-                          <span className={styles.badge} style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
+                          <span className={styles.badge} style={{ background: 'linear-gradient(135deg, #8B5A3C 0%, #A67C52 100%)' }}>
                             {recipe.cuisine}
                           </span>
                         ) : (

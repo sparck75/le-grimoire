@@ -2,7 +2,7 @@
 
 .container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #8B5A3C 0%, #A67C52 100%);
   position: relative;
 }
 
@@ -118,7 +118,7 @@
 .browseButton {
   display: inline-block;
   padding: 1rem 2.5rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #8B5A3C 0%, #A67C52 100%);
   color: white;
   text-decoration: none;
   border-radius: 50px;
@@ -156,7 +156,7 @@
 
 .statBadge {
   padding: 0.5rem 1.25rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #8B5A3C 0%, #A67C52 100%);
   color: white;
   border-radius: 50px;
   font-weight: 600;
@@ -238,7 +238,7 @@
 .recipeTitle {
   font-size: 1.1rem;
   font-weight: 600;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #8B5A3C 0%, #A67C52 100%);
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -260,7 +260,7 @@
   gap: 0.75rem;
   padding: 0.65rem 1rem;
   background: rgba(102, 126, 234, 0.03);
-  border-left: 3px solid #667eea;
+  border-left: 3px solid #8B5A3C;
   border-radius: 8px;
   transition: all 0.2s ease;
 }
@@ -275,7 +275,7 @@
   height: 20px;
   cursor: pointer;
   flex-shrink: 0;
-  accent-color: #667eea;
+  accent-color: #8B5A3C;
 }
 
 .itemContent {
@@ -299,7 +299,7 @@
 
 .itemQuantity {
   font-size: 0.85rem;
-  color: #667eea;
+  color: #8B5A3C;
   font-weight: 600;
   background: rgba(102, 126, 234, 0.1);
   padding: 0.2rem 0.6rem;
@@ -349,7 +349,7 @@
   gap: 0.75rem;
   padding: 0.65rem 1rem;
   background: rgba(16, 185, 129, 0.04);
-  border-left: 3px solid #10b981;
+  border-left: 3px solid #6B8E6F;
   border-radius: 8px;
   opacity: 0.6;
   transition: all 0.2s ease;

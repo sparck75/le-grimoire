@@ -101,6 +101,13 @@ export default function Navigation() {
               🥕 <span>{t('ingredients')}</span>
             </Link>
             <Link 
+              href="/conversions" 
+              className={pathname === '/conversions' ? styles.navLinkActive : styles.navLink}
+              onClick={() => setIsOpen(false)}
+            >
+              🔄 <span>Conversions</span>
+            </Link>
+            <Link 
               href="/shopping-list" 
               className={pathname === '/shopping-list' ? styles.navLinkActive : styles.navLink}
               onClick={() => setIsOpen(false)}

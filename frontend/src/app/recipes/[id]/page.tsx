@@ -10,6 +10,7 @@ interface Recipe {
   title: string;
   description: string | null;
   ingredients: string[];
+  equipment: string[];
   instructions: string;
   servings: number | null;
   prep_time: number | null;
@@ -267,39 +268,62 @@ export default function RecipeDetailPage() {
 
         {/* Recipe Content */}
         <div className={styles.recipeContent}>
-          {/* Ingredients Section */}
-          <div className={styles.section}>
-            <div className={styles.sectionHeader}>
-              <h2 className={styles.sectionTitle}>
-                <span className={styles.sectionIcon}>🥕</span>
-                Ingrédients
-              </h2>
+          {/* Left Column: Ingredients and Equipment */}
+          <div className={styles.leftColumn}>
+            {/* Ingredients Section */}
+            <div className={styles.section}>
+              <div className={styles.sectionHeader}>
+                <h2 className={styles.sectionTitle}>
+                  <span className={styles.sectionIcon}>🥕</span>
+                  Ingrédients
+                </h2>
+              </div>
+              <div className={styles.ingredientsList}>
+                {recipe.ingredients && recipe.ingredients.length > 0 ? (
+                  recipe.ingredients.map((ingredient, index) => (
+                    <div key={index} className={styles.ingredientItem}>
+                      <span className={styles.ingredientBullet}>✓</span>
+                      <span className={styles.ingredientText}>{ingredient}</span>
+                      <button 
+                        className={`${styles.addIngredientBtn} ${addedIngredients.has(index) ? styles.addIngredientBtnAdded : ''}`}
+                        onClick={() => addIngredientToList(ingredient, index)}
+                        title="Ajouter à ma liste"
+                        disabled={addedIngredients.has(index)}
+                      >
+                        <span className={styles.addIcon}>
+                          {addedIngredients.has(index) ? '✓' : '+'}
+                        </span>
+                      </button>
+                    </div>
+                  ))
+                ) : (
+                  <p className={styles.emptyMessage}>Aucun ingrédient spécifié</p>
+                )}
+              </div>
             </div>
-            <div className={styles.ingredientsList}>
-              {recipe.ingredients && recipe.ingredients.length > 0 ? (
-                recipe.ingredients.map((ingredient, index) => (
-                  <div key={index} className={styles.ingredientItem}>
-                    <span className={styles.ingredientBullet}>✓</span>
-                    <span className={styles.ingredientText}>{ingredient}</span>
-                    <button 
-                      className={`${styles.addIngredientBtn} ${addedIngredients.has(index) ? styles.addIngredientBtnAdded : ''}`}
-                      onClick={() => addIngredientToList(ingredient, index)}
-                      title="Ajouter à ma liste"
-                      disabled={addedIngredients.has(index)}
-                    >
-                      <span className={styles.addIcon}>
-                        {addedIngredients.has(index) ? '✓' : '+'}
-                      </span>
-                    </button>
-                  </div>
-                ))
-              ) : (
-                <p className={styles.emptyMessage}>Aucun ingrédient spécifié</p>
-              )}
-            </div>
+
+            {/* Equipment Section */}
+            {recipe.equipment && recipe.equipment.length > 0 && (
+              <div className={styles.section}>
+                <div className={styles.sectionHeader}>
+                  <h2 className={styles.sectionTitle}>
+                    <span className={styles.sectionIcon}>🔪</span>
+                    Équipement
+                  </h2>
+                </div>
+                <div className={styles.equipmentList}>
+                  {recipe.equipment.map((item, index) => (
+                    <div key={index} className={styles.equipmentItem}>
+                      <span className={styles.equipmentBullet}>•</span>
+                      <span className={styles.equipmentText}>{item}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Instructions Section */}
+          {/* Right Column: Instructions */}
           <div className={styles.section}>
             <div className={styles.sectionHeader}>
               <h2 className={styles.sectionTitle}>
@@ -343,6 +367,9 @@ export default function RecipeDetailPage() {
             📖 Voir plus de recettes
           </Link>
         </div>
+
+        {/* Print Footer (only visible when printing) */}
+        <div className={styles.printFooter} style={{ display: 'none' }}></div>
         
         {/* Success Message */}
         {addedToList && (

@@ -62,6 +62,7 @@ class RecipeCreateRequest(BaseModel):
     notes: Optional[str] = None
     is_public: bool = True
     ingredients: List[RecipeIngredientItem] = []
+    equipment: Optional[List[str]] = None
 
 
 class RecipeUpdateRequest(BaseModel):
@@ -81,6 +82,7 @@ class RecipeUpdateRequest(BaseModel):
     notes: Optional[str] = None
     is_public: Optional[bool] = None
     ingredients: Optional[List[RecipeIngredientItem]] = None
+    equipment: Optional[List[str]] = None
 
 
 class RecipeDetailResponse(BaseModel):
@@ -101,6 +103,7 @@ class RecipeDetailResponse(BaseModel):
     notes: Optional[str]
     is_public: bool
     ingredients: List[RecipeIngredientResponse]
+    equipment: Optional[List[str]] = None
     
     class Config:
         from_attributes = True
@@ -168,7 +171,8 @@ async def create_recipe(
         instructions=recipe_data.instructions,
         notes=recipe_data.notes,
         is_public=recipe_data.is_public,
-        ingredients=[]  # Keep empty array for backward compatibility
+        ingredients=[],  # Keep empty array for backward compatibility
+        equipment=recipe_data.equipment
     )
     
     db.add(new_recipe)
@@ -243,7 +247,8 @@ async def create_recipe(
         instructions=new_recipe.instructions,
         notes=new_recipe.notes,
         is_public=new_recipe.is_public,
-        ingredients=ingredient_responses
+        ingredients=ingredient_responses,
+        equipment=new_recipe.equipment
     )
 
 
@@ -322,7 +327,8 @@ async def get_admin_recipe(recipe_id: UUID, db: Session = Depends(get_db)):
         instructions=recipe.instructions,
         notes=recipe.notes,
         is_public=recipe.is_public,
-        ingredients=ingredient_responses
+        ingredients=ingredient_responses,
+        equipment=recipe.equipment
     )
 
 
@@ -367,6 +373,8 @@ async def update_recipe(
         recipe.notes = recipe_data.notes
     if recipe_data.is_public is not None:
         recipe.is_public = recipe_data.is_public
+    if recipe_data.equipment is not None:
+        recipe.equipment = recipe_data.equipment
     
     # Update ingredients if provided
     if recipe_data.ingredients is not None:
@@ -448,7 +456,8 @@ async def update_recipe(
         instructions=recipe.instructions,
         notes=recipe.notes,
         is_public=recipe.is_public,
-        ingredients=ingredient_responses
+        ingredients=ingredient_responses,
+        equipment=recipe.equipment
     )
 
 
