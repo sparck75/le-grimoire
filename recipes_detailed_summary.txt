@@ -1,0 +1,136 @@
+﻿=== RECIPES DATABASE EXPORT ===
+Date: 2025-10-26 11:44:25
+Total Recipes: 5
+
+---
+Title: Relish verte
+ID: 41594976-17c9-405e-ab34-a296c60c9a3d
+Description: D??licieuse recette de Relish verte
+Category: Accompagnement
+Cuisine: Autre
+Servings: 
+Prep Time:  min
+Cook Time:  min
+Total Time:  min
+Ingredients (11):
+  - 12 tomates vertes hach??es
+  - 1/2 tasse de gros sel
+  - 1/2 pied de c??leri
+  - 3 oignons (probablement ce que signifiait ?? acquanes ??)
+  - 1 1/2 piment vert
+  - 1 piment rouge
+  - 4 pommes
+  - 2 tasses de vinaigre
+  - 3 tasses de sucre
+  - 1 c. ?? table d?????pices ?? marinades (dans une mousseline)
+  - Colorant vert (facultatif)
+
+---
+Title: Quiche aux Fruits de Mer
+ID: d9b89cd6-57b6-41f5-8cdb-c6e0595f2863
+Description: D??licieuse recette de Quiche aux Fruits de Mer
+Category: Entr??e
+Cuisine: Fran??aise
+Servings: 
+Prep Time:  min
+Cook Time:  min
+Total Time:  min
+Ingredients (16):
+  - 2 ??ufs battus
+  - 1 c. ?? soupe de farine
+  - 1/2 tasse de mayonnaise
+  - 6 oz de cheddar doux r??p??
+  - 1/4 tasse d'??chalotes hach??es
+  - 1/4 tasse de c??leri hach??
+  - 1 bo??te de crevettes de 7 oz
+  - 1 bo??te de crabe ou de p??toncles
+  - Versez dans une cro??te ?? tarte: Versez le m??lange dans une cro??te ?? tarte non cuite.
+  - Cuire au four: Enfournez et cuisez pendant environ 40 minutes, ou jusqu'?? ce que la quiche soit dor??e et bien cuite.
+  - Note pour les crevettes fra??ches:
+  - Si vous utilisez des crevettes fra??ches, faites-les cuire avant de les ajouter ?? la quiche.
+  - Pr??chauffez votre four ?? 425??F (220??C).
+  - Cuisez la cro??te ?? tarte vide pendant 5 minutes.
+  - Ajoutez le m??lange aux crevettes cuites et enfournez ?? 450??F (230??C) pendant 20 ?? 25 minutes.
+  - Bon app??tit!
+
+---
+Title: P??t?? mexicain (3 p??t??s)
+ID: f5d8939f-55cb-4a14-93ae-8d1aa4716b0a
+Description: D??licieuse recette de P??t?? mexicain (3 p??t??s)
+Category: Plat principal
+Cuisine: Mexicaine
+Servings: 
+Prep Time:  min
+Cook Time:  min
+Total Time:  min
+Ingredients (27):
+  - 1 livre de veau hach??
+  - 1 livre de porc hach??
+  - 2 oignons moyens, hach??s
+  - 1 tasse de ketchup
+  - 1 tasse de relish verte
+  - 1 tasse de sauce chili
+  - 1 piment vert, hach??
+  - 1 poivron vert, hach??
+  - Sel et poivre
+  - 6 abaisses de p??te
+  - Tranches de fromage mozzarella (suffisamment pour couvrir la garniture des 3 p??t??s)
+  - Pour la sauce:
+  - 1/4 tasse de vinaigre blanc
+  - 1/4 tasse d'huile
+  - 1 gousse d'ail, hach??e
+  - 1 3/4 tasse de ketchup
+  - 1 1/2 tasse de sucre ?? glacer
+  - 3 ?? 4 oignons verts, hach??s finement
+  - Sel et poivre
+  - Pr??parer la garniture: Dans une grande po??le, brunir le veau hach?? et le porc hach?? ?? feu moyen-vif.
+  - Ajouter les oignons moyens hach??s et l'ail hach??. Cuire jusqu'?? ce qu'ils soient tendres, environ 5 minutes.
+  - Incorporer 1 tasse de ketchup, la relish verte, la sauce chili, le piment vert et le poivron vert. Bien m??langer.
+  - Saler et poivrer au go??t.
+  - Porter ?? ??bullition, puis r??duire le feu ?? doux, couvrir et laisser mijoter pendant 30 minutes pour permettre aux saveurs de se d??velopper.
+  - Assembler les p??t??s: D??poser une abaisse de p??te dans chaque plat ?? p??t??. R??partir la garniture dans les 3 plats. Disposer des tranches de mozzarella sur la garniture de chaque p??t??. Recouvrir chaque p??t?? avec une autre abaisse de p??te. ?? l'aide d'un couteau, faire quelques petites ouvertures sur le dessus de chaque p??t??.
+  - Cuire au four ?? 350??F (175??C) pendant 20 minutes, ou jusqu'?? ce que le p??t?? soit chaud et bouillonnant.
+  - Servir chaud avec la sauce pr??par??e.
+
+---
+Title: ??ufs ?? la Florentine
+ID: 701f4668-d8a2-4f69-8619-641c19c1b3d6
+Description: D??licieuse recette de ??ufs ?? la Florentine
+Category: Entr??e
+Cuisine: Italienne
+Servings: 4
+Prep Time: 15 min
+Cook Time: 15 min
+Total Time: 30 min
+Ingredients (12):
+  - 30 ml de beurre ou de margarine
+  - 2 c. ?? table de farine tout usage
+  - 250 ml de lait 2%
+  - 1 ml de sel
+  - Une pinc??e de poivre
+  - 500 ml d'??pinards hach??s
+  - 4 ??ufs moyens
+  - 4 c. ?? table de mozzarella r??p??e
+  - ??quipement:
+  - Plaque ?? p??tisserie
+  - Casserole moyenne
+  - Fouet
+
+---
+Title: Brie fondant aux poires et pacanes
+ID: 458f4342-a932-43db-9966-977befdeec23
+Description: D??licieuse recette de Brie fondant aux poires et pacanes
+Category: Entr??e
+Cuisine: Fran??aise
+Servings: 4
+Prep Time:  min
+Cook Time: 15 min
+Total Time: 15 min
+Ingredients (5):
+  - 1 brie entier d'environ 200 g
+  - 2 c. ?? soupe (30 ml) de sirop d'??rable
+  - 1/4 tasse (60 ml) de pacanes, en morceaux ou hach??es
+  - 1/2 poire, coup??e en petits cubes
+  - 1 baguette, tranch??e
+
+
