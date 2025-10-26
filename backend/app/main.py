@@ -44,7 +44,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
-app.include_router(recipes.router, prefix="/api/recipes", tags=["Recipes"])
+app.include_router(recipes.router, prefix="/api/v2/recipes", tags=["Recipes"])
 app.include_router(ocr.router, prefix="/api/ocr", tags=["OCR"])
 app.include_router(grocery.router, prefix="/api/grocery", tags=["Grocery Specials"])
 app.include_router(shopping_lists.router, prefix="/api/shopping-lists", tags=["Shopping Lists"])

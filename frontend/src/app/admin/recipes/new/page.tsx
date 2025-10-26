@@ -1,11 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 interface Recipe {
-  id?: string;
   title: string;
   description: string;
   ingredients: string[];
@@ -20,14 +19,10 @@ interface Recipe {
   is_public: boolean;
 }
 
-export default function AdminRecipeEditPage() {
-  const params = useParams();
+export default function AdminRecipeNewPage() {
   const router = useRouter();
-  const [recipe, setRecipe] = useState<Recipe | null>(null);
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -40,40 +35,6 @@ export default function AdminRecipeEditPage() {
   const [cuisine, setCuisine] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [isPublic, setIsPublic] = useState(true);
-
-  useEffect(() => {
-    async function fetchRecipe() {
-      if (!params.id) return;
-
-      try {
-        const response = await fetch(`/api/v2/recipes/${params.id}`);
-        
-        if (!response.ok) {
-          throw new Error('Failed to fetch recipe');
-        }
-
-        const data = await response.json();
-        setRecipe(data);
-        setTitle(data.title || '');
-        setDescription(data.description || '');
-        setIngredients(data.ingredients?.length > 0 ? data.ingredients : ['']);
-        setInstructions(data.instructions || '');
-        setServings(data.servings);
-        setPrepTime(data.prep_time);
-        setCookTime(data.cook_time);
-        setCategory(data.category || '');
-        setCuisine(data.cuisine || '');
-        setImageUrl(data.image_url || '');
-        setIsPublic(data.is_public !== false);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unknown error');
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchRecipe();
-  }, [params.id]);
 
   const handleAddIngredient = () => {
     setIngredients([...ingredients, '']);
@@ -94,11 +55,9 @@ export default function AdminRecipeEditPage() {
     e.preventDefault();
     setSaving(true);
     setError(null);
-    setSuccessMessage(null);
 
     try {
       const recipeData: Recipe = {
-        id: params.id as string,
         title,
         description,
         ingredients: ingredients.filter(ing => ing.trim() !== ''),
@@ -113,19 +72,19 @@ export default function AdminRecipeEditPage() {
         is_public: isPublic,
       };
 
-      const response = await fetch(`/api/v2/recipes/${params.id}`, {
-        method: 'PUT',
+      const response = await fetch('/api/v2/recipes/', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(recipeData),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to update recipe');
+        throw new Error(errorData.detail || 'Failed to create recipe');
       }
 
-      setSuccessMessage('Recette mise à jour avec succès!');
-      setTimeout(() => router.push('/admin'), 2000);
+      const newRecipe = await response.json();
+      router.push(`/admin/recipes/${newRecipe.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
@@ -133,57 +92,12 @@ export default function AdminRecipeEditPage() {
     }
   };
 
-  const handleDelete = async () => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer cette recette?')) return;
-
-    try {
-      const response = await fetch(`/api/v2/recipes/${params.id}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) throw new Error('Failed to delete recipe');
-      router.push('/admin');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete recipe');
-    }
-  };
-
-  if (loading) {
-    return (
-      <div>
-        <div className="admin-header">
-          <h1>Modifier la Recette</h1>
-          <Link href="/admin" className="btn btn-secondary">← Retour</Link>
-        </div>
-        <div className="loading">Chargement...</div>
-      </div>
-    );
-  }
-
-  if (error && !recipe) {
-    return (
-      <div>
-        <div className="admin-header">
-          <h1>Modifier la Recette</h1>
-          <Link href="/admin" className="btn btn-secondary">← Retour</Link>
-        </div>
-        <div className="error">Erreur: {error}</div>
-      </div>
-    );
-  }
-
   return (
     <div>
       <div className="admin-header">
-        <h1>Modifier la Recette: {title}</h1>
+        <h1>Créer une Nouvelle Recette</h1>
         <Link href="/admin" className="btn btn-secondary">← Retour</Link>
       </div>
-
-      {successMessage && (
-        <div style={{ padding: '1rem', marginBottom: '1rem', backgroundColor: '#d4edda', color: '#155724', borderRadius: '4px', border: '1px solid #c3e6cb' }}>
-          {successMessage}
-        </div>
-      )}
 
       {error && (
         <div style={{ padding: '1rem', marginBottom: '1rem', backgroundColor: '#f8d7da', color: '#721c24', borderRadius: '4px', border: '1px solid #f5c6cb' }}>
@@ -280,17 +194,17 @@ export default function AdminRecipeEditPage() {
           </label>
         </div>
 
-        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', gap: '1rem' }}>
           <button type="submit" disabled={saving}
-            style={{ flex: 1, padding: '0.75rem 2rem', fontSize: '1rem', backgroundColor: saving ? '#6c757d' : '#007bff',
+            style={{ flex: 1, padding: '0.75rem 2rem', fontSize: '1rem', backgroundColor: saving ? '#6c757d' : '#28a745',
               color: 'white', border: 'none', borderRadius: '4px', cursor: saving ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}>
-            {saving ? 'Enregistrement...' : '💾 Enregistrer'}
+            {saving ? 'Création...' : '✨ Créer la recette'}
           </button>
-          <button type="button" onClick={handleDelete} disabled={saving}
-            style={{ padding: '0.75rem 2rem', fontSize: '1rem', backgroundColor: '#dc3545', color: 'white', border: 'none',
-              borderRadius: '4px', cursor: saving ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}>
-            🗑️ Supprimer
-          </button>
+          <Link href="/admin" className="btn btn-secondary" 
+            style={{ padding: '0.75rem 2rem', fontSize: '1rem', backgroundColor: '#6c757d', color: 'white', 
+              border: 'none', borderRadius: '4px', textDecoration: 'none', display: 'inline-block', fontWeight: 'bold' }}>
+            Annuler
+          </Link>
         </div>
       </form>
     </div>

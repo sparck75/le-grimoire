@@ -34,8 +34,8 @@ export default function UploadPage() {
       const formData = new FormData()
       formData.append('file', file)
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-      const response = await fetch(`${apiUrl}/api/ocr/upload`, {
+      // Use Next.js proxy route (configured in next.config.js)
+      const response = await fetch('/api/ocr/upload', {
         method: 'POST',
         body: formData,
       })

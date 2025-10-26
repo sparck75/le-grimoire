@@ -12,9 +12,9 @@ const nextConfig = {
     ],
   },
   async rewrites() {
-    // For mobile access: use NEXT_PUBLIC_API_URL if set (contains local IP)
-    // For Docker internal: use BACKEND_URL or fallback to service name
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL || 'http://backend:8000';
+    // Server-side rewrites MUST use Docker service name 'backend'
+    // NEXT_PUBLIC_* variables are for browser/client-side only
+    const backendUrl = process.env.BACKEND_URL || 'http://backend:8000';
     
     console.log('🔗 API Rewrite configured to:', backendUrl);
     

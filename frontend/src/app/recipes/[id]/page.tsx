@@ -141,7 +141,7 @@ export default function RecipeDetailPage() {
     async function fetchRecipe() {
       try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-        const response = await fetch(`${apiUrl}/api/recipes/${params.id}`);
+        const response = await fetch(`${apiUrl}/api/v2/recipes/${params.id}`);
         
         if (!response.ok) {
           throw new Error('Recette non trouvée');

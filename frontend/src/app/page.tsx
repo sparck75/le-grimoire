@@ -37,7 +37,7 @@ export default function Home() {
         
         <div className={styles.hero}>
           <h1 className={styles.title}>
-            Votre Bibliothèque de<br />Recettes Personnelle
+            Votre Bibliothèque de<br />Recettes Personnelles
           </h1>
           <p className={styles.subtitle}>
             Organisez, partagez et découvrez vos recettes préférées en toute simplicité

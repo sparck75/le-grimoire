@@ -1,4 +1,5 @@
 'use client';
+// Cache buster: 2025-10-25-v2
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -16,11 +17,18 @@ export default function AdminDashboard() {
   useEffect(() => {
     async function fetchStats() {
       try {
+        // Use client-side API calls directly to backend
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        
         // Fetch stats from various endpoints
         const [statsRes, recipesRes] = await Promise.all([
-          fetch('/api/admin/ingredients/stats/summary'),
-          fetch('/api/admin/recipes'),
+          fetch(`${apiUrl}/api/admin/ingredients/stats/summary`),
+          fetch(`${apiUrl}/api/v2/recipes`),
         ]);
+
+        if (!statsRes.ok || !recipesRes.ok) {
+          throw new Error('Failed to fetch stats');
+        }
 
         const statsData = await statsRes.json();
         const recipes = await recipesRes.json();

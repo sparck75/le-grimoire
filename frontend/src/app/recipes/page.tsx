@@ -42,7 +42,9 @@ export default function RecipesPage() {
     async function fetchRecipes() {
       try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-        const response = await fetch(`${apiUrl}/api/recipes/`)
+        console.log('🔍 Fetching from:', `${apiUrl}/api/v2/recipes/`)
+        console.log('🌍 NEXT_PUBLIC_API_URL:', process.env.NEXT_PUBLIC_API_URL)
+        const response = await fetch(`${apiUrl}/api/v2/recipes/`)
         
         if (!response.ok) {
           throw new Error('Failed to fetch recipes')
