@@ -30,6 +30,22 @@ class RecipeResponse(BaseModel):
     class Config:
         from_attributes = True
 
+
+class RecipeCreate(BaseModel):
+    """Recipe creation request"""
+    title: str
+    description: Optional[str] = None
+    ingredients: List[str]
+    instructions: str
+    servings: Optional[int] = None
+    prep_time: Optional[int] = None
+    cook_time: Optional[int] = None
+    total_time: Optional[int] = None
+    category: Optional[str] = None
+    cuisine: Optional[str] = None
+    image_url: Optional[str] = None
+    is_public: bool = True
+
 @router.get("/", response_model=List[RecipeResponse])
 async def list_recipes(
     skip: int = Query(0, ge=0),
@@ -84,6 +100,51 @@ async def get_recipe(recipe_id: UUID, db: Session = Depends(get_db)):
     
     if not recipe.is_public:
         raise HTTPException(status_code=403, detail="Recipe is not public")
+    
+    return RecipeResponse(
+        id=str(recipe.id),
+        title=recipe.title,
+        description=recipe.description,
+        ingredients=recipe.ingredients,
+        instructions=recipe.instructions,
+        servings=recipe.servings,
+        prep_time=recipe.prep_time,
+        cook_time=recipe.cook_time,
+        total_time=recipe.total_time,
+        category=recipe.category,
+        cuisine=recipe.cuisine,
+        image_url=recipe.image_url,
+        is_public=recipe.is_public
+    )
+
+
+@router.post("/", response_model=RecipeResponse)
+async def create_recipe(
+    recipe_data: RecipeCreate,
+    db: Session = Depends(get_db)
+):
+    """
+    Create a new recipe
+    """
+    # Create the recipe
+    recipe = Recipe(
+        title=recipe_data.title,
+        description=recipe_data.description,
+        ingredients=recipe_data.ingredients,
+        instructions=recipe_data.instructions,
+        servings=recipe_data.servings,
+        prep_time=recipe_data.prep_time,
+        cook_time=recipe_data.cook_time,
+        total_time=recipe_data.total_time,
+        category=recipe_data.category,
+        cuisine=recipe_data.cuisine,
+        image_url=recipe_data.image_url,
+        is_public=recipe_data.is_public
+    )
+    
+    db.add(recipe)
+    db.commit()
+    db.refresh(recipe)
     
     return RecipeResponse(
         id=str(recipe.id),

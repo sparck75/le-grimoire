@@ -39,6 +39,9 @@ class Settings(BaseSettings):
         "http://localhost:8000",
         "http://localhost",
         "http://frontend:3000",
+        "http://192.168.1.100",
+        "http://192.168.1.100:3000",
+        "http://192.168.1.100:80",
         "http://192.168.1.133",
         "http://192.168.1.133:80",
         "*"  # Allow all origins for development
@@ -63,5 +66,6 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = True
+
 
 settings = Settings()
