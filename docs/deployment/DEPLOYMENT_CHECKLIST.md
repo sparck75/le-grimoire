@@ -96,9 +96,12 @@ docker --version
 ### Installation Docker Compose
 
 ```bash
-curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-chmod +x /usr/local/bin/docker-compose
-docker-compose --version
+# Docker Compose est installé automatiquement comme plugin avec Docker
+# Si ce n'est pas le cas, l'installer manuellement:
+sudo apt install -y docker-compose-plugin
+
+# Vérifier l'installation
+docker compose version
 ```
 
 - [ ] Docker Compose installé
@@ -196,9 +199,10 @@ nano .env
 - [ ] Variables modifiées :
 
 **Mots de passe** :
-- [ ] `POSTGRES_PASSWORD` changé : `___________________________`
-- [ ] `MONGO_INITDB_ROOT_PASSWORD` changé : `___________________________`
+- [ ] `MONGODB_USER` : `legrimoire` (par défaut)
+- [ ] `MONGODB_PASSWORD` changé : `___________________________`
 - [ ] `MONGODB_URL` mis à jour avec le bon mot de passe
+- [ ] `POSTGRES_PASSWORD` changé : `___________________________`
 
 **Secrets générés** :
 ```bash
@@ -254,7 +258,7 @@ openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
 ### Démarrage de l'application
 
 ```bash
-docker-compose -f docker-compose.prod.yml up -d --build
+docker compose -f docker-compose.prod.yml up -d --build
 ```
 
 - [ ] Commande lancée
@@ -265,8 +269,8 @@ docker-compose -f docker-compose.prod.yml up -d --build
 ### Vérification
 
 ```bash
-docker-compose -f docker-compose.prod.yml ps
-docker-compose -f docker-compose.prod.yml logs
+docker compose -f docker-compose.prod.yml ps
+docker compose -f docker-compose.prod.yml logs
 ```
 
 - [ ] Tous les conteneurs sont "Up" :
@@ -315,7 +319,7 @@ snap install --classic certbot
 ### Obtention du certificat
 
 ```bash
-docker-compose -f docker-compose.prod.yml stop nginx
+docker compose -f docker-compose.prod.yml stop nginx
 
 certbot certonly --standalone \
   -d legrimoireonline.ca -d www.legrimoireonline.ca \
@@ -325,7 +329,7 @@ certbot certonly --standalone \
 cp /etc/letsencrypt/live/legrimoireonline.ca/fullchain.pem nginx/ssl/
 cp /etc/letsencrypt/live/legrimoireonline.ca/privkey.pem nginx/ssl/
 
-docker-compose -f docker-compose.prod.yml start nginx
+docker compose -f docker-compose.prod.yml start nginx
 ```
 
 - [ ] Nginx arrêté
@@ -352,11 +356,11 @@ docker-compose -f docker-compose.prod.yml start nginx
 cat > /root/renew-ssl.sh << 'EOF'
 #!/bin/bash
 cd /root/apps/le-grimoire
-docker-compose -f docker-compose.prod.yml stop nginx
+docker compose -f docker-compose.prod.yml stop nginx
 certbot renew --quiet
 cp /etc/letsencrypt/live/legrimoireonline.ca/fullchain.pem nginx/ssl/
 cp /etc/letsencrypt/live/legrimoireonline.ca/privkey.pem nginx/ssl/
-docker-compose -f docker-compose.prod.yml start nginx
+docker compose -f docker-compose.prod.yml start nginx
 echo "$(date): Certificat SSL renouvelé" >> /var/log/ssl-renewal.log
 EOF
 
@@ -377,14 +381,14 @@ chmod +x /root/renew-ssl.sh
 ### Initialisation MongoDB
 
 ```bash
-docker-compose -f docker-compose.prod.yml exec backend python scripts/import_openfoodfacts.py
+docker compose -f docker-compose.prod.yml exec backend python scripts/import_openfoodfacts.py
 ```
 
 - [ ] Script d'import lancé
 - [ ] Import terminé sans erreurs
 - [ ] Nombre d'ingrédients vérifié :
   ```bash
-  docker-compose -f docker-compose.prod.yml exec mongodb mongosh \
+  docker compose -f docker-compose.prod.yml exec mongodb mongosh \
     -u legrimoire -p VOTRE_MONGO_PASSWORD --authenticationDatabase admin \
     --eval "use legrimoire; db.ingredients.countDocuments()"
   ```
@@ -442,9 +446,9 @@ cat > /root/check-grimoire.sh << 'EOF'
 cd /root/apps/le-grimoire
 
 # Vérifier conteneurs
-if [ $(docker-compose -f docker-compose.prod.yml ps -q | wc -l) -lt 5 ]; then
+if [ $(docker compose -f docker-compose.prod.yml ps -q | wc -l) -lt 5 ]; then
     echo "$(date): ALERTE - Certains conteneurs sont arrêtés" >> /var/log/grimoire-monitor.log
-    docker-compose -f docker-compose.prod.yml up -d
+    docker compose -f docker-compose.prod.yml up -d
 fi
 
 # Vérifier accès HTTPS

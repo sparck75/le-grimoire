@@ -34,13 +34,13 @@ ssh root@XXX.XXX.XXX.XXX
 # Mise à jour
 apt update && apt upgrade -y
 
-# Installer Docker
+# Installer Docker (includes Docker Compose plugin)
 curl -fsSL https://get.docker.com -o get-docker.sh
 sh get-docker.sh
 
-# Installer Docker Compose
-curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-chmod +x /usr/local/bin/docker-compose
+# Vérifier l'installation
+docker --version
+docker compose version
 ```
 
 ### 5️⃣ Configurer le pare-feu (2 min)
@@ -60,11 +60,11 @@ git clone https://github.com/sparck75/le-grimoire.git
 cd le-grimoire
 ```
 
-### 7️⃣ Créer le fichier .env (3 min)
+### 7️⃣ Créer le fichier .env.production (3 min)
 
 ```bash
-cp .env.example .env
-nano .env
+cp .env.production.example .env.production
+nano .env.production
 ```
 
 **Modifiez les valeurs suivantes** :
@@ -74,12 +74,16 @@ nano .env
 SECRET_KEY=$(python3 -c "import secrets; print(secrets.token_urlsafe(64))")
 JWT_SECRET_KEY=$(python3 -c "import secrets; print(secrets.token_urlsafe(64))")
 
-# Mots de passe
+# Mots de passe MongoDB et PostgreSQL
+MONGODB_USER=legrimoire
+MONGODB_PASSWORD=VotreMotDePasseMongoDB456
 POSTGRES_PASSWORD=VotreMotDePassePostgreSQL123
-MONGO_INITDB_ROOT_PASSWORD=VotreMotDePasseMongoDB456
 
 # URLs
 NEXT_PUBLIC_API_URL=https://legrimoireonline.ca
+
+# Mettre à jour aussi MONGODB_URL avec le mot de passe MongoDB
+# MONGODB_URL=mongodb://legrimoire:VotreMotDePasseMongoDB456@mongodb:27017/legrimoire?authSource=admin
 ```
 
 ### 8️⃣ Configurer Nginx pour le domaine (3 min)
@@ -107,10 +111,10 @@ openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
 ### 🔟 Démarrer l'application (5 min)
 
 ```bash
-docker-compose -f docker-compose.prod.yml up -d --build
+docker compose -f docker-compose.prod.yml up -d --build
 
 # Vérifier
-docker-compose -f docker-compose.prod.yml ps
+docker compose -f docker-compose.prod.yml ps
 ```
 
 ---
@@ -126,7 +130,7 @@ docker-compose -f docker-compose.prod.yml ps
 apt install -y certbot
 
 # Arrêter nginx temporairement
-docker-compose -f docker-compose.prod.yml stop nginx
+docker compose -f docker-compose.prod.yml stop nginx
 
 # Obtenir le certificat (remplacez votre-email@example.com)
 certbot certonly --standalone \
@@ -139,7 +143,7 @@ cp /etc/letsencrypt/live/legrimoireonline.ca/fullchain.pem nginx/ssl/
 cp /etc/letsencrypt/live/legrimoireonline.ca/privkey.pem nginx/ssl/
 
 # Redémarrer nginx
-docker-compose -f docker-compose.prod.yml start nginx
+docker compose -f docker-compose.prod.yml start nginx
 ```
 
 ### Configurer le renouvellement automatique
@@ -148,11 +152,11 @@ docker-compose -f docker-compose.prod.yml start nginx
 cat > /root/renew-ssl.sh << 'EOF'
 #!/bin/bash
 cd /root/apps/le-grimoire
-docker-compose -f docker-compose.prod.yml stop nginx
+docker compose -f docker-compose.prod.yml stop nginx
 certbot renew --quiet
 cp /etc/letsencrypt/live/legrimoireonline.ca/fullchain.pem nginx/ssl/
 cp /etc/letsencrypt/live/legrimoireonline.ca/privkey.pem nginx/ssl/
-docker-compose -f docker-compose.prod.yml start nginx
+docker compose -f docker-compose.prod.yml start nginx
 echo "$(date): Certificat SSL renouvelé" >> /var/log/ssl-renewal.log
 EOF
 
@@ -184,10 +188,10 @@ chmod +x /root/renew-ssl.sh
 cd /root/apps/le-grimoire
 
 # Importer les ingrédients (5942 items)
-docker-compose -f docker-compose.prod.yml exec backend python scripts/import_openfoodfacts.py
+docker compose -f docker-compose.prod.yml exec backend python scripts/import_openfoodfacts.py
 
 # Vérifier
-docker-compose -f docker-compose.prod.yml exec mongodb mongosh -u legrimoire -p VOTRE_MONGO_PASSWORD --authenticationDatabase admin --eval "use legrimoire; db.ingredients.countDocuments()"
+docker compose -f docker-compose.prod.yml exec mongodb mongosh -u legrimoire -p VOTRE_MONGO_PASSWORD --authenticationDatabase admin --eval "use legrimoire; db.ingredients.countDocuments()"
 ```
 
 ---
@@ -200,25 +204,25 @@ docker-compose -f docker-compose.prod.yml exec mongodb mongosh -u legrimoire -p 
 cd /root/apps/le-grimoire
 
 # Logs
-docker-compose -f docker-compose.prod.yml logs -f
+docker compose -f docker-compose.prod.yml logs -f
 
 # Redémarrer
-docker-compose -f docker-compose.prod.yml restart
+docker compose -f docker-compose.prod.yml restart
 
 # Arrêter
-docker-compose -f docker-compose.prod.yml down
+docker compose -f docker-compose.prod.yml down
 
 # Mettre à jour
 git pull origin main
-docker-compose -f docker-compose.prod.yml down
-docker-compose -f docker-compose.prod.yml up -d --build
+docker compose -f docker-compose.prod.yml down
+docker compose -f docker-compose.prod.yml up -d --build
 ```
 
 ### Monitoring
 
 ```bash
 # Statut des conteneurs
-docker-compose -f docker-compose.prod.yml ps
+docker compose -f docker-compose.prod.yml ps
 
 # Ressources
 docker stats
@@ -250,14 +254,14 @@ docker exec le-grimoire-mongodb mongorestore --username=legrimoire --password=VO
 
 ```bash
 # Vérifier les conteneurs
-docker-compose -f docker-compose.prod.yml ps
+docker compose -f docker-compose.prod.yml ps
 
 # Vérifier les logs
-docker-compose -f docker-compose.prod.yml logs nginx
-docker-compose -f docker-compose.prod.yml logs frontend
+docker compose -f docker-compose.prod.yml logs nginx
+docker compose -f docker-compose.prod.yml logs frontend
 
 # Redémarrer
-docker-compose -f docker-compose.prod.yml restart
+docker compose -f docker-compose.prod.yml restart
 ```
 
 ### DNS ne fonctionne pas

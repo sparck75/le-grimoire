@@ -9,6 +9,19 @@ Ce guide vous accompagnera dans le déploiement de Le Grimoire sur un serveur Vu
 - Accès SSH au serveur
 - Connaissances de base en ligne de commande Linux
 
+### Versions des composants
+
+Le déploiement utilisera les versions suivantes (gérées via Docker) :
+- **Ubuntu** : 22.04 LTS
+- **Docker Engine** : 24.0+ (dernière version stable)
+- **Docker Compose** : v2.20+ (plugin)
+- **MongoDB** : 7.0
+- **PostgreSQL** : 15 (optionnel, legacy)
+- **Redis** : 7
+- **Nginx** : Alpine (dernière)
+- **Python** : 3.11 (backend)
+- **Node.js** : 20 (frontend)
+
 ## 🚀 Étape 1 : Configuration initiale du serveur Vultr
 
 ### 1.1 Créer un serveur Vultr
@@ -206,7 +219,7 @@ cd le-grimoire
 
 ```bash
 # Copier le fichier d'exemple
-cp .env.example .env.production
+cp .env.production.example .env.production
 
 # Éditer le fichier
 nano .env.production
@@ -216,6 +229,8 @@ Configurez les variables suivantes (voir le fichier `.env.production.example` po
 
 ```bash
 # Database Configuration (MongoDB)
+MONGODB_USER=legrimoire
+MONGODB_PASSWORD=CHANGEZ_CE_MOT_DE_PASSE
 MONGODB_URL=mongodb://legrimoire:CHANGEZ_CE_MOT_DE_PASSE@mongodb:27017/legrimoire?authSource=admin
 MONGODB_DB_NAME=legrimoire
 
@@ -403,7 +418,19 @@ curl http://localhost/api/health
 
 ## 🔄 Étape 7 : Configuration de la sauvegarde automatique
 
-### 7.1 Créer un script de sauvegarde
+### 7.1 Sauvegarde avec deploy.sh (Recommandé)
+
+La méthode la plus simple est d'utiliser le script deploy.sh existant :
+
+```bash
+# Sauvegarde manuelle
+cd ~/apps/le-grimoire
+./deploy.sh backup
+```
+
+### 7.2 Créer un script de sauvegarde dédié (Optionnel)
+
+Si vous préférez avoir un script de sauvegarde séparé, créez `backup.sh` :
 
 ```bash
 # Créer le script
@@ -453,14 +480,17 @@ chmod +x ~/apps/le-grimoire/backup.sh
 ~/apps/le-grimoire/backup.sh
 ```
 
-### 7.2 Configurer une tâche cron pour les sauvegardes automatiques
+### 7.3 Configurer une tâche cron pour les sauvegardes automatiques
 
 ```bash
 # Éditer le crontab
 crontab -e
 
-# Ajouter une ligne pour exécuter le backup tous les jours à 3h du matin
-0 3 * * * /home/legrimoire/apps/le-grimoire/backup.sh >> /home/legrimoire/apps/le-grimoire/backups/backup.log 2>&1
+# Option 1: Utiliser deploy.sh (recommandé)
+0 3 * * * cd /home/legrimoire/apps/le-grimoire && ./deploy.sh backup >> /home/legrimoire/apps/le-grimoire/backups/backup.log 2>&1
+
+# Option 2: Utiliser backup.sh (si créé)
+# 0 3 * * * /home/legrimoire/apps/le-grimoire/backup.sh >> /home/legrimoire/apps/le-grimoire/backups/backup.log 2>&1
 ```
 
 ## 📊 Étape 8 : Monitoring et maintenance
@@ -516,7 +546,7 @@ docker compose -f docker-compose.prod.yml restart frontend
 cd ~/apps/le-grimoire
 
 # Sauvegarder les données avant la mise à jour
-./backup.sh
+./deploy.sh backup
 
 # Récupérer les dernières modifications
 git pull origin main

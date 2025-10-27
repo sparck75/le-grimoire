@@ -89,7 +89,7 @@ dig legrimoireonline.ca
 3. **Vérifier nginx**
    ```bash
    # Vérifier que nginx écoute pour www
-   docker-compose -f docker-compose.prod.yml exec nginx nginx -T | grep server_name
+   docker compose -f docker-compose.prod.yml exec nginx nginx -T | grep server_name
    
    # Devrait montrer : server_name legrimoireonline.ca www.legrimoireonline.ca;
    ```
@@ -126,7 +126,7 @@ openssl s_client -connect legrimoireonline.ca:443 -servername legrimoireonline.c
 2. **Réobtenir le certificat**
    ```bash
    # Arrêter nginx
-   docker-compose -f docker-compose.prod.yml stop nginx
+   docker compose -f docker-compose.prod.yml stop nginx
    
    # Supprimer l'ancien certificat
    rm -rf /etc/letsencrypt/live/legrimoireonline.ca/
@@ -144,7 +144,7 @@ openssl s_client -connect legrimoireonline.ca:443 -servername legrimoireonline.c
    cp /etc/letsencrypt/live/legrimoireonline.ca/privkey.pem nginx/ssl/
    
    # Redémarrer nginx
-   docker-compose -f docker-compose.prod.yml start nginx
+   docker compose -f docker-compose.prod.yml start nginx
    ```
 
 3. **Vérifier les permissions**
@@ -223,31 +223,31 @@ cat /var/log/ssl-renewal.log
 **Diagnostic** :
 ```bash
 # Voir l'état des conteneurs
-docker-compose -f docker-compose.prod.yml ps
+docker compose -f docker-compose.prod.yml ps
 
 # Voir les logs
-docker-compose -f docker-compose.prod.yml logs
+docker compose -f docker-compose.prod.yml logs
 ```
 
 **Solutions** :
 
 1. **Vérifier les logs d'un service spécifique**
    ```bash
-   docker-compose -f docker-compose.prod.yml logs frontend
-   docker-compose -f docker-compose.prod.yml logs backend
-   docker-compose -f docker-compose.prod.yml logs mongodb
+   docker compose -f docker-compose.prod.yml logs frontend
+   docker compose -f docker-compose.prod.yml logs backend
+   docker compose -f docker-compose.prod.yml logs mongodb
    ```
 
 2. **Redémarrer un service**
    ```bash
-   docker-compose -f docker-compose.prod.yml restart frontend
+   docker compose -f docker-compose.prod.yml restart frontend
    ```
 
 3. **Reconstruire les images**
    ```bash
-   docker-compose -f docker-compose.prod.yml down
-   docker-compose -f docker-compose.prod.yml build --no-cache
-   docker-compose -f docker-compose.prod.yml up -d
+   docker compose -f docker-compose.prod.yml down
+   docker compose -f docker-compose.prod.yml build --no-cache
+   docker compose -f docker-compose.prod.yml up -d
    ```
 
 4. **Vérifier le fichier .env**
@@ -401,7 +401,7 @@ docker system df
 **Diagnostic** :
 ```bash
 # Voir les logs MongoDB
-docker-compose -f docker-compose.prod.yml logs mongodb
+docker compose -f docker-compose.prod.yml logs mongodb
 ```
 
 **Solutions courantes** :
@@ -422,9 +422,9 @@ docker-compose -f docker-compose.prod.yml logs mongodb
 
 3. **Réinitialiser MongoDB (ATTENTION : perte de données)**
    ```bash
-   docker-compose -f docker-compose.prod.yml down
+   docker compose -f docker-compose.prod.yml down
    docker volume rm le-grimoire_mongodb_data
-   docker-compose -f docker-compose.prod.yml up -d
+   docker compose -f docker-compose.prod.yml up -d
    ```
 
 4. **Restaurer depuis une sauvegarde**
@@ -444,7 +444,7 @@ docker-compose -f docker-compose.prod.yml logs mongodb
 **Diagnostic** :
 ```bash
 # Compter les ingrédients
-docker-compose -f docker-compose.prod.yml exec mongodb mongosh \
+docker compose -f docker-compose.prod.yml exec mongodb mongosh \
   -u legrimoire -p VOTRE_PASSWORD --authenticationDatabase admin \
   --eval "use legrimoire; db.ingredients.countDocuments()"
 ```
@@ -453,13 +453,13 @@ docker-compose -f docker-compose.prod.yml exec mongodb mongosh \
 
 1. **Importer les ingrédients**
    ```bash
-   docker-compose -f docker-compose.prod.yml exec backend \
+   docker compose -f docker-compose.prod.yml exec backend \
      python scripts/import_openfoodfacts.py
    ```
 
 2. **Vérifier que le fichier existe**
    ```bash
-   docker-compose -f docker-compose.prod.yml exec backend \
+   docker compose -f docker-compose.prod.yml exec backend \
      ls -la data/openfoodfacts/
    ```
 
@@ -488,18 +488,18 @@ iftop
 
 1. **Vérifier les logs pour les erreurs**
    ```bash
-   docker-compose -f docker-compose.prod.yml logs --tail=100
+   docker compose -f docker-compose.prod.yml logs --tail=100
    ```
 
 2. **Redémarrer les services**
    ```bash
-   docker-compose -f docker-compose.prod.yml restart
+   docker compose -f docker-compose.prod.yml restart
    ```
 
 3. **Optimiser MongoDB**
    ```bash
    # Créer des index
-   docker-compose -f docker-compose.prod.yml exec mongodb mongosh \
+   docker compose -f docker-compose.prod.yml exec mongodb mongosh \
      -u legrimoire -p VOTRE_PASSWORD --authenticationDatabase admin \
      --eval "use legrimoire; db.ingredients.createIndex({'names.fr': 1})"
    ```
@@ -577,24 +577,24 @@ docker stats --no-stream
 
 1. **Vérifier que les conteneurs sont actifs**
    ```bash
-   docker-compose -f docker-compose.prod.yml ps
+   docker compose -f docker-compose.prod.yml ps
    ```
 
 2. **Vérifier les logs**
    ```bash
-   docker-compose -f docker-compose.prod.yml logs frontend
-   docker-compose -f docker-compose.prod.yml logs backend
-   docker-compose -f docker-compose.prod.yml logs nginx
+   docker compose -f docker-compose.prod.yml logs frontend
+   docker compose -f docker-compose.prod.yml logs backend
+   docker compose -f docker-compose.prod.yml logs nginx
    ```
 
 3. **Redémarrer les services**
    ```bash
-   docker-compose -f docker-compose.prod.yml restart frontend backend
+   docker compose -f docker-compose.prod.yml restart frontend backend
    ```
 
 4. **Vérifier la configuration nginx**
    ```bash
-   docker-compose -f docker-compose.prod.yml exec nginx nginx -t
+   docker compose -f docker-compose.prod.yml exec nginx nginx -t
    ```
 
 ---
@@ -618,7 +618,7 @@ docker stats --no-stream
 
 2. **Vérifier les performances du backend**
    ```bash
-   docker-compose -f docker-compose.prod.yml logs backend | tail -100
+   docker compose -f docker-compose.prod.yml logs backend | tail -100
    ```
 
 ---
@@ -640,8 +640,8 @@ docker stats --no-stream
 
 2. **Vérifier les permissions du volume**
    ```bash
-   docker-compose -f docker-compose.prod.yml exec backend ls -la /app/uploads
-   docker-compose -f docker-compose.prod.yml exec backend chmod 777 /app/uploads
+   docker compose -f docker-compose.prod.yml exec backend ls -la /app/uploads
+   docker compose -f docker-compose.prod.yml exec backend chmod 777 /app/uploads
    ```
 
 3. **Vérifier l'espace disque**
@@ -657,10 +657,10 @@ docker stats --no-stream
 
 ```bash
 # État des conteneurs
-docker-compose -f docker-compose.prod.yml ps
+docker compose -f docker-compose.prod.yml ps
 
 # Logs de tous les services
-docker-compose -f docker-compose.prod.yml logs --tail=50
+docker compose -f docker-compose.prod.yml logs --tail=50
 
 # Ressources utilisées
 docker stats --no-stream
@@ -694,20 +694,20 @@ curl -I https://legrimoireonline.ca
 cd /root/apps/le-grimoire
 
 # Arrêter tout
-docker-compose -f docker-compose.prod.yml down
+docker compose -f docker-compose.prod.yml down
 
 # Nettoyer Docker
 docker system prune -a
 
 # Reconstruire
-docker-compose -f docker-compose.prod.yml build --no-cache
+docker compose -f docker-compose.prod.yml build --no-cache
 
 # Redémarrer
-docker-compose -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.prod.yml up -d
 
 # Vérifier
-docker-compose -f docker-compose.prod.yml ps
-docker-compose -f docker-compose.prod.yml logs -f
+docker compose -f docker-compose.prod.yml ps
+docker compose -f docker-compose.prod.yml logs -f
 ```
 
 ---
@@ -718,7 +718,7 @@ Si votre problème n'est pas résolu :
 
 1. **Consultez les logs détaillés**
    ```bash
-   docker-compose -f docker-compose.prod.yml logs --tail=1000 > logs.txt
+   docker compose -f docker-compose.prod.yml logs --tail=1000 > logs.txt
    ```
 
 2. **Ouvrez une issue sur GitHub**

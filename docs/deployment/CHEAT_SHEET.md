@@ -61,9 +61,6 @@ free -h
 # Sauvegarde manuelle
 ./deploy.sh backup
 
-# Ou avec le script
-./backup.sh
-
 # Lister les sauvegardes
 ls -lh backups/
 
@@ -223,7 +220,9 @@ sudo journalctl --vacuum-time=7d
 nano .env.production
 
 # Variables critiques:
+# - MONGODB_USER
 # - MONGODB_PASSWORD
+# - MONGODB_URL (doit correspondre aux variables ci-dessus)
 # - SECRET_KEY
 # - JWT_SECRET_KEY
 # - NEXT_PUBLIC_API_URL

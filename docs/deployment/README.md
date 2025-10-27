@@ -93,8 +93,7 @@ le-grimoire/
 ├── .env.production.example     # Template de configuration
 ├── .env.production            # Configuration réelle (à créer, pas dans Git)
 ├── docker-compose.prod.yml    # Docker Compose production
-├── deploy.sh                  # Script de déploiement
-├── backup.sh                  # Script de sauvegarde (à créer)
+├── deploy.sh                  # Script de déploiement (inclut backup)
 ├── nginx/
 │   ├── nginx.prod.conf       # Config Nginx production
 │   └── ssl/                  # Certificats SSL (à créer)
@@ -172,8 +171,9 @@ nano .env.production
 
 ```bash
 # Base de données MongoDB
-MONGODB_URL=mongodb://legrimoire:CHANGEZ_MOT_DE_PASSE@mongodb:27017/legrimoire?authSource=admin
+MONGODB_USER=legrimoire
 MONGODB_PASSWORD=CHANGEZ_MOT_DE_PASSE
+MONGODB_URL=mongodb://legrimoire:CHANGEZ_MOT_DE_PASSE@mongodb:27017/legrimoire?authSource=admin
 
 # Secrets de l'application (générer avec Python)
 SECRET_KEY=$(python3 -c "import secrets; print(secrets.token_urlsafe(32))")
@@ -257,6 +257,25 @@ git pull origin main
 ./deploy.sh update
 ```
 
+### Rollback après une mise à jour problématique
+
+Si une mise à jour cause des problèmes, vous pouvez revenir à la version précédente :
+
+```bash
+cd ~/apps/le-grimoire
+
+# Revenir à la version précédente du code
+git log --oneline -10  # Identifier le commit précédent
+git checkout <commit-hash-precedent>
+
+# Reconstruire et redémarrer
+docker compose -f docker-compose.prod.yml down
+docker compose -f docker-compose.prod.yml build --no-cache
+docker compose -f docker-compose.prod.yml up -d
+
+# Si nécessaire, restaurer la base de données (voir section Sauvegardes)
+```
+
 ### Mise à jour du système
 
 ```bash
@@ -278,7 +297,7 @@ Configurez un cron job pour des sauvegardes quotidiennes :
 crontab -e
 
 # Ajouter cette ligne (backup à 3h du matin)
-0 3 * * * /home/legrimoire/apps/le-grimoire/backup.sh >> /home/legrimoire/apps/le-grimoire/backups/backup.log 2>&1
+0 3 * * * cd /home/legrimoire/apps/le-grimoire && ./deploy.sh backup >> /home/legrimoire/apps/le-grimoire/backups/backup.log 2>&1
 ```
 
 ### Sauvegarde manuelle
@@ -289,6 +308,36 @@ crontab -e
 
 Les sauvegardes sont stockées dans `backups/` avec le format :
 `mongodb_backup_YYYYMMDD_HHMMSS.tar.gz`
+
+### Restaurer une sauvegarde
+
+```bash
+cd ~/apps/le-grimoire
+
+# Extraire la sauvegarde
+cd backups
+tar -xzf mongodb_backup_YYYYMMDD_HHMMSS.tar.gz
+cd ..
+
+# Arrêter l'application
+docker compose -f docker-compose.prod.yml down
+
+# Redémarrer uniquement MongoDB
+docker compose -f docker-compose.prod.yml up -d mongodb
+sleep 10
+
+# Copier et restaurer les données
+docker cp backups/mongodb_backup_YYYYMMDD_HHMMSS le-grimoire-mongodb-prod:/backup
+docker compose -f docker-compose.prod.yml exec mongodb mongorestore \
+  --username=legrimoire \
+  --password=VOTRE_MOT_DE_PASSE \
+  --authenticationDatabase=admin \
+  --drop \
+  /backup/legrimoire
+
+# Redémarrer tous les services
+docker compose -f docker-compose.prod.yml up -d
+```
 
 ## 🆘 Dépannage
 
