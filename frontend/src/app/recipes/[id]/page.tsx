@@ -21,6 +21,15 @@ interface Recipe {
   image_url: string | null;
 }
 
+interface ShoppingListItem {
+  id: string;
+  ingredient_name: string;
+  quantity: number | null;
+  unit: string | null;
+  checked: boolean;
+  recipe_title: string;
+}
+
 export default function RecipeDetailPage() {
   const params = useParams();
   const [recipe, setRecipe] = useState<Recipe | null>(null);
@@ -35,7 +44,7 @@ export default function RecipeDetailPage() {
 
     // Get existing shopping list
     const stored = localStorage.getItem('shoppingList');
-    let shoppingList = [];
+    let shoppingList: ShoppingListItem[] = [];
     if (stored) {
       try {
         shoppingList = JSON.parse(stored);
@@ -45,7 +54,7 @@ export default function RecipeDetailPage() {
     }
 
     // Check if ingredient already exists
-    const exists = shoppingList.some((item: any) => 
+    const exists = shoppingList.some((item: ShoppingListItem) => 
       item.ingredient_name === ingredient && item.recipe_title === recipe.title
     );
 
@@ -93,7 +102,7 @@ export default function RecipeDetailPage() {
 
     // Get existing shopping list
     const stored = localStorage.getItem('shoppingList');
-    let shoppingList = [];
+    let shoppingList: ShoppingListItem[] = [];
     if (stored) {
       try {
         shoppingList = JSON.parse(stored);
@@ -105,7 +114,7 @@ export default function RecipeDetailPage() {
     // Filter out ingredients that already exist
     const newItems = recipe.ingredients
       .filter((ingredient: string) => 
-        !shoppingList.some((item: any) => 
+        !shoppingList.some((item: ShoppingListItem) => 
           item.ingredient_name === ingredient && item.recipe_title === recipe.title
         )
       )
