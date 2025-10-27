@@ -13,7 +13,19 @@ tests/e2e/
 ├── home.spec.ts          # Tests for the home page
 ├── recipes.spec.ts       # Tests for recipe browsing and search
 ├── navigation.spec.ts    # Tests for navigation between pages
-└── ingredients.spec.ts   # Tests for ingredients functionality
+├── ingredients.spec.ts   # Tests for ingredients functionality
+├── shopping-list.spec.ts # Tests for shopping list
+├── auth.spec.ts          # Tests for authentication (login/register)
+├── api.spec.ts           # API testing and UI-API integration
+└── example-pom.spec.ts   # Examples using Page Object Model
+
+tests/pages/              # Page Object Models
+├── HomePage.ts           # Home page object
+└── RecipesPage.ts        # Recipes page object
+
+tests/
+├── helpers.ts            # Test helper functions
+└── fixtures.ts           # Custom test fixtures
 ```
 
 ## Running Tests
@@ -113,6 +125,57 @@ page.getByLabel('Email')
 page.getByTestId('submit-button')
 ```
 
+### Page Object Model
+
+For complex pages, use the Page Object Model pattern:
+
+```typescript
+// pages/HomePage.ts
+export class HomePage {
+  readonly page: Page;
+  readonly exploreButton: Locator;
+
+  constructor(page: Page) {
+    this.page = page;
+    this.exploreButton = page.getByRole('link', { name: /Explorer/ });
+  }
+
+  async goto() {
+    await this.page.goto('/');
+  }
+
+  async clickExplore() {
+    await this.exploreButton.click();
+  }
+}
+
+// In your test
+import { HomePage } from '../pages/HomePage';
+
+test('navigate to recipes', async ({ page }) => {
+  const homePage = new HomePage(page);
+  await homePage.goto();
+  await homePage.clickExplore();
+});
+```
+
+See `tests/pages/` for examples and `tests/e2e/example-pom.spec.ts` for usage.
+
+### API Testing
+
+Playwright can also test APIs directly:
+
+```typescript
+test('should fetch recipes from API', async ({ request }) => {
+  const response = await request.get('http://localhost:8000/api/v2/recipes/');
+  expect(response.ok()).toBeTruthy();
+  const data = await response.json();
+  expect(Array.isArray(data)).toBeTruthy();
+});
+```
+
+See `tests/e2e/api.spec.ts` for complete examples.
+
 ## Test Coverage
 
 Current test coverage includes:
@@ -121,10 +184,13 @@ Current test coverage includes:
 - ✅ Recipe browsing and search
 - ✅ Navigation between pages
 - ✅ Ingredients search
-- 🔲 User authentication (login/register)
-- 🔲 Recipe creation and editing
-- 🔲 Shopping list generation
-- 🔲 Admin functionality
+- ✅ Shopping list page
+- ✅ Authentication pages (login/register)
+- ✅ API endpoint testing
+- ✅ UI-API integration tests
+- ✅ Page Object Model examples
+- 🔲 Recipe creation and editing (forms)
+- 🔲 Admin functionality (full coverage)
 
 ## Debugging Tests
 
