@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useAuth } from '../../../contexts/AuthContext';
 import styles from '../admin.module.css';
 
 interface Recipe {
@@ -26,6 +27,7 @@ type ViewMode = 'table' | 'cards';
 type SortOption = 'title' | 'category' | 'difficulty' | 'time' | 'recent';
 
 export default function RecipesAdmin() {
+  const { token, user } = useAuth();
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -39,13 +41,40 @@ export default function RecipesAdmin() {
   const [selectedRecipes, setSelectedRecipes] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    fetchRecipes();
-  }, []);
+    console.log('Token:', token ? 'present' : 'missing');
+    console.log('User:', user);
+    
+    if (token) {
+      console.log('Fetching recipes with token...');
+      fetchRecipes();
+    } else {
+      // If no token after a delay, show error
+      const timeout = setTimeout(() => {
+        if (!token) {
+          setError('Authentification requise. Veuillez vous connecter.');
+          setLoading(false);
+        }
+      }, 2000);
+      
+      return () => clearTimeout(timeout);
+    }
+  }, [token]);
 
   async function fetchRecipes() {
+    if (!token) {
+      setError('Authentification requise');
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
-      const response = await fetch('/api/admin/recipes');
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      };
+      
+      const response = await fetch('/api/admin/recipes', { headers });
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);

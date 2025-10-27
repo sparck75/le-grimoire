@@ -91,6 +91,45 @@
   gap: 1.5rem;
 }
 
+.methodSelector {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.methodActive {
+  flex: 1;
+  padding: 0.875rem 1.5rem;
+  background: linear-gradient(135deg, #8B5A3C 0%, #A67C52 100%);
+  color: white;
+  border: 2px solid #8B5A3C;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(139, 90, 60, 0.3);
+}
+
+.methodInactive {
+  flex: 1;
+  padding: 0.875rem 1.5rem;
+  background: white;
+  color: #4a5568;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.methodInactive:hover {
+  border-color: #A67C52;
+  background: #faf9f7;
+  transform: translateY(-1px);
+}
+
 .uploadArea {
   border: 2px dashed #cbd5e0;
   border-radius: 12px;
@@ -188,6 +227,27 @@
 
 .info li {
   margin-bottom: 0.5rem;
+}
+
+.loginButton {
+  display: inline-block;
+  padding: 1rem 2rem;
+  background: linear-gradient(135deg, #8B5A3C 0%, #A67C52 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.125rem;
+  font-weight: 600;
+  text-decoration: none;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(139, 90, 60, 0.3);
+}
+
+.loginButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(139, 90, 60, 0.4);
 }
 
 /* Mobile Responsive */

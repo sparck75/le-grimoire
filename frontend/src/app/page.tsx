@@ -40,7 +40,7 @@ export default function Home() {
               🍽️ Explorer les Recettes
             </Link>
             {canAddRecipe && (
-              <Link href="/upload" className={styles.buttonSecondary}>
+              <Link href="/recipes/new" className={styles.buttonSecondary}>
                 ➕ Ajouter une Recette
               </Link>
             )}

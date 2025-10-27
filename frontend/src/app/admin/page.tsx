@@ -1,8 +1,10 @@
-now we need to upate the accueil pages to remove the Ajouter une recette unless you are a collaborator or and AdminDashboard.  The edit button in the SpeechRecognitionResultList, should also be avaiable for contributer and admin onplay'use client';
+'use client';
 // Cache buster: 2025-10-25-v2
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useAuth } from '../../contexts/AuthContext';
+import { useRouter } from 'next/navigation';
 
 interface Stats {
   totalIngredients: number;
@@ -11,8 +13,19 @@ interface Stats {
 }
 
 export default function AdminDashboard() {
+  const { user } = useAuth();
+  const router = useRouter();
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Check if user is admin
+  const isAdmin = user && user.role === 'admin';
+
+  useEffect(() => {
+    if (!isAdmin && !loading) {
+      router.push('/');
+    }
+  }, [isAdmin, loading, router]);
 
   useEffect(() => {
     async function fetchStats() {
@@ -55,6 +68,24 @@ export default function AdminDashboard() {
           <h1>Tableau de Bord</h1>
         </div>
         <div className="loading">Chargement des statistiques...</div>
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <div>
+        <div className="admin-header">
+          <h1>Accès refusé</h1>
+        </div>
+        <div style={{ padding: '2rem', textAlign: 'center' }}>
+          <p style={{ fontSize: '1.25rem', color: '#721c24', marginBottom: '2rem' }}>
+            🔒 Cette page est réservée aux administrateurs uniquement.
+          </p>
+          <Link href="/" className="btn btn-primary">
+            Retour à l&apos;accueil
+          </Link>
+        </div>
       </div>
     );
   }

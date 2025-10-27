@@ -9,7 +9,7 @@ from contextlib import asynccontextmanager
 from app.api import (
     recipes, auth, ocr, grocery, shopping_lists,
     admin_ingredients, admin_recipes, admin_users,
-    ingredients, categories
+    ingredients, categories, recipe_images
 )
 from app.core.config import settings
 from app.core.database import init_mongodb, close_mongodb
@@ -45,6 +45,7 @@ app.add_middleware(
 # Include routers
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(recipes.router, prefix="/api/v2/recipes", tags=["Recipes"])
+app.include_router(recipe_images.router, prefix="/api/recipes", tags=["Recipe Images"])
 app.include_router(ocr.router, prefix="/api/ocr", tags=["OCR"])
 app.include_router(grocery.router, prefix="/api/grocery", tags=["Grocery Specials"])
 app.include_router(shopping_lists.router, prefix="/api/shopping-lists", tags=["Shopping Lists"])
@@ -61,6 +62,16 @@ data_path = Path("/app/data")
 if data_path.exists():
     app.mount("/data", StaticFiles(directory="/app/data"), name="data")
 
+# Mount uploads directory for recipe images
+upload_path = Path(settings.UPLOAD_DIR)
+if upload_path.exists():
+    app.mount(
+        "/uploads",
+        StaticFiles(directory=settings.UPLOAD_DIR),
+        name="uploads"
+    )
+
+
 @app.get("/")
 async def root():
     """Health check endpoint"""
@@ -69,6 +80,7 @@ async def root():
         "version": "1.0.0",
         "status": "healthy"
     }
+
 
 @app.get("/api/health")
 async def health():

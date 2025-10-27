@@ -14,6 +14,7 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
+  token: string | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, username: string, password: string) => Promise<void>;
@@ -27,12 +28,14 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // Check if user is logged in on mount
-    const token = localStorage.getItem('access_token');
-    if (token) {
+    const storedToken = localStorage.getItem('access_token');
+    if (storedToken) {
+      setToken(storedToken);
       fetchCurrentUser();
     } else {
       setLoading(false);
@@ -41,34 +44,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchCurrentUser = async () => {
     try {
-      const token = localStorage.getItem('access_token');
-      const response = await fetch('http://localhost:8000/api/auth/me', {
+      const storedToken = localStorage.getItem('access_token');
+      const response = await fetch('/api/auth/me', {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${storedToken}`
         }
       });
 
       if (response.ok) {
         const userData = await response.json();
         setUser(userData);
+        setToken(storedToken);
       } else {
         // Token is invalid, clear it
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
         setUser(null);
+        setToken(null);
       }
     } catch (error) {
       console.error('Error fetching user:', error);
       localStorage.removeItem('access_token');
       localStorage.removeItem('refresh_token');
       setUser(null);
+      setToken(null);
     } finally {
       setLoading(false);
     }
   };
 
   const login = async (email: string, password: string) => {
-    const response = await fetch('http://localhost:8000/api/auth/login', {
+    const response = await fetch('/api/auth/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -85,10 +91,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('access_token', data.access_token);
     localStorage.setItem('refresh_token', data.refresh_token);
     setUser(data.user);
+    setToken(data.access_token);
   };
 
   const register = async (email: string, username: string, password: string) => {
-    const response = await fetch('http://localhost:8000/api/auth/register', {
+    const response = await fetch('/api/auth/register', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -105,12 +112,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('access_token', data.access_token);
     localStorage.setItem('refresh_token', data.refresh_token);
     setUser(data.user);
+    setToken(data.access_token);
   };
 
   const logout = () => {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     setUser(null);
+    setToken(null);
   };
 
   const refreshToken = async () => {
@@ -119,7 +128,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error('No refresh token');
     }
 
-    const response = await fetch('http://localhost:8000/api/auth/refresh', {
+    const response = await fetch('/api/auth/refresh', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -136,6 +145,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('access_token', data.access_token);
     localStorage.setItem('refresh_token', data.refresh_token);
     setUser(data.user);
+    setToken(data.access_token);
   };
 
   const isAdmin = () => user?.role === 'admin';
@@ -145,6 +155,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     <AuthContext.Provider
       value={{
         user,
+        token,
         loading,
         login,
         register,

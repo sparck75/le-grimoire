@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import ImageUpload from '../../../components/ImageUpload';
 
 interface Recipe {
   title: string;
@@ -35,7 +36,8 @@ export default function AdminRecipeNewPage() {
   const [cookTime, setCookTime] = useState<number | null>(null);
   const [category, setCategory] = useState('');
   const [cuisine, setCuisine] = useState('');
-  const [imageUrl, setImageUrl] = useState('');
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [isPublic, setIsPublic] = useState(true);
 
   const handleAddIngredient = () => {
@@ -114,7 +116,13 @@ export default function AdminRecipeNewPage() {
     <div>
       <div className="admin-header">
         <h1>Créer une Nouvelle Recette</h1>
-        <Link href="/admin" className="btn btn-secondary">← Retour</Link>
+        <button 
+          onClick={() => router.back()} 
+          className="btn btn-secondary"
+          style={{ padding: '0.5rem 1rem', backgroundColor: '#6c757d', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+        >
+          ← Retour
+        </button>
       </div>
 
       {error && (
@@ -218,12 +226,14 @@ export default function AdminRecipeNewPage() {
           </div>
         </div>
 
-        <div style={{ marginBottom: '1.5rem' }}>
-          <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>URL de l&apos;image</label>
-          <input type="url" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)}
-            placeholder="https://exemple.com/image.jpg"
-            style={{ width: '100%', padding: '0.5rem', fontSize: '1rem', border: '1px solid #ccc', borderRadius: '4px' }} />
-        </div>
+        <ImageUpload
+          currentImageUrl={imageUrl}
+          onImageChange={(url, file) => {
+            setImageUrl(url);
+            setImageFile(file);
+          }}
+          label="Image de la recette"
+        />
 
         <div style={{ marginBottom: '2rem' }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
@@ -239,11 +249,15 @@ export default function AdminRecipeNewPage() {
               color: 'white', border: 'none', borderRadius: '4px', cursor: saving ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}>
             {saving ? 'Création...' : '✨ Créer la recette'}
           </button>
-          <Link href="/admin" className="btn btn-secondary" 
+          <button 
+            type="button"
+            onClick={() => router.back()} 
+            className="btn btn-secondary" 
             style={{ padding: '0.75rem 2rem', fontSize: '1rem', backgroundColor: '#6c757d', color: 'white', 
-              border: 'none', borderRadius: '4px', textDecoration: 'none', display: 'inline-block', fontWeight: 'bold' }}>
+              border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+          >
             Annuler
-          </Link>
+          </button>
         </div>
       </form>
     </div>

@@ -17,12 +17,15 @@ pymongo==4.15.3
 # Authentication
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
+bcrypt==4.0.1
 authlib==1.6.5
 httpx==0.25.2
 
 # OCR
 pytesseract==0.3.10
 Pillow==10.3.0
+opencv-python-headless==4.8.1.78
+numpy==1.26.4
 
 # Web scraping
 beautifulsoup4==4.12.2
@@ -34,6 +37,7 @@ requests==2.32.4
 python-dotenv==1.0.0
 pydantic==2.12.0
 pydantic-settings==2.1.0
+email-validator==2.1.0
 redis==5.0.1
 tqdm==4.66.3
 rapidfuzz==3.14.1

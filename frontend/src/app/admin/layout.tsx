@@ -51,6 +51,11 @@ export default function AdminLayout({
             <span>Recettes</span>
           </Link>
           
+          <Link href="/admin/users" className="nav-item" onClick={() => setIsSidebarOpen(false)}>
+            <span className="nav-icon">👥</span>
+            <span>Utilisateurs</span>
+          </Link>
+          
           <div className="nav-divider"></div>
           
           <Link href="/" className="nav-item" onClick={() => setIsSidebarOpen(false)}>

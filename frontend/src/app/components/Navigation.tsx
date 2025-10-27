@@ -133,8 +133,8 @@ export default function Navigation() {
             {/* Show "Add Recipe" for collaborators and admins */}
             {isCollaborator() && (
               <Link 
-                href="/admin/recipes/new" 
-                className={pathname === '/admin/recipes/new' ? styles.navLinkActive : styles.navLink}
+                href="/recipes/new" 
+                className={pathname === '/recipes/new' ? styles.navLinkActive : styles.navLink}
                 onClick={() => setIsOpen(false)}
               >
                 ➕ <span>Ajouter une Recette</span>
