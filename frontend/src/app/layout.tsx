@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 import Navigation from './components/Navigation'
 import { LanguageProvider } from './context/LanguageContext'
+import { AuthProvider } from '@/contexts/AuthContext'
 
 export const metadata: Metadata = {
   title: 'Le Grimoire - Vos recettes de cuisine',
@@ -16,10 +17,12 @@ export default function RootLayout({
   return (
     <html lang="fr">
       <body>
-        <LanguageProvider>
-          <Navigation />
-          {children}
-        </LanguageProvider>
+        <AuthProvider>
+          <LanguageProvider>
+            <Navigation />
+            {children}
+          </LanguageProvider>
+        </AuthProvider>
       </body>
     </html>
   )

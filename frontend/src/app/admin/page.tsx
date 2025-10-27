@@ -1,4 +1,4 @@
-'use client';
+now we need to upate the accueil pages to remove the Ajouter une recette unless you are a collaborator or and AdminDashboard.  The edit button in the SpeechRecognitionResultList, should also be avaiable for contributer and admin onplay'use client';
 // Cache buster: 2025-10-25-v2
 
 import { useEffect, useState } from 'react';
@@ -87,6 +87,14 @@ export default function AdminDashboard() {
           <div className="stat-value">{stats?.totalRecipes || 0}</div>
           <Link href="/admin/recipes" className="btn btn-primary" style={{ marginTop: '1rem' }}>
             Gérer les Recettes
+          </Link>
+        </div>
+
+        <div className="stat-card">
+          <h3>👥 Utilisateurs</h3>
+          <div className="stat-value">🔐</div>
+          <Link href="/admin/users" className="btn btn-primary" style={{ marginTop: '1rem' }}>
+            Gérer les Utilisateurs
           </Link>
         </div>
       </div>

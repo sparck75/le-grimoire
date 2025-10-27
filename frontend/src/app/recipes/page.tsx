@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useAuth } from '../../contexts/AuthContext'
 import styles from './recipes.module.css'
 
 interface Recipe {
@@ -25,6 +26,7 @@ type SortOption = 'name' | 'time' | 'difficulty' | 'recent'
 type ViewMode = 'grid' | 'list'
 
 export default function RecipesPage() {
+  const { user } = useAuth()
   const [recipes, setRecipes] = useState<Recipe[]>([])
   const [filteredRecipes, setFilteredRecipes] = useState<Recipe[]>([])
   const [loading, setLoading] = useState(true)
@@ -108,6 +110,9 @@ export default function RecipesPage() {
   // Get unique categories and cuisines
   const categories = ['all', ...Array.from(new Set(recipes.map(r => r.category).filter(Boolean)))]
   const cuisines = ['all', ...Array.from(new Set(recipes.map(r => r.cuisine).filter(Boolean)))]
+
+  // Check if user can edit recipes
+  const canEditRecipe = user && (user.role === 'collaborator' || user.role === 'admin')
 
   if (loading) {
     return (
@@ -339,15 +344,17 @@ export default function RecipesPage() {
                   <Link href={`/recipes/${recipe.id}`} className={styles.viewLink}>
                     Voir la recette →
                   </Link>
-                  <div className={styles.actionButtons}>
-                    <Link 
-                      href={`/admin/recipes/${recipe.id}`} 
-                      className={styles.editButton}
-                      title="Modifier"
-                    >
-                      ✎
-                    </Link>
-                  </div>
+                  {canEditRecipe && (
+                    <div className={styles.actionButtons}>
+                      <Link 
+                        href={`/admin/recipes/${recipe.id}`} 
+                        className={styles.editButton}
+                        title="Modifier"
+                      >
+                        ✎
+                      </Link>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

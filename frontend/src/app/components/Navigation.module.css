@@ -157,6 +157,125 @@
   border-left: 1px solid rgba(102, 126, 234, 0.2);
 }
 
+/* User Menu Styles */
+.userMenu {
+  position: relative;
+  padding: 0 1rem;
+  border-left: 1px solid rgba(102, 126, 234, 0.2);
+}
+
+.userButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: 2px solid rgba(102, 126, 234, 0.2);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 600;
+  color: #666;
+}
+
+.userButton:hover {
+  background: rgba(102, 126, 234, 0.1);
+  border-color: #8B5A3C;
+  transform: translateY(-2px);
+}
+
+.userIcon {
+  font-size: 1.2rem;
+}
+
+.userName {
+  font-size: 0.95rem;
+}
+
+.userDropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 0.5rem;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+  min-width: 220px;
+  padding: 0.75rem 0;
+  z-index: 1000;
+  animation: dropdownSlide 0.2s ease;
+}
+
+@keyframes dropdownSlide {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.userInfo {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid rgba(102, 126, 234, 0.1);
+}
+
+.userEmail {
+  font-size: 0.875rem;
+  color: #666;
+  margin-bottom: 0.25rem;
+}
+
+.userRole {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #8B5A3C;
+}
+
+.logoutButton {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 600;
+  color: #666;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.logoutButton:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.loginButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  color: white;
+  background: linear-gradient(135deg, #8B5A3C 0%, #A67C52 100%);
+  border-radius: 10px;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+  margin-left: 1rem;
+}
+
+.loginButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
 .langButton,
 .langButtonActive {
   background: transparent;
@@ -286,6 +405,31 @@
     padding: 1rem 1.5rem;
     justify-content: center;
     margin-top: 0.5rem;
+  }
+
+  .userMenu {
+    border-left: none;
+    border-top: 1px solid rgba(102, 126, 234, 0.2);
+    width: 100%;
+    padding: 1rem 1.5rem;
+  }
+
+  .userButton {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .userDropdown {
+    position: relative;
+    margin-top: 0.75rem;
+    box-shadow: none;
+    border: 1px solid rgba(102, 126, 234, 0.1);
+  }
+
+  .loginButton {
+    width: 100%;
+    margin: 1rem 1.5rem 0;
+    justify-content: center;
   }
 
   .navLink,

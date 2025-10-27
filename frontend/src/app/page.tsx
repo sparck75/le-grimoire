@@ -1,8 +1,15 @@
+'use client'
+
 import Link from 'next/link'
 import Image from 'next/image'
+import { useAuth } from '../contexts/AuthContext'
 import styles from './page.module.css'
 
 export default function Home() {
+  const { user } = useAuth()
+  
+  // Check if user is contributor or admin
+  const canAddRecipe = user && (user.role === 'collaborator' || user.role === 'admin')
   return (
     <main className={styles.main}>
       <div className={styles.container}>
@@ -32,9 +39,11 @@ export default function Home() {
             <Link href="/recipes" className={styles.button}>
               🍽️ Explorer les Recettes
             </Link>
-            <Link href="/upload" className={styles.buttonSecondary}>
-              ➕ Ajouter une Recette
-            </Link>
+            {canAddRecipe && (
+              <Link href="/upload" className={styles.buttonSecondary}>
+                ➕ Ajouter une Recette
+              </Link>
+            )}
           </div>
         </div>
         

@@ -8,7 +8,7 @@ from pathlib import Path
 from contextlib import asynccontextmanager
 from app.api import (
     recipes, auth, ocr, grocery, shopping_lists,
-    admin_ingredients, admin_recipes,
+    admin_ingredients, admin_recipes, admin_users,
     ingredients, categories
 )
 from app.core.config import settings
@@ -50,6 +50,7 @@ app.include_router(grocery.router, prefix="/api/grocery", tags=["Grocery Special
 app.include_router(shopping_lists.router, prefix="/api/shopping-lists", tags=["Shopping Lists"])
 app.include_router(admin_ingredients.router, prefix="/api/admin/ingredients", tags=["Admin - Ingredients"])
 app.include_router(admin_recipes.router, prefix="/api/admin", tags=["Admin - Recipes"])
+app.include_router(admin_users.router, prefix="/api/admin/users", tags=["Admin - Users"])
 
 # New MongoDB-based endpoints
 app.include_router(ingredients.router, prefix="/api/v2/ingredients", tags=["Ingredients v2"])

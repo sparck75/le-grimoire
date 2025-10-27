@@ -8,6 +8,8 @@ from pydantic import BaseModel
 from decimal import Decimal
 from uuid import UUID
 from app.core.database import get_db
+from app.core.security import get_current_active_admin
+from app.models.user import User
 from app.models.recipe import Recipe
 from app.models.ingredient import RecipeIngredient
 from app.models.mongodb import Ingredient  # MongoDB ingredient model
@@ -128,6 +130,7 @@ class RecipeListResponse(BaseModel):
 async def list_all_recipes(
     skip: int = 0,
     limit: int = 100,
+    current_user: User = Depends(get_current_active_admin),
     db: Session = Depends(get_db)
 ):
     """List all recipes (admin view - includes private recipes)"""
@@ -151,6 +154,7 @@ async def list_all_recipes(
 @router.post("/recipes", response_model=RecipeDetailResponse)
 async def create_recipe(
     recipe_data: RecipeCreateRequest,
+    current_user: User = Depends(get_current_active_admin),
     db: Session = Depends(get_db)
 ):
     """Create a new recipe with structured ingredients"""
@@ -253,7 +257,11 @@ async def create_recipe(
 
 
 @router.get("/recipes/{recipe_id}", response_model=RecipeDetailResponse)
-async def get_admin_recipe(recipe_id: UUID, db: Session = Depends(get_db)):
+async def get_admin_recipe(
+    recipe_id: UUID,
+    current_user: User = Depends(get_current_active_admin),
+    db: Session = Depends(get_db)
+):
     """Get recipe details with structured ingredients for admin"""
     recipe = db.query(Recipe).filter(Recipe.id == recipe_id).first()
     
@@ -336,6 +344,7 @@ async def get_admin_recipe(recipe_id: UUID, db: Session = Depends(get_db)):
 async def update_recipe(
     recipe_id: UUID,
     recipe_data: RecipeUpdateRequest,
+    current_user: User = Depends(get_current_active_admin),
     db: Session = Depends(get_db)
 ):
     """Update a recipe and its ingredients"""
@@ -462,7 +471,11 @@ async def update_recipe(
 
 
 @router.delete("/recipes/{recipe_id}")
-async def delete_recipe(recipe_id: UUID, db: Session = Depends(get_db)):
+async def delete_recipe(
+    recipe_id: UUID,
+    current_user: User = Depends(get_current_active_admin),
+    db: Session = Depends(get_db)
+):
     """Delete a recipe"""
     recipe = db.query(Recipe).filter(Recipe.id == recipe_id).first()
     

@@ -2,15 +2,19 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../../contexts/AuthContext';
 import styles from './Navigation.module.css';
 
 export default function Navigation() {
   const pathname = usePathname();
+  const router = useRouter();
   const [itemCount, setItemCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const { language, setLanguage, t } = useLanguage();
+  const { user, logout, isAdmin, isCollaborator } = useAuth();
 
   useEffect(() => {
     // Update item count from localStorage
@@ -43,6 +47,14 @@ export default function Navigation() {
       window.removeEventListener('shoppingListUpdated', handleListUpdate);
     };
   }, []);
+
+  // Handle logout
+  const handleLogout = async () => {
+    await logout();
+    setUserMenuOpen(false);
+    setIsOpen(false);
+    router.push('/');
+  };
 
   // Hide navigation on admin pages (after all hooks)
   if (pathname?.startsWith('/admin')) {
@@ -117,14 +129,68 @@ export default function Navigation() {
                 <span className={styles.navBadge}>{itemCount}</span>
               )}
             </Link>
+            
+            {/* Show "Add Recipe" for collaborators and admins */}
+            {isCollaborator() && (
+              <Link 
+                href="/admin/recipes/new" 
+                className={pathname === '/admin/recipes/new' ? styles.navLinkActive : styles.navLink}
+                onClick={() => setIsOpen(false)}
+              >
+                ➕ <span>Ajouter une Recette</span>
+              </Link>
+            )}
+            
+            {/* Show "Admin Panel" for admins only */}
+            {isAdmin() && (
+              <Link 
+                href="/admin" 
+                className={pathname?.startsWith('/admin') ? styles.navLinkActive : styles.navLink}
+                onClick={() => setIsOpen(false)}
+              >
+                ⚙️ <span>{t('admin')}</span>
+              </Link>
+            )}
+          </div>
+
+          {/* User Menu or Login Button */}
+          {user ? (
+            <div className={styles.userMenu}>
+              <button 
+                className={styles.userButton}
+                onClick={() => setUserMenuOpen(!userMenuOpen)}
+              >
+                <span className={styles.userIcon}>👤</span>
+                <span className={styles.userName}>{user.username}</span>
+              </button>
+              {userMenuOpen && (
+                <div className={styles.userDropdown}>
+                  <div className={styles.userInfo}>
+                    <div className={styles.userEmail}>{user.email}</div>
+                    <div className={styles.userRole}>
+                      {user.role === 'admin' && '👑 Admin'}
+                      {user.role === 'collaborator' && '✍️ Collaborateur'}
+                      {user.role === 'reader' && '👀 Lecteur'}
+                    </div>
+                  </div>
+                  <button 
+                    className={styles.logoutButton}
+                    onClick={handleLogout}
+                  >
+                    🚪 Déconnexion
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
             <Link 
-              href="/admin" 
-              className={pathname?.startsWith('/admin') ? styles.navLinkActive : styles.navLink}
+              href="/login" 
+              className={styles.loginButton}
               onClick={() => setIsOpen(false)}
             >
-              ⚙️ <span>{t('admin')}</span>
+              🔑 <span>Connexion</span>
             </Link>
-          </div>
+          )}
 
           {/* Language Selector */}
           <div className={styles.languageSelector}>
