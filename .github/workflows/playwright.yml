@@ -49,34 +49,63 @@ jobs:
       - name: Start services with Docker Compose
         run: |
           docker-compose up -d
+          echo "Waiting 10 seconds for containers to initialize..."
+          sleep 10
+          echo "Docker containers status:"
+          docker-compose ps
           
       - name: Wait for services to be healthy
         run: |
           echo "Waiting for services to be ready..."
+          
+          # Check Docker services status
+          echo "Docker services status:"
+          docker-compose ps
+          
           # Wait for backend
+          echo "Waiting for backend..."
+          BACKEND_READY=false
           for i in {1..60}; do
             if curl -f http://localhost:8000/api/health 2>/dev/null; then
               echo "Backend is ready!"
+              BACKEND_READY=true
               break
             fi
             echo "Waiting for backend... ($i/60)"
             sleep 2
           done
           
+          if [ "$BACKEND_READY" = false ]; then
+            echo "Backend failed to start. Showing logs:"
+            docker-compose logs backend
+            exit 1
+          fi
+          
           # Wait for frontend
+          echo "Waiting for frontend..."
+          FRONTEND_READY=false
           for i in {1..60}; do
             if curl -f http://localhost:3000 2>/dev/null; then
               echo "Frontend is ready!"
+              FRONTEND_READY=true
               break
             fi
             echo "Waiting for frontend... ($i/60)"
             sleep 2
           done
+          
+          if [ "$FRONTEND_READY" = false ]; then
+            echo "Frontend failed to start. Showing logs:"
+            docker-compose logs frontend
+            exit 1
+          fi
 
       - name: Run Playwright tests
         working-directory: ./frontend
         env:
+          CI: true
           PLAYWRIGHT_BASE_URL: http://localhost:3000
+          BACKEND_URL: http://localhost:8000
         run: npm run test
 
       - name: Upload Playwright report
