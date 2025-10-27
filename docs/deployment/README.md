@@ -257,6 +257,25 @@ git pull origin main
 ./deploy.sh update
 ```
 
+### Rollback après une mise à jour problématique
+
+Si une mise à jour cause des problèmes, vous pouvez revenir à la version précédente :
+
+```bash
+cd ~/apps/le-grimoire
+
+# Revenir à la version précédente du code
+git log --oneline -10  # Identifier le commit précédent
+git checkout <commit-hash-precedent>
+
+# Reconstruire et redémarrer
+docker compose -f docker-compose.prod.yml down
+docker compose -f docker-compose.prod.yml build --no-cache
+docker compose -f docker-compose.prod.yml up -d
+
+# Si nécessaire, restaurer la base de données (voir section Sauvegardes)
+```
+
 ### Mise à jour du système
 
 ```bash
@@ -289,6 +308,36 @@ crontab -e
 
 Les sauvegardes sont stockées dans `backups/` avec le format :
 `mongodb_backup_YYYYMMDD_HHMMSS.tar.gz`
+
+### Restaurer une sauvegarde
+
+```bash
+cd ~/apps/le-grimoire
+
+# Extraire la sauvegarde
+cd backups
+tar -xzf mongodb_backup_YYYYMMDD_HHMMSS.tar.gz
+cd ..
+
+# Arrêter l'application
+docker compose -f docker-compose.prod.yml down
+
+# Redémarrer uniquement MongoDB
+docker compose -f docker-compose.prod.yml up -d mongodb
+sleep 10
+
+# Copier et restaurer les données
+docker cp backups/mongodb_backup_YYYYMMDD_HHMMSS le-grimoire-mongodb-prod:/backup
+docker compose -f docker-compose.prod.yml exec mongodb mongorestore \
+  --username=legrimoire \
+  --password=VOTRE_MOT_DE_PASSE \
+  --authenticationDatabase=admin \
+  --drop \
+  /backup/legrimoire
+
+# Redémarrer tous les services
+docker compose -f docker-compose.prod.yml up -d
+```
 
 ## 🆘 Dépannage
 
