@@ -106,6 +106,12 @@ jobs:
             exit 1
           fi
 
+      - name: Run database migrations
+        run: |
+          echo "Running Alembic migrations..."
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml exec -T backend alembic upgrade head
+          echo "Migrations completed successfully!"
+
       - name: Seed test data
         run: |
           echo "Seeding test data..."

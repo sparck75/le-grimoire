@@ -98,13 +98,19 @@ If MongoDB is configured, seeds 5 sample ingredients:
 
 ### In CI/CD (Automatic)
 
-The GitHub Actions workflow automatically runs this script:
+The GitHub Actions workflow automatically runs this script after database migrations:
 
 ```yaml
+- name: Run database migrations
+  run: |
+    docker compose exec -T backend alembic upgrade head
+
 - name: Seed test data
   run: |
-    docker compose -f docker-compose.yml -f docker-compose.ci.yml exec -T backend python -m scripts.seed_test_data
+    docker compose exec -T backend python -m scripts.seed_test_data
 ```
+
+⚠️ **Important**: Migrations must run BEFORE seeding to ensure all required database columns exist.
 
 ### Local Testing
 
