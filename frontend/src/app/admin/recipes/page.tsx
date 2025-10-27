@@ -137,8 +137,8 @@ export default function RecipesAdmin() {
     });
 
   // Get unique values for filters
-  const categories = ['all', ...Array.from(new Set(recipes.map(r => r.category).filter(Boolean)))];
-  const cuisines = ['all', ...Array.from(new Set(recipes.map(r => r.cuisine).filter(Boolean)))];
+  const categories = ['all', ...Array.from(new Set(recipes.map(r => r.category).filter((c): c is string => c !== null)))];
+  const cuisines = ['all', ...Array.from(new Set(recipes.map(r => r.cuisine).filter((c): c is string => c !== null)))];
   const difficulties = ['all', 'Facile', 'Moyen', 'Difficile'];
 
   // Calculate stats
