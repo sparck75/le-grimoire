@@ -35,21 +35,35 @@ mkdir -p "$BACKUP_DIR"
 # Get MongoDB password from .env.production
 MONGODB_PASSWORD=$(grep MONGODB_PASSWORD .env.production | cut -d '=' -f2)
 
-docker exec $MONGODB_CONTAINER mongodump \
-    --out /tmp/backup_$DATE \
-    --authenticationDatabase admin \
-    -u legrimoire \
-    -p "$MONGODB_PASSWORD" 2>/dev/null || echo "⚠️  Backup failed (database may not be running)"
-
-if [ $? -eq 0 ]; then
-    docker cp $MONGODB_CONTAINER:/tmp/backup_$DATE "$BACKUP_DIR/mongodb_backup_$DATE"
-    cd "$BACKUP_DIR"
-    tar -czf "mongodb_backup_$DATE.tar.gz" "mongodb_backup_$DATE"
-    rm -rf "mongodb_backup_$DATE"
-    cd ..
-    echo "✅ Backup saved to: $BACKUP_DIR/mongodb_backup_$DATE.tar.gz"
+# Check if MongoDB container is running
+if docker ps --format '{{.Names}}' | grep -q "^${MONGODB_CONTAINER}$"; then
+    echo "Creating MongoDB backup..."
+    
+    # Try to create backup inside container
+    if docker exec $MONGODB_CONTAINER mongodump \
+        --out /tmp/backup_$DATE \
+        --authenticationDatabase admin \
+        -u legrimoire \
+        -p "$MONGODB_PASSWORD" 2>/dev/null; then
+        
+        # Copy backup out of container
+        docker cp $MONGODB_CONTAINER:/tmp/backup_$DATE "$BACKUP_DIR/mongodb_backup_$DATE"
+        
+        # Compress backup
+        cd "$BACKUP_DIR"
+        tar -czf "mongodb_backup_$DATE.tar.gz" "mongodb_backup_$DATE"
+        rm -rf "mongodb_backup_$DATE"
+        cd ..
+        
+        # Clean up inside container
+        docker exec $MONGODB_CONTAINER rm -rf /tmp/backup_$DATE 2>/dev/null || true
+        
+        echo "✅ Backup saved to: $BACKUP_DIR/mongodb_backup_$DATE.tar.gz"
+    else
+        echo "⚠️  Backup failed - mongodump error (check credentials or database status)"
+    fi
 else
-    echo "⚠️  Skipping backup - database not accessible"
+    echo "⚠️  MongoDB container not running - skipping backup"
 fi
 echo ""
 
