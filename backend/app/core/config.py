@@ -2,7 +2,7 @@
 Application configuration
 """
 from pydantic_settings import BaseSettings
-from typing import List
+
 
 class Settings(BaseSettings):
     """Application settings"""
@@ -33,19 +33,10 @@ class Settings(BaseSettings):
     # Redis
     REDIS_URL: str = "redis://redis:6379"
     
-    # CORS
-    ALLOWED_ORIGINS: List[str] = [
-        "http://localhost:3000",
-        "http://localhost:8000",
-        "http://localhost",
-        "http://frontend:3000",
-        "http://192.168.1.100",
-        "http://192.168.1.100:3000",
-        "http://192.168.1.100:80",
-        "http://192.168.1.133",
-        "http://192.168.1.133:80",
-        "*"  # Allow all origins for development
-    ]
+    # CORS - Allow setting via environment variable for production
+    # In production, set ALLOWED_ORIGINS env var to:
+    # "https://legrimoireonline.ca,https://www.legrimoireonline.ca"
+    ALLOWED_ORIGINS: str = "*"  # Default to wildcard for development
     
     # OCR
     OCR_ENGINE: str = "tesseract"
