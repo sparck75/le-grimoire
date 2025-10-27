@@ -1,4 +1,4 @@
-import { test as base } from '@playwright/test';
+import { test as base, Page } from '@playwright/test';
 
 /**
  * Example test fixtures for Le Grimoire
@@ -10,9 +10,9 @@ import { test as base } from '@playwright/test';
 // Define custom fixture types
 type CustomFixtures = {
   // Example: A fixture that navigates to recipes page
-  recipesPage: any;
+  recipesPage: Page;
   // Example: A fixture for authenticated user
-  authenticatedPage: any;
+  authenticatedPage: Page;
 };
 
 /**
