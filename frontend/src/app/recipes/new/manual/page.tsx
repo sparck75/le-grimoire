@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '../../../../contexts/AuthContext';
 import Link from 'next/link';
@@ -22,7 +22,7 @@ interface Recipe {
   is_public: boolean;
 }
 
-export default function ManualRecipeNewPage() {
+function ManualRecipeForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user } = useAuth();
@@ -595,5 +595,13 @@ export default function ManualRecipeNewPage() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function ManualRecipeNewPage() {
+  return (
+    <Suspense fallback={<div>Chargement...</div>}>
+      <ManualRecipeForm />
+    </Suspense>
   );
 }

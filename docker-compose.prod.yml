@@ -79,6 +79,8 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       target: production
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
     container_name: le-grimoire-frontend-prod
     restart: always
     environment:

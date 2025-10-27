@@ -17,6 +17,10 @@ CMD ["npm", "run", "dev"]
 FROM base AS builder
 WORKDIR /app
 
+# Accept build arguments
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+
 COPY package*.json ./
 RUN npm ci
 

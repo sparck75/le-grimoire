@@ -20,6 +20,7 @@ interface IngredientFormData {
   subcategory: string;
   aliases: string[];
   notes: string;
+  is_active: boolean;
 }
 
 export default function NewIngredientPage() {
@@ -36,6 +37,7 @@ export default function NewIngredientPage() {
     subcategory: '',
     aliases: [],
     notes: '',
+    is_active: true,
   });
   
   const [aliasInput, setAliasInput] = useState('');
