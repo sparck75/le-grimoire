@@ -79,3 +79,8 @@ nginx/ssl/
 /backend/recettes
 /data
 /recettes
+
+# Playwright test artifacts
+test-results/
+playwright-report/
+playwright/.cache/

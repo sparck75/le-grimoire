@@ -101,7 +101,31 @@ docker-compose exec mongodb mongosh le_grimoire
 
 # Compter les ingrédients
 docker-compose exec mongodb mongosh --eval "use le_grimoire; db.ingredients.countDocuments()"
+
+# Exécuter les tests E2E
+cd frontend && npm test
 ```
+
+## 🧪 Tests
+
+Le projet inclut des tests E2E automatisés avec Playwright :
+
+```bash
+cd frontend
+
+# Exécuter tous les tests
+npm test
+
+# Mode visuel (voir le navigateur)
+npm run test:headed
+
+# Mode UI interactif
+npm run test:ui
+```
+
+Les tests s'exécutent automatiquement dans la CI/CD sur chaque push et pull request.
+
+📖 **[Documentation complète des tests](frontend/tests/README.md)**
 
 ## � Développement local
 
