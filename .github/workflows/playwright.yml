@@ -1,0 +1,159 @@
+name: Playwright Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  test:
+    name: Run Playwright Tests
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Install Playwright Browsers
+        working-directory: ./frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Create .env file
+        run: |
+          cat > .env << EOF
+          DATABASE_URL=postgresql://grimoire:grimoire_password@localhost:5432/le_grimoire
+          MONGODB_URL=mongodb://legrimoire:grimoire_mongo_password@localhost:27017/legrimoire?authSource=admin
+          MONGODB_DB_NAME=legrimoire
+          SECRET_KEY=test-secret-key-for-ci
+          JWT_SECRET_KEY=test-jwt-secret-key-for-ci-testing
+          JWT_ALGORITHM=HS256
+          ACCESS_TOKEN_EXPIRE_MINUTES=10080
+          REDIS_URL=redis://localhost:6379
+          NEXT_PUBLIC_API_URL=http://localhost:8000
+          BACKEND_URL=http://localhost:8000
+          EOF
+
+      - name: Start services with Docker Compose
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d
+          echo "Waiting 15 seconds for containers to initialize..."
+          sleep 15
+          echo "Docker containers status:"
+          docker compose ps
+          
+      - name: Wait for services to be healthy
+        run: |
+          echo "Waiting for services to be ready..."
+          
+          # Check Docker services status
+          echo "Docker services status:"
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml ps
+          
+          # Wait for backend
+          echo "Waiting for backend..."
+          BACKEND_READY=false
+          for i in {1..60}; do
+            if curl -f http://localhost:8000/api/health 2>/dev/null; then
+              echo "Backend is ready!"
+              BACKEND_READY=true
+              break
+            fi
+            echo "Waiting for backend... ($i/60)"
+            sleep 2
+          done
+          
+          if [ "$BACKEND_READY" = false ]; then
+            echo "Backend failed to start. Showing logs:"
+            docker compose -f docker-compose.yml -f docker-compose.ci.yml logs backend
+            docker compose -f docker-compose.yml -f docker-compose.ci.yml logs mongodb
+            docker compose -f docker-compose.yml -f docker-compose.ci.yml logs db
+            exit 1
+          fi
+          
+          # Wait for frontend
+          echo "Waiting for frontend..."
+          FRONTEND_READY=false
+          for i in {1..60}; do
+            if curl -f http://localhost:3000 2>/dev/null; then
+              echo "Frontend is ready!"
+              FRONTEND_READY=true
+              break
+            fi
+            echo "Waiting for frontend... ($i/60)"
+            sleep 2
+          done
+          
+          if [ "$FRONTEND_READY" = false ]; then
+            echo "Frontend failed to start. Showing logs:"
+            docker compose -f docker-compose.yml -f docker-compose.ci.yml logs frontend
+            exit 1
+          fi
+
+      - name: Run database migrations
+        run: |
+          echo "Running Alembic migrations..."
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml exec -T backend alembic upgrade head
+          echo "Migrations completed successfully!"
+
+      - name: Seed test data
+        run: |
+          echo "Seeding test data..."
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml exec -T backend python -m scripts.seed_test_data
+          echo "Test data seeded successfully!"
+
+      - name: Run Playwright tests
+        working-directory: ./frontend
+        env:
+          CI: true
+          PLAYWRIGHT_BASE_URL: http://localhost:3000
+          BACKEND_URL: http://localhost:8000
+        run: npm run test
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: frontend/playwright-report/
+          retention-days: 30
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-results
+          path: frontend/test-results/
+          retention-days: 30
+
+      - name: Show Docker logs on failure
+        if: failure()
+        run: |
+          echo "=== Frontend logs ==="
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml logs frontend
+          echo "=== Backend logs ==="
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml logs backend
+          echo "=== MongoDB logs ==="
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml logs mongodb
+          echo "=== PostgreSQL logs ==="
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml logs db
+
+      - name: Cleanup
+        if: always()
+        run: docker compose -f docker-compose.yml -f docker-compose.ci.yml down -v

@@ -64,6 +64,33 @@ docker run -d \
 
 ## Tests
 
+### Tests E2E avec Playwright
+
+Le projet utilise Playwright pour les tests d'interface utilisateur automatisés.
+
+```bash
+# Démarrer tous les services
+docker-compose up -d
+
+# Installer les dépendances de test (première fois)
+cd frontend
+npm install
+
+# Exécuter tous les tests
+npm test
+
+# Exécuter les tests en mode visuel
+npm run test:headed
+
+# Exécuter les tests en mode UI interactif
+npm run test:ui
+
+# Voir le rapport de tests
+npm run test:report
+```
+
+📖 **[Documentation complète des tests](../frontend/tests/README.md)**
+
 ### Tester l'API Backend
 
 ```bash
