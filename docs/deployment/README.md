@@ -1,343 +1,358 @@
-# Documentation de Déploiement - Le Grimoire
+# Guide de déploiement - Le Grimoire
 
-Ce dossier contient toute la documentation nécessaire pour déployer **Le Grimoire** en production sur un serveur Vultr avec le domaine **legrimoireonline.ca**.
+Documentation complète pour déployer Le Grimoire sur un serveur de production avec le domaine `legrimoireonline.ca`.
 
-> 📖 **Nouveau ici ?** Lisez d'abord la [Vue d'Ensemble du Déploiement](./DEPLOYMENT_OVERVIEW.md) pour choisir le bon guide pour vous.
+## 📚 Documentation disponible
 
-## 📚 Guides disponibles
+Ce dossier contient toute la documentation nécessaire pour déployer et maintenir Le Grimoire en production :
 
-### Guide rapide ⚡
-**[QUICK_DEPLOY.md](./QUICK_DEPLOY.md)** - Guide en 10 étapes (45 minutes)
-- Configuration serveur Vultr
-- DNS GoDaddy
-- Installation Docker
-- Déploiement de l'application
-- Configuration SSL avec Let's Encrypt
+### 🚀 Guides principaux
 
-👉 **Commencez ici** si vous voulez déployer rapidement et avez déjà de l'expérience avec Linux/Docker.
+1. **[VULTR_DEPLOYMENT.md](./VULTR_DEPLOYMENT.md)** - Guide complet de déploiement sur Vultr
+   - Configuration du serveur Vultr
+   - Installation de Docker
+   - Configuration SSL avec Let's Encrypt
+   - Déploiement de l'application
+   - Sauvegardes automatiques
+   - Monitoring et maintenance
 
----
+2. **[GODADDY_DNS.md](./GODADDY_DNS.md)** - Configuration DNS sur GoDaddy
+   - Configuration des enregistrements A
+   - Propagation DNS
+   - Tests et vérifications
+   - Résolution des problèmes courants
 
-### Guide complet 📖
-**[VULTR_DEPLOYMENT.md](./VULTR_DEPLOYMENT.md)** - Guide détaillé pas à pas (2-3 heures)
-- Création et configuration du serveur Vultr (choix du plan, localisation, etc.)
-- Installation des dépendances (Docker, Docker Compose, UFW)
-- Configuration du pare-feu
-- Déploiement de l'application
-- Configuration SSL/TLS avec Let's Encrypt
-- Configuration des sauvegardes automatiques
-- Configuration du monitoring
-- Scripts de maintenance
-- Guide de dépannage complet
+3. **[SECURITY.md](./SECURITY.md)** - Guide de sécurité
+   - Configuration sécurisée du serveur
+   - Gestion des secrets
+   - Configuration SSL/TLS
+   - Sauvegardes et restauration
+   - Réponse aux incidents
 
-👉 **Lisez ce guide** si c'est votre premier déploiement ou si vous voulez tous les détails.
+4. **[CHEAT_SHEET.md](./CHEAT_SHEET.md)** - Aide-mémoire des commandes
+   - Commandes Docker courantes
+   - Monitoring et logs
+   - Dépannage rapide
+   - Maintenance
 
----
+## 🎯 Démarrage rapide
 
-### Configuration DNS GoDaddy 🌐
-**[GODADDY_DNS.md](./GODADDY_DNS.md)** - Guide spécifique GoDaddy (30 minutes)
-- Instructions détaillées avec captures d'écran
-- Configuration des enregistrements A et CNAME
-- Vérification de la propagation DNS
-- Dépannage DNS
-- Temps de propagation expliqués
-- Configuration email optionnelle
+### Prérequis
+- Serveur Vultr avec Ubuntu 22.04 LTS (minimum 2GB RAM)
+- Domaine `legrimoireonline.ca` sur GoDaddy
+- Accès SSH au serveur
 
-👉 **Consultez ce guide** pour les détails spécifiques à la configuration DNS sur GoDaddy.
-
----
-
-## 🏗️ Architecture de déploiement
-
-```
-Internet
-   ↓
-[GoDaddy DNS]
-   ↓
-legrimoireonline.ca → XXX.XXX.XXX.XXX (Serveur Vultr)
-   ↓
-[Nginx] ← Let's Encrypt SSL/TLS
-   ↓
-   ├─→ [Frontend Container] (Next.js) :3000
-   ├─→ [Backend Container] (FastAPI) :8000
-   ├─→ [MongoDB Container] :27017
-   ├─→ [PostgreSQL Container] :5432 (legacy)
-   └─→ [Redis Container] :6379
-```
-
-## 📋 Checklist de déploiement
-
-Utilisez cette checklist pour suivre votre progression :
-
-### Préparation
-- [ ] Compte Vultr créé
-- [ ] Domaine legrimoireonline.ca chez GoDaddy
-- [ ] Accès SSH configuré (clé ou mot de passe)
-- [ ] Git installé localement
-
-### Serveur Vultr
-- [ ] Serveur créé (Ubuntu 22.04)
-- [ ] IP notée : `___________________`
-- [ ] Connexion SSH testée
-- [ ] Système mis à jour (`apt update && apt upgrade`)
-- [ ] Docker installé
-- [ ] Docker Compose installé
-- [ ] Pare-feu UFW configuré (ports 22, 80, 443)
-
-### DNS GoDaddy
-- [ ] Enregistrement A pour `@` créé (pointe vers IP Vultr)
-- [ ] Enregistrement A/CNAME pour `www` créé
-- [ ] Anciens enregistrements supprimés
-- [ ] Propagation DNS vérifiée (`nslookup legrimoireonline.ca`)
-
-### Application
-- [ ] Dépôt Git cloné sur le serveur
-- [ ] Fichier `.env` créé avec valeurs sécurisées
-- [ ] Secrets générés (`SECRET_KEY`, `JWT_SECRET_KEY`)
-- [ ] Mots de passe changés (PostgreSQL, MongoDB)
-- [ ] Configuration nginx modifiée pour le domaine
-- [ ] Certificats temporaires créés
-- [ ] Application démarrée (`docker-compose -f docker-compose.prod.yml up -d`)
-- [ ] Conteneurs actifs vérifiés
-- [ ] Accès HTTP testé
-
-### SSL/TLS
-- [ ] Certbot installé
-- [ ] Certificat Let's Encrypt obtenu
-- [ ] Certificats copiés dans nginx/ssl
-- [ ] Nginx redémarré
-- [ ] Accès HTTPS testé
-- [ ] Redirection HTTP → HTTPS testée
-- [ ] Renouvellement automatique configuré (cron)
-- [ ] Test de renouvellement effectué (`certbot renew --dry-run`)
-
-### Configuration finale
-- [ ] Ingrédients OpenFoodFacts importés (5942 items)
-- [ ] Base de données MongoDB vérifiée
-- [ ] Compte admin créé (si applicable)
-- [ ] Sauvegardes automatiques configurées
-- [ ] Monitoring configuré
-- [ ] Logs vérifiés
-
-### Tests
-- [ ] https://legrimoireonline.ca fonctionne
-- [ ] https://www.legrimoireonline.ca fonctionne
-- [ ] http://legrimoireonline.ca redirige vers HTTPS
-- [ ] https://legrimoireonline.ca/docs (API) accessible
-- [ ] https://legrimoireonline.ca/health retourne "healthy"
-- [ ] SSL vérifié sur https://www.ssllabs.com/ssltest/
-- [ ] Création de recette testée
-- [ ] Recherche d'ingrédients testée
-- [ ] Liste de courses testée
-
-## 🚀 Démarrage rapide
-
-Pour un déploiement rapide, suivez ces étapes :
+### Étapes principales
 
 ```bash
-# 1. Créer le serveur sur Vultr (interface web)
+# 1. Configurer le DNS sur GoDaddy (voir GODADDY_DNS.md)
+# Pointer legrimoireonline.ca et www.legrimoireonline.ca vers l'IP du serveur
 
-# 2. Se connecter
-ssh root@VOTRE_IP_VULTR
+# 2. Se connecter au serveur Vultr
+ssh root@YOUR_SERVER_IP
 
-# 3. Installer Docker
-curl -fsSL https://get.docker.com | sh
+# 3. Créer un utilisateur et configurer la sécurité (voir VULTR_DEPLOYMENT.md)
+adduser legrimoire
+usermod -aG sudo legrimoire
 
-# 4. Installer Docker Compose
-curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-chmod +x /usr/local/bin/docker-compose
+# 4. Installer Docker
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+sudo usermod -aG docker legrimoire
 
-# 5. Cloner le projet
+# 5. Cloner le dépôt
 git clone https://github.com/sparck75/le-grimoire.git
 cd le-grimoire
 
-# 6. Configurer
-cp .env.production.template .env
-nano .env  # Modifier les valeurs
+# 6. Configurer l'environnement
+cp .env.production.example .env.production
+nano .env.production  # Éditer avec vos valeurs
 
-# 7. Démarrer
-docker-compose -f docker-compose.prod.yml up -d --build
+# 7. Obtenir les certificats SSL
+sudo certbot certonly --standalone -d legrimoireonline.ca -d www.legrimoireonline.ca
+sudo cp /etc/letsencrypt/live/legrimoireonline.ca/fullchain.pem nginx/ssl/
+sudo cp /etc/letsencrypt/live/legrimoireonline.ca/privkey.pem nginx/ssl/
+
+# 8. Déployer l'application
+./deploy.sh deploy
 ```
 
-Consultez [QUICK_DEPLOY.md](./QUICK_DEPLOY.md) pour les détails complets.
+## 📦 Fichiers de configuration
 
-## 🔧 Fichiers de configuration
+### Fichiers principaux
 
-### Fichiers importants
+- **`.env.production.example`** - Template pour les variables d'environnement
+- **`docker-compose.prod.yml`** - Configuration Docker pour la production
+- **`nginx/nginx.prod.conf`** - Configuration Nginx avec SSL
+- **`deploy.sh`** - Script de déploiement automatisé
 
-| Fichier | Description |
-|---------|-------------|
-| `.env.production.template` | Template pour les variables d'environnement de production |
-| `docker-compose.prod.yml` | Configuration Docker Compose pour production |
-| `nginx/nginx.prod.conf` | Configuration Nginx pour production avec SSL |
-| `nginx/nginx.conf` | Configuration Nginx pour développement local |
+### Structure des fichiers
 
-### Créer le fichier .env
-
-```bash
-cp .env.production.template .env
-nano .env
+```
+le-grimoire/
+├── .env.production.example     # Template de configuration
+├── .env.production            # Configuration réelle (à créer, pas dans Git)
+├── docker-compose.prod.yml    # Docker Compose production
+├── deploy.sh                  # Script de déploiement
+├── backup.sh                  # Script de sauvegarde (à créer)
+├── nginx/
+│   ├── nginx.prod.conf       # Config Nginx production
+│   └── ssl/                  # Certificats SSL (à créer)
+│       ├── fullchain.pem
+│       └── privkey.pem
+└── docs/deployment/
+    ├── README.md             # Ce fichier
+    ├── VULTR_DEPLOYMENT.md   # Guide Vultr complet
+    ├── GODADDY_DNS.md        # Guide DNS GoDaddy
+    └── SECURITY.md           # Guide de sécurité
 ```
 
-**Changez obligatoirement** :
-- `POSTGRES_PASSWORD`
-- `MONGO_INITDB_ROOT_PASSWORD`
-- `SECRET_KEY` (généré avec `python3 -c "import secrets; print(secrets.token_urlsafe(64))"`)
-- `JWT_SECRET_KEY` (généré avec `python3 -c "import secrets; print(secrets.token_urlsafe(64))"`)
-- `NEXT_PUBLIC_API_URL=https://legrimoireonline.ca`
+## 🔧 Utilisation du script de déploiement
 
-## 📊 Ressources nécessaires
+Le script `deploy.sh` facilite les opérations de déploiement courantes.
 
-### Serveur Vultr recommandé
-
-| Plan | vCPU | RAM | SSD | Prix/mois | Usage |
-|------|------|-----|-----|-----------|-------|
-| **Minimum** | 1 | 2 GB | 55 GB | $12 | Développement/test |
-| **Recommandé** | 2 | 4 GB | 80 GB | $18 | Production petite échelle |
-| **Optimal** | 2 | 4 GB | 100 GB | $24 | Production moyenne |
-| **Haute performance** | 4 | 8 GB | 160 GB | $48 | Production haute échelle |
-
-**Recommandation** : Commencez avec le plan à **$18-24/mois** (2 vCPU, 4 GB RAM).
-
-### Coûts totaux estimés
-
-- **Serveur Vultr** : $18-48/mois
-- **Domaine .ca (GoDaddy)** : ~$15-20/an (≈$1.50/mois)
-- **Backups Vultr** : $1.50/mois (optionnel mais recommandé)
-- **SSL Let's Encrypt** : Gratuit ✅
-- **Total** : **≈$20-50/mois**
-
-## 🛠️ Maintenance
-
-### Commandes quotidiennes
+### Mode interactif
 
 ```bash
+./deploy.sh
+```
+
+Un menu s'affichera avec les options suivantes :
+1. Deploy (première installation)
+2. Update (mise à jour)
+3. Start services
+4. Stop services
+5. Restart services
+6. Show logs
+7. Show status
+8. Backup MongoDB
+9. Import ingredients
+
+### Mode commande
+
+```bash
+# Déploiement initial
+./deploy.sh deploy
+
+# Mise à jour
+./deploy.sh update
+
+# Démarrer les services
+./deploy.sh start
+
+# Arrêter les services
+./deploy.sh stop
+
+# Redémarrer les services
+./deploy.sh restart
+
 # Voir les logs
-docker-compose -f docker-compose.prod.yml logs -f
+./deploy.sh logs
 
-# Vérifier le statut
-docker-compose -f docker-compose.prod.yml ps
+# Voir le statut
+./deploy.sh status
 
-# Redémarrer un service
-docker-compose -f docker-compose.prod.yml restart frontend
+# Créer une sauvegarde
+./deploy.sh backup
+
+# Importer les ingrédients
+./deploy.sh import-ingredients
 ```
+
+## 🔐 Configuration des variables d'environnement
+
+Créez votre fichier `.env.production` à partir du template :
+
+```bash
+cp .env.production.example .env.production
+nano .env.production
+```
+
+### Variables importantes à configurer
+
+```bash
+# Base de données MongoDB
+MONGODB_URL=mongodb://legrimoire:CHANGEZ_MOT_DE_PASSE@mongodb:27017/legrimoire?authSource=admin
+MONGODB_PASSWORD=CHANGEZ_MOT_DE_PASSE
+
+# Secrets de l'application (générer avec Python)
+SECRET_KEY=$(python3 -c "import secrets; print(secrets.token_urlsafe(32))")
+JWT_SECRET_KEY=$(python3 -c "import secrets; print(secrets.token_urlsafe(32))")
+
+# URL de production
+NEXT_PUBLIC_API_URL=https://legrimoireonline.ca
+```
+
+## 🌐 Configuration DNS
+
+### Sur GoDaddy
+
+1. Se connecter à GoDaddy
+2. Aller dans "My Products" > "DNS"
+3. Ajouter les enregistrements A :
+   - **Type**: A, **Name**: @, **Value**: IP_DU_SERVEUR
+   - **Type**: A, **Name**: www, **Value**: IP_DU_SERVEUR
+
+Voir [GODADDY_DNS.md](./GODADDY_DNS.md) pour plus de détails.
+
+## 🔒 Obtenir les certificats SSL
+
+```bash
+# Installer Certbot
+sudo apt install certbot
+
+# Arrêter les services temporairement
+docker compose -f docker-compose.prod.yml down
+
+# Obtenir les certificats
+sudo certbot certonly --standalone \
+  -d legrimoireonline.ca \
+  -d www.legrimoireonline.ca
+
+# Copier les certificats
+sudo cp /etc/letsencrypt/live/legrimoireonline.ca/fullchain.pem nginx/ssl/
+sudo cp /etc/letsencrypt/live/legrimoireonline.ca/privkey.pem nginx/ssl/
+sudo chown legrimoire:legrimoire nginx/ssl/*
+```
+
+## 📊 Monitoring
+
+### Vérifier les services
+
+```bash
+# Statut des conteneurs
+docker compose -f docker-compose.prod.yml ps
+
+# Logs en temps réel
+docker compose -f docker-compose.prod.yml logs -f
+
+# Utilisation des ressources
+docker stats
+
+# Espace disque
+df -h
+```
+
+### Points à surveiller
+
+- **CPU/RAM** : Devrait rester sous 80% en utilisation normale
+- **Disque** : Nettoyer les anciennes sauvegardes si >80%
+- **Logs** : Vérifier les erreurs quotidiennement
+- **SSL** : Renouveler avant expiration (automatique avec certbot)
+
+## 🔄 Mises à jour
 
 ### Mise à jour de l'application
 
 ```bash
-cd /root/apps/le-grimoire
+cd ~/apps/le-grimoire
+
+# Créer une sauvegarde
+./deploy.sh backup
+
+# Mettre à jour le code
 git pull origin main
-docker-compose -f docker-compose.prod.yml down
-docker-compose -f docker-compose.prod.yml up -d --build
+
+# Reconstruire et redémarrer
+./deploy.sh update
 ```
 
-### Sauvegardes
+### Mise à jour du système
 
-Les sauvegardes automatiques sont configurées via cron (script dans [VULTR_DEPLOYMENT.md](./VULTR_DEPLOYMENT.md)).
-
-Sauvegarde manuelle :
 ```bash
-docker exec le-grimoire-mongodb mongodump --username=legrimoire --password=VOTRE_PASSWORD --authenticationDatabase=admin --db=legrimoire --out=/backup
-docker cp le-grimoire-mongodb:/backup ./backup-$(date +%Y%m%d)
+# Mise à jour des paquets
+sudo apt update && sudo apt upgrade -y
+
+# Redémarrer si nécessaire
+sudo reboot
 ```
 
-## 🐛 Dépannage
+## 💾 Sauvegardes
 
-### Problèmes courants
+### Sauvegardes automatiques
 
-| Problème | Solution |
-|----------|----------|
-| Site ne charge pas | Vérifier `docker-compose ps` et `docker-compose logs` |
-| DNS ne fonctionne pas | Vérifier `nslookup legrimoireonline.ca`, attendre propagation (24-48h) |
-| Erreur SSL | Vérifier `certbot certificates`, renouveler avec `/root/renew-ssl.sh` |
-| Conteneur ne démarre pas | Vérifier les logs avec `docker-compose logs [service]` |
-| Erreur MongoDB | Vérifier l'espace disque `df -h`, redémarrer MongoDB |
-| Performance lente | Vérifier `docker stats` et `htop`, upgrader le serveur |
+Configurez un cron job pour des sauvegardes quotidiennes :
 
-Pour le dépannage détaillé, consultez [VULTR_DEPLOYMENT.md - Section Dépannage](./VULTR_DEPLOYMENT.md#dépannage).
+```bash
+# Éditer le crontab
+crontab -e
+
+# Ajouter cette ligne (backup à 3h du matin)
+0 3 * * * /home/legrimoire/apps/le-grimoire/backup.sh >> /home/legrimoire/apps/le-grimoire/backups/backup.log 2>&1
+```
+
+### Sauvegarde manuelle
+
+```bash
+./deploy.sh backup
+```
+
+Les sauvegardes sont stockées dans `backups/` avec le format :
+`mongodb_backup_YYYYMMDD_HHMMSS.tar.gz`
+
+## 🆘 Dépannage
+
+### Le site n'est pas accessible
+
+1. Vérifier le DNS : `nslookup legrimoireonline.ca`
+2. Vérifier les conteneurs : `docker compose -f docker-compose.prod.yml ps`
+3. Vérifier les logs : `docker compose -f docker-compose.prod.yml logs nginx`
+4. Vérifier le pare-feu : `sudo ufw status`
+
+### Erreur SSL
+
+1. Vérifier les certificats : `ls -la nginx/ssl/`
+2. Recopier les certificats si nécessaire
+3. Redémarrer nginx : `docker compose -f docker-compose.prod.yml restart nginx`
+
+### Base de données inaccessible
+
+1. Vérifier MongoDB : `docker compose -f docker-compose.prod.yml logs mongodb`
+2. Vérifier la connexion : `docker compose -f docker-compose.prod.yml exec mongodb mongosh`
+3. Redémarrer MongoDB : `docker compose -f docker-compose.prod.yml restart mongodb`
+
+Pour plus de solutions, voir [VULTR_DEPLOYMENT.md](./VULTR_DEPLOYMENT.md#dépannage).
 
 ## 📞 Support
 
-### Documentation
-- [Guide de démarrage](../getting-started/QUICKSTART.md)
-- [Architecture](../architecture/OVERVIEW.md)
-- [API Reference](../architecture/API_REFERENCE.md)
-- [Guide de développement](../development/DEVELOPMENT.md)
+- **Documentation** : [docs/README.md](../README.md)
+- **Issues GitHub** : https://github.com/sparck75/le-grimoire/issues
+- **Support Vultr** : https://my.vultr.com/support/
+- **Support GoDaddy** : https://www.godaddy.com/contact-us
 
-### Communauté
-- [GitHub Issues](https://github.com/sparck75/le-grimoire/issues) - Bugs et questions
-- [GitHub Discussions](https://github.com/sparck75/le-grimoire/discussions) - Discussions générales
+## ✅ Checklist de déploiement
 
-### Ressources externes
-- [Vultr Documentation](https://www.vultr.com/docs/)
-- [Let's Encrypt Documentation](https://letsencrypt.org/docs/)
-- [Docker Documentation](https://docs.docker.com/)
-- [Nginx Documentation](https://nginx.org/en/docs/)
-- [GoDaddy Support](https://www.godaddy.com/help) - 1-800-581-0548 (Canada)
+### Avant le déploiement
+- [ ] Serveur Vultr créé
+- [ ] DNS configuré sur GoDaddy
+- [ ] Propagation DNS vérifiée (whatsmydns.net)
+- [ ] Accès SSH configuré
 
-## 🎯 Prochaines étapes après le déploiement
+### Configuration du serveur
+- [ ] Utilisateur non-root créé
+- [ ] Pare-feu UFW configuré
+- [ ] Docker installé
+- [ ] Clés SSH configurées
 
-1. **Sécurité**
-   - [ ] Configurer un utilisateur non-root
-   - [ ] Configurer fail2ban pour protection SSH
-   - [ ] Activer les backups automatiques Vultr
-   - [ ] Configurer Sentry pour le monitoring des erreurs
+### Déploiement
+- [ ] Dépôt cloné
+- [ ] .env.production configuré
+- [ ] Certificats SSL obtenus
+- [ ] Application déployée
+- [ ] Tests effectués
 
-2. **Performance**
-   - [ ] Configurer un CDN (Cloudflare)
-   - [ ] Optimiser les images
-   - [ ] Activer la compression Brotli
-   - [ ] Configurer le caching Redis
+### Post-déploiement
+- [ ] Sauvegardes automatiques configurées
+- [ ] Monitoring mis en place
+- [ ] Documentation lue
+- [ ] Plan d'urgence préparé
 
-3. **Monitoring**
-   - [ ] Configurer Uptime monitoring (UptimeRobot, Pingdom)
-   - [ ] Configurer des alertes (email, SMS)
-   - [ ] Mettre en place des dashboards (Grafana)
-   - [ ] Configurer des logs centralisés
+## 🎉 Succès !
 
-4. **Features**
-   - [ ] Configurer l'email (SMTP)
-   - [ ] Ajouter Google Analytics
-   - [ ] Configurer OAuth (Google, Apple)
-   - [ ] Ajouter un système de newsletter
+Une fois le déploiement terminé, votre application devrait être accessible sur :
 
-## ✅ Validation finale
+- **Site principal** : https://legrimoireonline.ca
+- **Avec www** : https://www.legrimoireonline.ca
+- **Documentation API** : https://legrimoireonline.ca/docs
 
-Avant de considérer le déploiement terminé, assurez-vous que :
-
-- ✅ https://legrimoireonline.ca charge correctement
-- ✅ Certificat SSL valide (vérifier sur ssllabs.com)
-- ✅ Tous les conteneurs sont actifs (`docker-compose ps`)
-- ✅ Les logs ne montrent pas d'erreurs critiques
-- ✅ Ingrédients OpenFoodFacts importés (5942 items)
-- ✅ Sauvegardes automatiques configurées
-- ✅ Renouvellement SSL automatique configuré
-- ✅ Monitoring de base en place
-- ✅ Documentation de production à jour
-
-## 📝 Notes importantes
-
-### Sécurité
-- **Ne committez JAMAIS** le fichier `.env` avec les vraies valeurs
-- Changez **tous les mots de passe** par défaut
-- Générez des **clés secrètes** uniques et sécurisées
-- Activez les **backups automatiques**
-- Mettez à jour **régulièrement** le système et Docker
-
-### Performance
-- Commencez avec un serveur **2 vCPU / 4 GB RAM**
-- Monitorer les ressources avec `docker stats` et `htop`
-- Upgrader si nécessaire vers un plan plus puissant
-- Configurer un **CDN** (Cloudflare) pour améliorer les performances
-
-### Coûts
-- Le déploiement coûte environ **$20-25/mois** pour commencer
-- Peut augmenter à **$48-72/mois** pour haute performance
-- SSL est **gratuit** avec Let's Encrypt
-- Sauvegardes Vultr : **$1.50/mois** (recommandé)
-
----
-
-**Bon déploiement ! 🚀**
-
-Pour toute question, consultez la documentation complète ou ouvrez une issue sur GitHub.
+Félicitations ! 🎊

@@ -1,406 +1,353 @@
 # Configuration DNS GoDaddy pour Le Grimoire
 
-Ce guide détaillé vous montre comment configurer votre domaine **legrimoireonline.ca** sur GoDaddy pour pointer vers votre serveur Vultr.
+Ce guide vous explique comment configurer votre domaine `legrimoireonline.ca` sur GoDaddy pour qu'il pointe vers votre serveur Vultr.
 
 ## 📋 Prérequis
 
-- ✅ Compte GoDaddy avec le domaine **legrimoireonline.ca**
-- ✅ Adresse IP de votre serveur Vultr (ex: `45.76.123.45`)
-- ✅ Accès à votre compte GoDaddy
+- Domaine `legrimoireonline.ca` enregistré sur GoDaddy
+- Adresse IP publique de votre serveur Vultr (exemple: 45.76.123.45)
+- Accès à votre compte GoDaddy
 
----
+## 🌐 Étape 1 : Accéder à la gestion DNS
 
-## 🔐 Connexion à GoDaddy
+### 1.1 Se connecter à GoDaddy
 
-### Étape 1 : Accéder à votre compte
-
-1. Allez sur **https://godaddy.com/**
-2. Cliquez sur **Sign In** (en haut à droite)
+1. Allez sur https://www.godaddy.com
+2. Cliquez sur **"Sign In"** en haut à droite
 3. Entrez vos identifiants GoDaddy
-4. Cliquez sur **Sign In**
+4. Cliquez sur **"Sign In"**
 
-### Étape 2 : Accéder à la gestion des domaines
+### 1.2 Accéder aux paramètres du domaine
 
-1. Une fois connecté, cliquez sur votre **nom d'utilisateur** en haut à droite
-2. Sélectionnez **My Products** (Mes produits)
-3. Vous verrez la liste de vos domaines et produits
+1. Une fois connecté, cliquez sur votre nom/profil en haut à droite
+2. Sélectionnez **"My Products"** dans le menu déroulant
+3. Trouvez `legrimoireonline.ca` dans la liste de vos domaines
+4. Cliquez sur le bouton **"DNS"** à côté du domaine
+   - Ou cliquez sur les trois points (...) puis **"Manage DNS"**
 
----
+Vous devriez maintenant voir la page de gestion DNS avec la liste de vos enregistrements DNS actuels.
 
-## 🌐 Configuration des DNS
+## 🔧 Étape 2 : Configurer les enregistrements DNS
 
-### Étape 3 : Accéder aux paramètres DNS
+### 2.1 Supprimer les enregistrements existants (si nécessaire)
 
-1. Trouvez **legrimoireonline.ca** dans la liste de vos domaines
-2. Cliquez sur le bouton **DNS** (ou sur les **trois points** → **Manage DNS**)
-3. Vous serez redirigé vers la page **DNS Management**
+Si vous avez déjà des enregistrements A pour `@` (domaine racine) ou `www`, vous devez les supprimer ou les modifier :
 
-### Étape 4 : Voir les enregistrements actuels
+1. Trouvez les enregistrements de type **"A"** avec le nom **"@"** ou **"www"**
+2. Cliquez sur l'icône de **crayon** (éditer) ou sur **les trois points** puis **"Delete"** pour chaque enregistrement
+3. Confirmez la suppression si demandé
 
-Sur la page DNS Management, vous verrez plusieurs sections :
-- **Records** (Enregistrements) - C'est ici que nous allons travailler
-- **Nameservers** - Doit être sur "GoDaddy Nameservers" (par défaut)
-- **DNSSEC** - Peut rester désactivé pour l'instant
+### 2.2 Ajouter l'enregistrement A pour le domaine racine
 
-### Étape 5 : Supprimer les enregistrements par défaut
+Cet enregistrement fait pointer `legrimoireonline.ca` vers votre serveur.
 
-GoDaddy ajoute généralement des enregistrements par défaut qui pointent vers leur page de parking. Nous devons les supprimer :
+1. Cliquez sur le bouton **"Add"** ou **"Add New Record"**
+2. Configurez l'enregistrement comme suit :
+   - **Type** : A
+   - **Name** : @ (représente le domaine racine)
+   - **Value** : L'adresse IP de votre serveur Vultr (exemple: 45.76.123.45)
+   - **TTL** : 600 seconds (10 minutes) ou 1 hour (recommandé pour la production)
+3. Cliquez sur **"Save"** ou **"Add Record"**
 
-#### Enregistrements à supprimer :
+### 2.3 Ajouter l'enregistrement A pour www
 
-1. **Enregistrement A avec nom "@"** qui pointe vers une IP GoDaddy (ex: `50.63.202.1`)
-   - Cliquez sur l'icône **crayon** (Edit) ou **trois points** → **Delete**
-   - Confirmez la suppression
+Cet enregistrement fait pointer `www.legrimoireonline.ca` vers votre serveur.
 
-2. **Enregistrement CNAME avec nom "www"** qui pointe vers `@` ou un domaine GoDaddy
-   - Cliquez sur l'icône **crayon** ou **trois points** → **Delete**
-   - Confirmez la suppression
+1. Cliquez à nouveau sur **"Add"** ou **"Add New Record"**
+2. Configurez l'enregistrement comme suit :
+   - **Type** : A
+   - **Name** : www
+   - **Value** : L'adresse IP de votre serveur Vultr (même IP qu'à l'étape 2.2)
+   - **TTL** : 600 seconds (10 minutes) ou 1 hour
+3. Cliquez sur **"Save"** ou **"Add Record"**
 
-3. **Enregistrement A avec nom "www"** (s'il existe)
-   - Supprimez-le de la même manière
+### 2.4 Configuration finale
 
-4. **Autres enregistrements A** qui ne sont pas nécessaires
-   - Si vous voyez des enregistrements comme `_domainconnect`, vous pouvez les laisser
-   - Supprimez seulement les enregistrements A et CNAME pour "@" et "www"
+Votre configuration DNS devrait maintenant ressembler à ceci :
 
-⚠️ **IMPORTANT** : Ne supprimez PAS les enregistrements :
-- NS (Nameserver)
-- SOA (Start of Authority)
-- MX (Mail Exchange) - sauf si vous n'utilisez pas d'email
-- TXT (comme SPF, DKIM) - laissez-les si vous utilisez l'email
+| Type | Name | Value | TTL |
+|------|------|-------|-----|
+| A | @ | 45.76.123.45 | 1 Hour |
+| A | www | 45.76.123.45 | 1 Hour |
 
-### Étape 6 : Ajouter le nouvel enregistrement A pour le domaine principal
+*(Remplacez 45.76.123.45 par l'IP réelle de votre serveur)*
 
-1. Cliquez sur le bouton **Add** (Ajouter) ou **Add New Record**
-2. Remplissez les champs suivants :
+### 2.5 Enregistrements optionnels
 
-**Configuration de l'enregistrement A principal :**
+#### Enregistrement MX (pour les emails)
 
-| Champ | Valeur | Exemple |
-|-------|--------|---------|
-| **Type** | Sélectionnez **A** dans le menu déroulant | A |
-| **Name** (Nom) | Entrez **@** (représente legrimoireonline.ca) | @ |
-| **Value** (Valeur) | Entrez l'adresse IP de votre serveur Vultr | `45.76.123.45` |
-| **TTL** | Sélectionnez **Custom** puis entrez **600** (ou laissez **1 hour**) | 600 seconds |
+Si vous souhaitez recevoir des emails sur votre domaine (par exemple: contact@legrimoireonline.ca), vous devrez configurer des enregistrements MX. Cela nécessite un serveur de messagerie séparé.
 
-3. Cliquez sur **Save** ou **Add Record**
+**Option 1 : Utiliser Google Workspace ou Microsoft 365**
+- Suivez les instructions de votre fournisseur de messagerie
 
-✅ Cet enregistrement fera pointer **legrimoireonline.ca** vers votre serveur Vultr.
+**Option 2 : Utiliser un service de redirection d'emails**
+- GoDaddy offre une redirection d'emails de base
+- Allez dans "Email & Office" dans votre compte GoDaddy
 
-### Étape 7 : Ajouter l'enregistrement A pour www
+#### Enregistrement TXT pour SPF (recommandé pour les emails)
 
-1. Cliquez à nouveau sur **Add** ou **Add New Record**
-2. Remplissez les champs :
+Si vous envoyez des emails depuis votre serveur :
 
-**Configuration de l'enregistrement A pour www :**
+1. Cliquez sur **"Add"**
+2. Configurez :
+   - **Type** : TXT
+   - **Name** : @
+   - **Value** : `v=spf1 ip4:45.76.123.45 ~all` (remplacez par votre IP)
+   - **TTL** : 1 hour
+3. Cliquez sur **"Save"**
 
-| Champ | Valeur | Exemple |
-|-------|--------|---------|
-| **Type** | Sélectionnez **A** | A |
-| **Name** | Entrez **www** | www |
-| **Value** | Entrez la même IP Vultr | `45.76.123.45` |
-| **TTL** | **600 seconds** ou **1 hour** | 600 seconds |
+## ⏱️ Étape 3 : Attendre la propagation DNS
 
-3. Cliquez sur **Save**
+### 3.1 Temps de propagation
 
-✅ Cet enregistrement fera pointer **www.legrimoireonline.ca** vers votre serveur.
+- **TTL initial** : Si vous venez de modifier les enregistrements, la propagation peut prendre de 10 minutes à 48 heures
+- **En général** : La plupart des changements sont visibles en 30 minutes à 2 heures
+- **Maximum** : Jusqu'à 48 heures dans les cas extrêmes
 
-### Alternative : Utiliser un CNAME pour www (Méthode 2)
+### 3.2 Vérifier la propagation DNS
 
-Au lieu de créer un enregistrement A pour "www", vous pouvez utiliser un CNAME :
+#### Méthode 1 : Utiliser un outil en ligne
 
-**Configuration de l'enregistrement CNAME pour www :**
+1. Allez sur https://www.whatsmydns.net/
+2. Entrez `legrimoireonline.ca` dans le champ
+3. Sélectionnez **"A"** dans le menu déroulant
+4. Cliquez sur **"Search"**
+5. Vérifiez que l'IP affichée correspond à celle de votre serveur Vultr
 
-| Champ | Valeur | Exemple |
-|-------|--------|---------|
-| **Type** | Sélectionnez **CNAME** | CNAME |
-| **Name** | Entrez **www** | www |
-| **Value** | Entrez **legrimoireonline.ca** (avec le point final) | legrimoireonline.ca. |
-| **TTL** | **1 hour** | 3600 seconds |
+Répétez pour `www.legrimoireonline.ca`
 
-⚠️ **Note** : GoDaddy peut automatiquement ajouter le point final (`.`) ou vous demander de l'ajouter.
+#### Méthode 2 : Utiliser la ligne de commande
 
----
+Sur **Linux/Mac** :
 
-## 📊 Vérification de la configuration
+```bash
+# Vérifier le domaine racine
+dig legrimoireonline.ca +short
 
-### Configuration finale
+# Vérifier www
+dig www.legrimoireonline.ca +short
 
-Après avoir terminé, vos enregistrements DNS devraient ressembler à ceci :
-
-#### Option 1 : Avec deux enregistrements A
-
-```
-Type    Name    Value               TTL         Actions
-----    ----    -----               ---         -------
-A       @       45.76.123.45        600         Edit | Delete
-A       www     45.76.123.45        600         Edit | Delete
-NS      @       ns51.domaincontrol.com   1 hour      -
-NS      @       ns52.domaincontrol.com   1 hour      -
-SOA     @       Primary nameserver...    1 hour      -
+# Ou avec nslookup
+nslookup legrimoireonline.ca
+nslookup www.legrimoireonline.ca
 ```
 
-#### Option 2 : Avec A + CNAME
-
-```
-Type    Name    Value                   TTL         Actions
-----    ----    -----                   ---         -------
-A       @       45.76.123.45            600         Edit | Delete
-CNAME   www     legrimoireonline.ca     1 hour      Edit | Delete
-NS      @       ns51.domaincontrol.com  1 hour      -
-NS      @       ns52.domaincontrol.com  1 hour      -
-SOA     @       Primary nameserver...   1 hour      -
-```
-
-Les deux options fonctionnent. L'option 2 (CNAME) est légèrement plus flexible si vous changez d'IP plus tard.
-
----
-
-## ⏱️ Propagation DNS
-
-### Temps de propagation
-
-Après avoir sauvegardé vos changements, la propagation DNS peut prendre :
-- **Minimum** : 15-30 minutes
-- **Typique** : 2-6 heures
-- **Maximum** : 24-48 heures
-
-La propagation dépend de :
-- Votre TTL (Time To Live) - 600 secondes = 10 minutes
-- Les serveurs DNS de votre FAI
-- La mise en cache DNS globale
-
-### Vérifier la propagation DNS
-
-#### Méthode 1 : Depuis votre ordinateur (Windows)
+Sur **Windows** (PowerShell ou Command Prompt) :
 
 ```cmd
-# Ouvrir l'Invite de commandes (CMD)
+# Vérifier le domaine racine
 nslookup legrimoireonline.ca
 
-# Résultat attendu :
-Server:  UnKnown
-Address:  192.168.1.1
-
-Non-authoritative answer:
-Name:    legrimoireonline.ca
-Address: 45.76.123.45
-```
-
-#### Méthode 2 : Depuis votre ordinateur (Mac/Linux)
-
-```bash
-# Terminal
-dig legrimoireonline.ca
-
-# Résultat attendu :
-;; ANSWER SECTION:
-legrimoireonline.ca.    600    IN    A    45.76.123.45
-```
-
-#### Méthode 3 : Outils en ligne (RECOMMANDÉ)
-
-Utilisez ces outils pour vérifier depuis plusieurs endroits dans le monde :
-
-1. **DNS Checker** (Meilleur outil)
-   - URL : https://dnschecker.org/
-   - Entrez : `legrimoireonline.ca`
-   - Type : `A`
-   - Cliquez sur **Search**
-   - Vous verrez les résultats de plusieurs pays
-
-2. **What's My DNS**
-   - URL : https://www.whatsmydns.net/
-   - Entrez : `legrimoireonline.ca`
-   - Type : `A`
-
-3. **Google DNS**
-   - URL : https://dns.google/
-   - Query : `legrimoireonline.ca`
-   - RR Type : `A`
-
-#### Vérification complète
-
-```bash
-# Vérifier le domaine principal
-nslookup legrimoireonline.ca
-
-# Vérifier le sous-domaine www
+# Vérifier www
 nslookup www.legrimoireonline.ca
-
-# Les deux devraient retourner votre IP Vultr : 45.76.123.45
 ```
 
----
+La réponse devrait contenir l'adresse IP de votre serveur Vultr.
 
-## 🔧 Dépannage DNS
+#### Méthode 3 : Utiliser votre navigateur
 
-### Problème 1 : Le domaine pointe toujours vers GoDaddy parking page
+Essayez d'accéder à votre site (attendez au moins 30 minutes après la modification DNS) :
 
-**Cause** : Les anciens enregistrements DNS n'ont pas été supprimés
+```
+http://legrimoireonline.ca
+http://www.legrimoireonline.ca
+```
 
-**Solution** :
-1. Retournez sur la page DNS Management de GoDaddy
-2. Vérifiez qu'il n'y a pas d'enregistrements A ou CNAME qui pointent vers GoDaddy
-3. Supprimez-les
-4. Attendez 10-30 minutes
-5. Videz le cache DNS de votre ordinateur :
-   ```cmd
-   # Windows
-   ipconfig /flushdns
+⚠️ **Note** : N'utilisez pas HTTPS pour l'instant, vous n'avez pas encore configuré SSL. Cela viendra après le déploiement (étape 5 du guide Vultr).
+
+## 🔍 Étape 4 : Vérifications et tests
+
+### 4.1 Vérifier depuis votre serveur
+
+Connectez-vous à votre serveur Vultr :
+
+```bash
+ssh legrimoire@YOUR_SERVER_IP
+
+# Vérifier que le domaine pointe vers ce serveur
+curl -I http://legrimoireonline.ca
+
+# Si nginx est déjà configuré, vous devriez voir une réponse HTTP
+```
+
+### 4.2 Tester la résolution DNS
+
+```bash
+# Vérifier la résolution DNS depuis le serveur
+host legrimoireonline.ca
+host www.legrimoireonline.ca
+
+# Vérifier les enregistrements DNS
+dig legrimoireonline.ca
+dig www.legrimoireonline.ca
+```
+
+### 4.3 Vérifier avec ping
+
+```bash
+# Depuis votre ordinateur local
+ping legrimoireonline.ca
+ping www.legrimoireonline.ca
+
+# Ctrl+C pour arrêter
+
+# Vérifiez que l'IP affichée correspond à votre serveur Vultr
+```
+
+## 🚨 Problèmes courants et solutions
+
+### Problème 1 : DNS ne se propage pas
+
+**Symptômes** : Après plusieurs heures, le domaine ne pointe toujours pas vers votre serveur
+
+**Solutions** :
+1. Vérifiez que vous avez bien sauvegardé les modifications dans GoDaddy
+2. Vérifiez que l'IP entrée est correcte
+3. Videz le cache DNS de votre ordinateur :
+   ```bash
+   # Linux
+   sudo systemd-resolve --flush-caches
    
    # Mac
    sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder
    
-   # Linux
-   sudo systemd-resolve --flush-caches
+   # Windows (Command Prompt en administrateur)
+   ipconfig /flushdns
+   ```
+4. Essayez depuis un autre réseau (données mobiles par exemple)
+5. Attendez encore quelques heures (jusqu'à 48h maximum)
+
+### Problème 2 : Le domaine affiche un contenu incorrect
+
+**Symptômes** : Le domaine charge mais affiche une page de parking GoDaddy ou autre contenu
+
+**Solutions** :
+1. Vérifiez que nginx est bien démarré sur votre serveur :
+   ```bash
+   docker compose -f docker-compose.prod.yml ps
+   ```
+2. Vérifiez les logs nginx :
+   ```bash
+   docker compose -f docker-compose.prod.yml logs nginx
+   ```
+3. Assurez-vous que le pare-feu autorise le trafic sur les ports 80 et 443
+4. Vérifiez la configuration nginx (voir VULTR_DEPLOYMENT.md)
+
+### Problème 3 : www fonctionne mais pas le domaine racine (ou vice-versa)
+
+**Symptômes** : `www.legrimoireonline.ca` fonctionne mais pas `legrimoireonline.ca`
+
+**Solutions** :
+1. Vérifiez que vous avez bien créé LES DEUX enregistrements A
+2. Vérifiez que les deux enregistrements pointent vers la même IP
+3. Attendez la propagation DNS (peut être différente pour chaque enregistrement)
+4. Vérifiez la configuration nginx :
+   ```bash
+   docker compose -f docker-compose.prod.yml exec nginx cat /etc/nginx/nginx.conf | grep server_name
    ```
 
-### Problème 2 : "DNS_PROBE_FINISHED_NXDOMAIN"
+### Problème 4 : ERR_SSL_VERSION_OR_CIPHER_MISMATCH
 
-**Cause** : Le domaine n'est pas encore propagé ou mal configuré
+**Symptômes** : Message d'erreur SSL dans le navigateur
 
-**Solution** :
-1. Vérifiez que les Nameservers sont sur **GoDaddy Nameservers** (pas Custom)
-   - Sur la page DNS Management, section **Nameservers**
-   - Doit afficher : `ns51.domaincontrol.com` et `ns52.domaincontrol.com`
-2. Si vous avez changé de Nameservers, attendez 24-48h
-3. Vérifiez avec `nslookup` ou `dig`
+**Solutions** :
+1. Assurez-vous d'avoir obtenu les certificats SSL (étape 5 du guide Vultr)
+2. N'utilisez pas HTTPS avant d'avoir configuré SSL
+3. Vérifiez que les certificats sont bien copiés dans nginx/ssl/
+4. Redémarrez nginx après avoir ajouté les certificats
 
-### Problème 3 : Le domaine principal fonctionne mais pas www
+### Problème 5 : Connection Refused ou Timeout
 
-**Cause** : Enregistrement www manquant ou mal configuré
+**Symptômes** : Le navigateur affiche "Connection Refused" ou "Timed Out"
 
-**Solution** :
-1. Retournez sur DNS Management
-2. Vérifiez l'enregistrement pour "www"
-3. Assurez-vous que :
-   - Type : A ou CNAME
-   - Name : www
-   - Value : Votre IP ou legrimoireonline.ca
+**Solutions** :
+1. Vérifiez que votre serveur Vultr est bien démarré
+2. Vérifiez que le pare-feu UFW autorise les ports 80 et 443 :
+   ```bash
+   sudo ufw status
+   ```
+3. Vérifiez que les conteneurs Docker sont bien démarrés :
+   ```bash
+   docker compose -f docker-compose.prod.yml ps
+   ```
+4. Vérifiez que nginx écoute bien sur les ports 80 et 443 :
+   ```bash
+   sudo netstat -tulpn | grep -E ':(80|443)'
+   ```
 
-### Problème 4 : Propagation lente
+## 📝 Configuration avancée (optionnel)
 
-**Cause** : TTL élevé ou cache DNS
+### Sous-domaines supplémentaires
 
-**Solution** :
-1. Attendez - c'est normal
-2. Testez avec `nslookup` ou les outils en ligne
-3. Essayez depuis un autre réseau (4G/5G de votre téléphone)
-4. Testez en navigation privée pour éviter le cache du navigateur
+Si vous souhaitez créer des sous-domaines (par exemple `api.legrimoireonline.ca` ou `admin.legrimoireonline.ca`) :
 
-### Problème 5 : Le site fonctionne avec l'IP mais pas avec le domaine
+1. Dans GoDaddy DNS, cliquez sur **"Add"**
+2. Configurez :
+   - **Type** : A
+   - **Name** : api (ou admin, ou autre)
+   - **Value** : L'IP de votre serveur Vultr
+   - **TTL** : 1 hour
+3. Cliquez sur **"Save"**
 
-**Cause** : DNS pas encore propagé ou mauvais enregistrement
+Ensuite, mettez à jour votre configuration nginx pour gérer ce sous-domaine.
 
-**Solution** :
-1. Vérifiez `nslookup legrimoireonline.ca` - doit retourner votre IP
-2. Si non, vérifiez la configuration DNS sur GoDaddy
-3. Attendez la propagation (15min - 48h)
-4. Testez avec https://dnschecker.org/
+### Redirection de domaine
 
----
+Si vous avez d'autres domaines qui doivent rediriger vers `legrimoireonline.ca` :
 
-## 📝 Notes importantes
+1. Dans GoDaddy, allez dans la gestion du domaine à rediriger
+2. Allez dans **"Settings"** > **"Domain Forwarding"**
+3. Configurez la redirection vers `legrimoireonline.ca`
+4. Choisissez une redirection **301 (Permanent)**
 
-### À propos du TTL
+### DNSSEC (optionnel)
 
-**TTL (Time To Live)** détermine combien de temps les serveurs DNS gardent vos enregistrements en cache :
+Pour une sécurité accrue, vous pouvez activer DNSSEC :
 
-- **600 seconds (10 minutes)** : Recommandé pendant la configuration initiale ou les changements
-- **3600 seconds (1 hour)** : Bon compromis pour production
-- **86400 seconds (24 hours)** : Pour les configurations stables qui ne changent jamais
+1. Dans GoDaddy, allez dans les paramètres DNS
+2. Cherchez l'option **"DNSSEC"**
+3. Activez DNSSEC en suivant les instructions
 
-💡 **Conseil** : Gardez un TTL bas (600s) pendant les premières 24h, puis augmentez à 3600s.
+⚠️ **Attention** : DNSSEC peut compliquer les modifications DNS. Activez-le uniquement si vous comprenez son fonctionnement.
 
-### À propos des Nameservers
+## ✅ Checklist de configuration DNS
 
-GoDaddy utilise par défaut ses propres nameservers :
-- `ns51.domaincontrol.com`
-- `ns52.domaincontrol.com`
+- [ ] Compte GoDaddy accessible
+- [ ] Adresse IP du serveur Vultr notée
+- [ ] Enregistrement A pour @ (domaine racine) créé
+- [ ] Enregistrement A pour www créé
+- [ ] Les deux enregistrements pointent vers la même IP
+- [ ] Propagation DNS vérifiée avec whatsmydns.net
+- [ ] Domaine accessible via HTTP (sans HTTPS pour l'instant)
+- [ ] www.domaine et domaine tous deux accessibles
+- [ ] Enregistrements optionnels (MX, TXT) configurés si nécessaire
 
-⚠️ **Ne changez pas les nameservers** sauf si vous utilisez Cloudflare ou un autre service DNS externe.
+## 🎯 Prochaines étapes
 
-### Email avec votre domaine
+Une fois que votre DNS est configuré et propagé :
 
-Si vous voulez utiliser **email@legrimoireonline.ca** :
+1. Retournez au [Guide de déploiement Vultr](./VULTR_DEPLOYMENT.md)
+2. Continuez à l'**Étape 5 : Configuration SSL avec Let's Encrypt**
+3. Configurez HTTPS pour sécuriser votre site
 
-1. Ne supprimez pas les enregistrements MX
-2. Configurez un service email comme :
-   - **GoDaddy Email** (service payant)
-   - **Google Workspace** (anciennement G Suite)
-   - **Microsoft 365**
-   - **Zoho Mail** (gratuit pour 5 utilisateurs)
-   - **ProtonMail**
+## 📚 Ressources supplémentaires
 
-Chaque service vous donnera des enregistrements MX et TXT à ajouter dans GoDaddy DNS Management.
+- [Documentation DNS GoDaddy](https://www.godaddy.com/help/manage-dns-records-680)
+- [Guide Let's Encrypt](https://letsencrypt.org/getting-started/)
+- [What's My DNS - Vérifier la propagation](https://www.whatsmydns.net/)
+- [Guide Vultr DNS](https://www.vultr.com/docs/introduction-to-vultr-dns/)
 
----
+## 🆘 Besoin d'aide ?
 
-## ✅ Checklist de vérification
+Si vous rencontrez des problèmes :
 
-Avant de considérer la configuration DNS terminée, vérifiez :
-
-- [ ] Enregistrement A pour "@" créé avec votre IP Vultr
-- [ ] Enregistrement A ou CNAME pour "www" créé
-- [ ] Anciens enregistrements GoDaddy supprimés
-- [ ] Nameservers sur "GoDaddy Nameservers"
-- [ ] `nslookup legrimoireonline.ca` retourne votre IP
-- [ ] `nslookup www.legrimoireonline.ca` retourne votre IP
-- [ ] https://dnschecker.org/ montre votre IP dans plusieurs pays
-- [ ] Navigation vers http://legrimoireonline.ca fonctionne
-- [ ] Navigation vers http://www.legrimoireonline.ca fonctionne
-
----
-
-## 🎉 Configuration terminée !
-
-Votre domaine **legrimoireonline.ca** est maintenant configuré pour pointer vers votre serveur Vultr !
-
-### Prochaines étapes
-
-1. **Attendez la propagation DNS** (15min - 48h)
-2. **Testez l'accès HTTP** : http://legrimoireonline.ca
-3. **Configurez SSL/TLS** avec Let's Encrypt (voir [VULTR_DEPLOYMENT.md](./VULTR_DEPLOYMENT.md))
-4. **Testez l'accès HTTPS** : https://legrimoireonline.ca
+1. Consultez la section "Problèmes courants" ci-dessus
+2. Vérifiez que tous les paramètres sont corrects
+3. Attendez au moins 24 heures pour la propagation DNS
+4. Contactez le support GoDaddy si le problème persiste
+5. Ouvrez une issue sur le dépôt GitHub du projet
 
 ---
 
-## 📞 Support
-
-### Ressources GoDaddy
-
-- **Centre d'aide** : https://www.godaddy.com/help
-- **Téléphone (Canada)** : 1-800-581-0548
-- **Chat en direct** : Disponible sur godaddy.com après connexion
-
-### Ressources Le Grimoire
-
-- [Guide de déploiement Vultr complet](./VULTR_DEPLOYMENT.md)
-- [Documentation complète](../README.md)
-- [GitHub Issues](https://github.com/sparck75/le-grimoire/issues)
-
----
-
-## 🔍 Captures d'écran de référence
-
-### 1. Page "My Products"
-Vous devriez voir votre domaine **legrimoireonline.ca** avec un bouton **DNS**.
-
-### 2. Page "DNS Management"
-Sections visibles :
-- **Records** (avec bouton Add)
-- **Nameservers** (doit être "GoDaddy Nameservers")
-- **DNSSEC**
-
-### 3. Formulaire "Add Record"
-Champs :
-- Type (dropdown)
-- Name (texte)
-- Value (texte)
-- TTL (dropdown)
-- Bouton Save
-
----
-
-**Note** : Les interfaces GoDaddy peuvent légèrement varier selon la version. Si vous ne trouvez pas exactement les mêmes options, cherchez des termes similaires comme "DNS", "Records", "A Record", etc.
+**Note importante** : N'oubliez pas de noter quelque part vos informations de configuration (adresse IP du serveur, nom d'utilisateur, etc.) dans un endroit sécurisé !

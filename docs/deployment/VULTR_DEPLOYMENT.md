@@ -1,906 +1,620 @@
-# Guide de Déploiement sur Vultr - Le Grimoire
+# Guide de déploiement sur Vultr - Le Grimoire
 
-Ce guide vous accompagne étape par étape pour déployer Le Grimoire sur un serveur Vultr avec le domaine **legrimoireonline.ca**.
+Ce guide vous accompagnera dans le déploiement de Le Grimoire sur un serveur Vultr avec le domaine `legrimoireonline.ca`.
 
-## 📋 Table des matières
+## 📋 Prérequis
 
-1. [Prérequis](#prérequis)
-2. [Configuration du serveur Vultr](#configuration-du-serveur-vultr)
-3. [Installation des dépendances](#installation-des-dépendances)
-4. [Configuration DNS (GoDaddy)](#configuration-dns-godaddy)
-5. [Déploiement de l'application](#déploiement-de-lapplication)
-6. [Configuration SSL avec Let's Encrypt](#configuration-ssl-avec-lets-encrypt)
-7. [Configuration finale](#configuration-finale)
-8. [Maintenance](#maintenance)
-9. [Dépannage](#dépannage)
+- Serveur Vultr avec Ubuntu 22.04 LTS (minimum 2GB RAM, 2 vCPU, 50GB SSD)
+- Domaine `legrimoireonline.ca` configuré sur GoDaddy
+- Accès SSH au serveur
+- Connaissances de base en ligne de commande Linux
 
----
+## 🚀 Étape 1 : Configuration initiale du serveur Vultr
 
-## Prérequis
+### 1.1 Créer un serveur Vultr
 
-### Services requis
-- ✅ Compte Vultr actif
-- ✅ Domaine **legrimoireonline.ca** enregistré chez GoDaddy
-- ✅ Accès SSH à votre serveur
-- ✅ Client Git installé localement
+1. Connectez-vous à votre compte Vultr : https://my.vultr.com/
+2. Cliquez sur **"Deploy New Server"**
+3. Choisissez les options suivantes :
+   - **Server Type** : Cloud Compute - Shared CPU
+   - **Location** : Choisissez le datacenter le plus proche de vos utilisateurs (ex: Toronto pour le Canada)
+   - **Image** : Ubuntu 22.04 LTS x64
+   - **Plan** : Minimum 2GB RAM ($12/mois) - recommandé 4GB RAM ($24/mois) pour de meilleures performances
+   - **Additional Features** : 
+     - ✅ Enable IPv6
+     - ✅ Enable Auto Backups (recommandé)
+   - **Server Hostname** : `legrimoire-prod`
+   - **Label** : `Le Grimoire Production`
 
-### Connaissances recommandées
-- Base de Linux (Ubuntu)
-- Docker et Docker Compose
-- Nginx
-- Gestion DNS
+4. Cliquez sur **"Deploy Now"**
+5. Attendez que le serveur soit "Running" (environ 2-3 minutes)
+6. Notez l'**adresse IP publique** de votre serveur (exemple: 45.76.123.45)
 
----
-
-## Configuration du serveur Vultr
-
-### 1. Créer une instance Vultr
-
-1. **Connectez-vous** à votre compte Vultr : https://my.vultr.com/
-2. **Cliquez sur** "Deploy New Server" (ou "+")
-3. **Sélectionnez** les options suivantes :
-
-**Type de serveur :**
-- Choose Server: **Cloud Compute**
-
-**Localisation :**
-- Toronto, Canada (pour un serveur proche du Canada)
-- Ou New York/Atlanta pour des performances optimales en Amérique du Nord
-
-**Image du serveur :**
-- Operating System: **Ubuntu 22.04 LTS x64**
-
-**Plan du serveur :**
-- **Minimum recommandé** : 2 vCPU, 4 GB RAM, 80 GB SSD ($18/mois)
-- **Recommandé** : 2 vCPU, 4 GB RAM, 100 GB SSD ($24/mois)
-- **Production haute performance** : 4 vCPU, 8 GB RAM, 160 GB SSD ($48/mois)
-
-**Paramètres supplémentaires :**
-- ✅ Enable IPv6
-- ✅ Enable Auto Backups (recommandé - $1.50/mois)
-- ❌ Enable DDOS Protection (optionnel)
-
-**Configuration SSH :**
-- **Option 1** : Ajoutez votre clé SSH publique (recommandé)
-- **Option 2** : Utilisez un mot de passe root (sera envoyé par email)
-
-**Nom du serveur :**
-- Server Hostname: `legrimoire-prod`
-- Server Label: `Le Grimoire Production`
-
-4. **Cliquez sur** "Deploy Now"
-
-### 2. Notez les informations du serveur
-
-Une fois le serveur déployé (2-5 minutes), notez :
-- **Adresse IP** : `XXX.XXX.XXX.XXX` (ex: 45.76.123.45)
-- **Mot de passe root** : (si vous n'utilisez pas de clé SSH)
-- **IPv6** : (optionnel)
-
-### 3. Connexion initiale SSH
+### 1.2 Première connexion SSH
 
 ```bash
-# Remplacez XXX.XXX.XXX.XXX par votre IP Vultr
-ssh root@XXX.XXX.XXX.XXX
+# Remplacez YOUR_SERVER_IP par l'IP de votre serveur
+ssh root@YOUR_SERVER_IP
+
+# Lors de la première connexion, vous devrez accepter l'empreinte du serveur
+# Tapez 'yes' et appuyez sur Enter
+
+# Le mot de passe root est disponible dans le panneau Vultr (section "Settings" -> "View Password")
 ```
 
-Si vous utilisez une clé SSH :
+### 1.3 Mise à jour du système
+
 ```bash
-ssh -i ~/.ssh/votre_cle root@XXX.XXX.XXX.XXX
+# Mettre à jour la liste des paquets
+apt update
+
+# Mettre à jour les paquets installés
+apt upgrade -y
+
+# Installer les dépendances de base
+apt install -y curl wget git ufw vim htop net-tools
+
+# Redémarrer si nécessaire
+reboot
 ```
 
----
+## 🔐 Étape 2 : Configuration de la sécurité
 
-## Installation des dépendances
-
-### 1. Mettre à jour le système
+### 2.1 Créer un utilisateur non-root
 
 ```bash
-# Mise à jour des paquets
-apt update && apt upgrade -y
+# Se connecter en tant que root
+ssh root@YOUR_SERVER_IP
 
-# Installer les outils de base
-apt install -y curl wget git vim ufw htop
+# Créer un utilisateur 'legrimoire'
+adduser legrimoire
+
+# Vous serez invité à définir un mot de passe - choisissez un mot de passe fort
+# Appuyez sur Enter pour laisser les autres champs vides
+
+# Ajouter l'utilisateur au groupe sudo
+usermod -aG sudo legrimoire
+
+# Vérifier que l'utilisateur a été créé
+id legrimoire
 ```
 
-### 2. Configurer le pare-feu (UFW)
+### 2.2 Configurer l'accès SSH par clé (recommandé)
+
+Sur **votre ordinateur local** :
 
 ```bash
-# Autoriser SSH
-ufw allow OpenSSH
+# Générer une paire de clés SSH (si vous n'en avez pas déjà)
+ssh-keygen -t ed25519 -C "votre_email@example.com"
 
-# Autoriser HTTP et HTTPS
-ufw allow 80/tcp
-ufw allow 443/tcp
+# Appuyez sur Enter pour accepter l'emplacement par défaut
+# Définissez une phrase de passe (optionnel mais recommandé)
+
+# Copier la clé publique vers le serveur
+ssh-copy-id legrimoire@YOUR_SERVER_IP
+
+# Tester la connexion
+ssh legrimoire@YOUR_SERVER_IP
+```
+
+Si `ssh-copy-id` ne fonctionne pas, faites-le manuellement :
+
+```bash
+# Sur votre ordinateur local, afficher votre clé publique
+cat ~/.ssh/id_ed25519.pub
+
+# Copier la sortie (commence par ssh-ed25519...)
+
+# Sur le serveur, en tant qu'utilisateur legrimoire
+mkdir -p ~/.ssh
+chmod 700 ~/.ssh
+nano ~/.ssh/authorized_keys
+
+# Coller votre clé publique, sauvegarder (Ctrl+X, Y, Enter)
+chmod 600 ~/.ssh/authorized_keys
+```
+
+### 2.3 Configurer le pare-feu (UFW)
+
+```bash
+# Permettre SSH (IMPORTANT : faites ceci AVANT d'activer le pare-feu)
+sudo ufw allow OpenSSH
+
+# Permettre HTTP (port 80)
+sudo ufw allow 80/tcp
+
+# Permettre HTTPS (port 443)
+sudo ufw allow 443/tcp
 
 # Activer le pare-feu
-ufw enable
+sudo ufw enable
 
 # Vérifier le statut
-ufw status
+sudo ufw status verbose
 ```
 
-Vous devriez voir :
-```
-Status: active
-
-To                         Action      From
---                         ------      ----
-OpenSSH                    ALLOW       Anywhere
-80/tcp                     ALLOW       Anywhere
-443/tcp                    ALLOW       Anywhere
-```
-
-### 3. Installer Docker
+### 2.4 Sécuriser SSH (optionnel mais recommandé)
 
 ```bash
-# Installer les prérequis
-apt install -y apt-transport-https ca-certificates curl software-properties-common
+# Éditer la configuration SSH
+sudo nano /etc/ssh/sshd_config
+
+# Modifier les lignes suivantes (enlever le # au début si nécessaire) :
+# PermitRootLogin no
+# PasswordAuthentication no  # Seulement si vous avez configuré les clés SSH
+# PubkeyAuthentication yes
+
+# Sauvegarder et quitter (Ctrl+X, Y, Enter)
+
+# Redémarrer le service SSH
+sudo systemctl restart sshd
+```
+
+⚠️ **ATTENTION** : Ne désactivez `PasswordAuthentication` que si vous avez testé avec succès la connexion par clé SSH !
+
+## 🐳 Étape 3 : Installation de Docker
+
+```bash
+# Se connecter en tant qu'utilisateur legrimoire
+ssh legrimoire@YOUR_SERVER_IP
+
+# Installer les dépendances
+sudo apt install -y ca-certificates curl gnupg lsb-release
 
 # Ajouter la clé GPG officielle de Docker
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+sudo mkdir -p /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
 
 # Ajouter le dépôt Docker
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+  $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 
-# Installer Docker
-apt update
-apt install -y docker-ce docker-ce-cli containerd.io
+# Mettre à jour la liste des paquets
+sudo apt update
+
+# Installer Docker Engine
+sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+# Ajouter l'utilisateur au groupe docker
+sudo usermod -aG docker legrimoire
+
+# Déconnexion et reconnexion pour appliquer les changements de groupe
+exit
+ssh legrimoire@YOUR_SERVER_IP
 
 # Vérifier l'installation
 docker --version
+docker compose version
 ```
 
-### 4. Installer Docker Compose
+## 📦 Étape 4 : Cloner et configurer Le Grimoire
+
+### 4.1 Cloner le dépôt
 
 ```bash
-# Télécharger Docker Compose
-curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-
-# Rendre exécutable
-chmod +x /usr/local/bin/docker-compose
-
-# Vérifier l'installation
-docker-compose --version
-```
-
-### 5. Créer un utilisateur non-root (recommandé)
-
-```bash
-# Créer l'utilisateur
-adduser legrimoire
-
-# Ajouter aux groupes sudo et docker
-usermod -aG sudo legrimoire
-usermod -aG docker legrimoire
-
-# Tester la connexion
-su - legrimoire
-docker ps  # Devrait fonctionner sans sudo
-exit
-```
-
----
-
-## Configuration DNS (GoDaddy)
-
-### 1. Connexion à GoDaddy
-
-1. Allez sur https://godaddy.com/
-2. Connectez-vous avec votre compte
-3. Cliquez sur votre nom en haut à droite → **My Products**
-4. Trouvez **legrimoireonline.ca** et cliquez sur **DNS**
-
-### 2. Configuration des enregistrements DNS
-
-#### A. Supprimer les enregistrements par défaut
-
-Dans la section **DNS Management**, supprimez :
-- Tous les enregistrements A existants
-- L'enregistrement CNAME avec le nom "@" (s'il existe)
-
-#### B. Ajouter les nouveaux enregistrements
-
-**Enregistrement A principal (domaine racine)** :
-- **Type** : A
-- **Name** : @ (représente legrimoireonline.ca)
-- **Value** : `XXX.XXX.XXX.XXX` (votre IP Vultr)
-- **TTL** : 600 seconds (ou 1 hour)
-
-Cliquez sur **Save** ou **Add Record**.
-
-**Enregistrement A pour www** :
-- **Type** : A
-- **Name** : www
-- **Value** : `XXX.XXX.XXX.XXX` (même IP Vultr)
-- **TTL** : 600 seconds
-
-Cliquez sur **Save** ou **Add Record**.
-
-**Alternative : Utiliser un CNAME pour www (optionnel)** :
-- **Type** : CNAME
-- **Name** : www
-- **Value** : legrimoireonline.ca
-- **TTL** : 1 hour
-
-#### C. Configuration finale
-
-Vos enregistrements DNS devraient ressembler à :
-
-```
-Type    Name    Value               TTL
-----    ----    -----               ---
-A       @       XXX.XXX.XXX.XXX     600
-A       www     XXX.XXX.XXX.XXX     600
-```
-
-Ou avec CNAME :
-```
-Type    Name    Value                   TTL
-----    ----    -----                   ---
-A       @       XXX.XXX.XXX.XXX         600
-CNAME   www     legrimoireonline.ca     3600
-```
-
-### 3. Temps de propagation DNS
-
-⏱️ **IMPORTANT** : La propagation DNS peut prendre de **15 minutes à 48 heures**.
-
-#### Vérifier la propagation
-
-```bash
-# Depuis votre ordinateur local
-nslookup legrimoireonline.ca
-
-# Ou
-dig legrimoireonline.ca
-
-# Ou en ligne
-# https://dnschecker.org/#A/legrimoireonline.ca
-```
-
-Vous devriez voir votre IP Vultr dans les résultats.
-
----
-
-## Déploiement de l'application
-
-### 1. Cloner le dépôt
-
-```bash
-# Se connecter au serveur (en tant que legrimoire ou root)
-ssh legrimoire@XXX.XXX.XXX.XXX
-
-# Créer le répertoire de l'application
-mkdir -p /home/legrimoire/apps
-cd /home/legrimoire/apps
+# Créer un répertoire pour les applications
+mkdir -p ~/apps
+cd ~/apps
 
 # Cloner le dépôt
 git clone https://github.com/sparck75/le-grimoire.git
 cd le-grimoire
 ```
 
-### 2. Créer le fichier .env de production
+### 4.2 Configurer les variables d'environnement
 
 ```bash
-# Copier le template
-cp .env.example .env
+# Copier le fichier d'exemple
+cp .env.example .env.production
 
 # Éditer le fichier
-nano .env
+nano .env.production
 ```
 
-**Contenu du fichier `.env`** :
+Configurez les variables suivantes (voir le fichier `.env.production.example` pour plus de détails) :
 
 ```bash
-# ==========================================
-# PRODUCTION ENVIRONMENT - legrimoireonline.ca
-# ==========================================
-
-# Database Configuration (PostgreSQL)
-POSTGRES_USER=legrimoire_prod
-POSTGRES_PASSWORD=CHANGEZ_MOI_MOT_DE_PASSE_TRES_SECURISE_123
-POSTGRES_DB=le_grimoire
-
-# MongoDB Configuration
-MONGO_INITDB_ROOT_USERNAME=legrimoire
-MONGO_INITDB_ROOT_PASSWORD=CHANGEZ_MOI_MONGODB_PASSWORD_456
-MONGODB_URL=mongodb://legrimoire:CHANGEZ_MOI_MONGODB_PASSWORD_456@mongodb:27017/legrimoire?authSource=admin
+# Database Configuration (MongoDB)
+MONGODB_URL=mongodb://legrimoire:CHANGEZ_CE_MOT_DE_PASSE@mongodb:27017/legrimoire?authSource=admin
 MONGODB_DB_NAME=legrimoire
 
-# Application Secrets (GÉNÉRER DES CLÉS UNIQUES!)
-SECRET_KEY=GENERATE_A_RANDOM_SECRET_KEY_HERE_789
-JWT_SECRET_KEY=GENERATE_A_RANDOM_JWT_SECRET_KEY_HERE_012
+# PostgreSQL (Legacy - optionnel)
+POSTGRES_USER=grimoire
+POSTGRES_PASSWORD=CHANGEZ_CE_MOT_DE_PASSE
+POSTGRES_DB=le_grimoire
 
-# OAuth Configuration (Optionnel - si vous utilisez Google/Apple login)
+# Application Secrets - IMPORTANT: Changez ces valeurs!
+SECRET_KEY=GÉNÉREZ_UNE_CLÉ_ALÉATOIRE_DE_32_CARACTÈRES
+JWT_SECRET_KEY=GÉNÉREZ_UNE_AUTRE_CLÉ_ALÉATOIRE_DE_32_CARACTÈRES
+
+# Frontend Configuration
+NEXT_PUBLIC_API_URL=https://legrimoireonline.ca
+
+# OAuth Configuration (optionnel)
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 APPLE_CLIENT_ID=
 APPLE_CLIENT_SECRET=
 
-# Redis Configuration
-REDIS_URL=redis://redis:6379
-
-# Frontend Configuration
-NEXT_PUBLIC_API_URL=https://legrimoireonline.ca
-BACKEND_URL=http://backend:8000
-
-# OCR Service
-OCR_ENGINE=tesseract
-
-# Grocery Store Scraper
-SCRAPER_USER_AGENT=Mozilla/5.0 (compatible; LeGrimoire/1.0)
-SCRAPER_RATE_LIMIT_SECONDS=2
+# Email Configuration (pour les notifications - optionnel)
+SMTP_HOST=
+SMTP_PORT=587
+SMTP_USER=
+SMTP_PASSWORD=
+SMTP_FROM_EMAIL=noreply@legrimoireonline.ca
 ```
 
-**🔐 IMPORTANT - Générer des secrets sécurisés** :
+### 4.3 Générer des clés secrètes sécurisées
 
 ```bash
-# Générer SECRET_KEY
-python3 -c "import secrets; print(secrets.token_urlsafe(64))"
+# Générer une clé aléatoire pour SECRET_KEY
+python3 -c "import secrets; print(secrets.token_urlsafe(32))"
 
-# Générer JWT_SECRET_KEY
-python3 -c "import secrets; print(secrets.token_urlsafe(64))"
+# Générer une autre clé pour JWT_SECRET_KEY
+python3 -c "import secrets; print(secrets.token_urlsafe(32))"
 
-# Ou utiliser OpenSSL
-openssl rand -base64 64
+# Copier ces valeurs dans votre fichier .env.production
 ```
 
-Copiez les valeurs générées dans votre `.env`.
-
-### 3. Modifier la configuration Nginx pour le domaine
+### 4.4 Créer les répertoires nécessaires
 
 ```bash
-nano nginx/nginx.conf
-```
-
-**Remplacez le contenu par** :
-
-```nginx
-events {
-    worker_connections 1024;
-}
-
-http {
-    # Configuration de base
-    include /etc/nginx/mime.types;
-    default_type application/octet-stream;
-    
-    # Logs
-    access_log /var/log/nginx/access.log;
-    error_log /var/log/nginx/error.log;
-    
-    # Performance
-    sendfile on;
-    tcp_nopush on;
-    tcp_nodelay on;
-    keepalive_timeout 65;
-    types_hash_max_size 2048;
-    client_max_body_size 20M;
-    
-    # Gzip compression
-    gzip on;
-    gzip_vary on;
-    gzip_proxied any;
-    gzip_comp_level 6;
-    gzip_types text/plain text/css text/xml text/javascript application/json application/javascript application/xml+rss application/rss+xml font/truetype font/opentype application/vnd.ms-fontobject image/svg+xml;
-    
-    # Upstreams
-    upstream frontend {
-        server frontend:3000;
-    }
-
-    upstream backend {
-        server backend:8000;
-    }
-
-    # Redirection HTTP vers HTTPS
-    server {
-        listen 80;
-        listen [::]:80;
-        server_name legrimoireonline.ca www.legrimoireonline.ca;
-        
-        # ACME Challenge pour Let's Encrypt
-        location /.well-known/acme-challenge/ {
-            root /var/www/certbot;
-        }
-        
-        # Rediriger tout vers HTTPS
-        location / {
-            return 301 https://$host$request_uri;
-        }
-    }
-
-    # Configuration HTTPS
-    server {
-        listen 443 ssl http2;
-        listen [::]:443 ssl http2;
-        server_name legrimoireonline.ca www.legrimoireonline.ca;
-
-        # Certificats SSL (seront configurés par Let's Encrypt)
-        ssl_certificate /etc/nginx/ssl/fullchain.pem;
-        ssl_certificate_key /etc/nginx/ssl/privkey.pem;
-        
-        # Configuration SSL moderne
-        ssl_protocols TLSv1.2 TLSv1.3;
-        ssl_ciphers HIGH:!aNULL:!MD5;
-        ssl_prefer_server_ciphers on;
-        ssl_session_cache shared:SSL:10m;
-        ssl_session_timeout 10m;
-        
-        # Security headers
-        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
-        add_header X-Frame-Options "SAMEORIGIN" always;
-        add_header X-Content-Type-Options "nosniff" always;
-        add_header X-XSS-Protection "1; mode=block" always;
-
-        # Frontend - Next.js
-        location / {
-            proxy_pass http://frontend;
-            proxy_http_version 1.1;
-            proxy_set_header Upgrade $http_upgrade;
-            proxy_set_header Connection 'upgrade';
-            proxy_set_header Host $host;
-            proxy_cache_bypass $http_upgrade;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
-            proxy_set_header X-Forwarded-Host $host;
-            proxy_set_header X-Forwarded-Port $server_port;
-        }
-
-        # Backend API
-        location /api {
-            proxy_pass http://backend;
-            proxy_http_version 1.1;
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
-            proxy_set_header X-Forwarded-Host $host;
-            proxy_set_header X-Forwarded-Port $server_port;
-            
-            # CORS headers
-            add_header Access-Control-Allow-Origin https://legrimoireonline.ca always;
-            add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS" always;
-            add_header Access-Control-Allow-Headers "Authorization, Content-Type" always;
-            add_header Access-Control-Allow-Credentials "true" always;
-            
-            # Handle preflight requests
-            if ($request_method = 'OPTIONS') {
-                return 204;
-            }
-        }
-
-        # API Documentation
-        location /docs {
-            proxy_pass http://backend;
-            proxy_http_version 1.1;
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
-        }
-
-        # Health check
-        location /health {
-            access_log off;
-            return 200 "healthy\n";
-            add_header Content-Type text/plain;
-        }
-    }
-}
-```
-
-### 4. Créer le répertoire pour Let's Encrypt
-
-```bash
-# Créer les répertoires nécessaires
+# Créer les répertoires pour les certificats SSL et les données
 mkdir -p nginx/ssl
-mkdir -p certbot/www
-
-# Créer des certificats temporaires auto-signés pour le premier démarrage
-openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-  -keyout nginx/ssl/privkey.pem \
-  -out nginx/ssl/fullchain.pem \
-  -subj "/C=CA/ST=Quebec/L=Montreal/O=LeGrimoire/CN=legrimoireonline.ca"
+mkdir -p data/mongodb
+mkdir -p backups
 ```
 
-### 5. Modifier docker-compose.prod.yml
+## 🔒 Étape 5 : Configuration SSL avec Let's Encrypt
 
-```bash
-nano docker-compose.prod.yml
-```
-
-Assurez-vous que la section nginx contient :
-
-```yaml
-  # Nginx Reverse Proxy
-  nginx:
-    image: nginx:alpine
-    container_name: le-grimoire-nginx
-    restart: always
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/ssl:/etc/nginx/ssl:ro
-      - ./certbot/www:/var/www/certbot:ro
-    depends_on:
-      - frontend
-      - backend
-    networks:
-      - grimoire-network
-```
-
-### 6. Démarrer l'application
-
-```bash
-# Construire et démarrer les conteneurs
-docker-compose -f docker-compose.prod.yml up -d --build
-
-# Vérifier que tout fonctionne
-docker-compose -f docker-compose.prod.yml ps
-
-# Voir les logs
-docker-compose -f docker-compose.prod.yml logs -f
-```
-
-### 7. Vérifier l'accès HTTP (avant SSL)
-
-Ouvrez votre navigateur et testez :
-- http://legrimoireonline.ca (devrait afficher votre site)
-- http://XXX.XXX.XXX.XXX (votre IP - devrait aussi fonctionner)
-
-⚠️ **Note** : À ce stade, HTTPS ne fonctionnera pas encore car nous utilisons un certificat auto-signé.
-
----
-
-## Configuration SSL avec Let's Encrypt
-
-### 1. Installer Certbot
+### 5.1 Installer Certbot
 
 ```bash
 # Installer Certbot
-apt install -y certbot python3-certbot-nginx
+sudo apt install -y certbot
 
-# Ou via snap (recommandé)
-snap install --classic certbot
-ln -s /snap/bin/certbot /usr/bin/certbot
+# Vérifier l'installation
+certbot --version
 ```
 
-### 2. Obtenir un certificat SSL
+### 5.2 Obtenir les certificats SSL
 
-**Méthode 1 : Certbot standalone (RECOMMANDÉ pour la première fois)**
+⚠️ **IMPORTANT** : Avant d'exécuter cette commande, assurez-vous que votre domaine pointe vers l'IP de votre serveur (voir la section GoDaddy ci-dessous).
 
 ```bash
-# Arrêter nginx temporairement
-docker-compose -f docker-compose.prod.yml stop nginx
+# Arrêter temporairement les services Docker s'ils tournent
+cd ~/apps/le-grimoire
+docker compose -f docker-compose.prod.yml down
 
 # Obtenir le certificat
-certbot certonly --standalone -d legrimoireonline.ca -d www.legrimoireonline.ca --email votre-email@example.com --agree-tos --non-interactive
+sudo certbot certonly --standalone -d legrimoireonline.ca -d www.legrimoireonline.ca
 
-# Les certificats seront dans /etc/letsencrypt/live/legrimoireonline.ca/
+# Suivez les instructions :
+# - Entrez votre adresse email
+# - Acceptez les conditions d'utilisation
+# - Décidez si vous voulez partager votre email avec l'EFF
 
-# Copier les certificats dans le répertoire nginx
-cp /etc/letsencrypt/live/legrimoireonline.ca/fullchain.pem nginx/ssl/
-cp /etc/letsencrypt/live/legrimoireonline.ca/privkey.pem nginx/ssl/
-
-# Redémarrer nginx
-docker-compose -f docker-compose.prod.yml start nginx
+# Les certificats seront créés dans :
+# /etc/letsencrypt/live/legrimoireonline.ca/fullchain.pem
+# /etc/letsencrypt/live/legrimoireonline.ca/privkey.pem
 ```
 
-**Méthode 2 : Avec nginx actif (webroot)**
+### 5.3 Copier les certificats dans le répertoire nginx
 
 ```bash
-# Nginx doit être en cours d'exécution
-certbot certonly --webroot -w /home/legrimoire/apps/le-grimoire/certbot/www -d legrimoireonline.ca -d www.legrimoireonline.ca --email votre-email@example.com --agree-tos --non-interactive
-
 # Copier les certificats
-cp /etc/letsencrypt/live/legrimoireonline.ca/fullchain.pem nginx/ssl/
-cp /etc/letsencrypt/live/legrimoireonline.ca/privkey.pem nginx/ssl/
+sudo cp /etc/letsencrypt/live/legrimoireonline.ca/fullchain.pem ~/apps/le-grimoire/nginx/ssl/
+sudo cp /etc/letsencrypt/live/legrimoireonline.ca/privkey.pem ~/apps/le-grimoire/nginx/ssl/
 
-# Recharger nginx
-docker-compose -f docker-compose.prod.yml exec nginx nginx -s reload
+# Changer les permissions
+sudo chown legrimoire:legrimoire ~/apps/le-grimoire/nginx/ssl/*
+chmod 644 ~/apps/le-grimoire/nginx/ssl/fullchain.pem
+chmod 600 ~/apps/le-grimoire/nginx/ssl/privkey.pem
 ```
 
-### 3. Configurer le renouvellement automatique
-
-Les certificats Let's Encrypt expirent après 90 jours. Configurez le renouvellement automatique :
+### 5.4 Configurer le renouvellement automatique
 
 ```bash
-# Créer un script de renouvellement
-cat > /root/renew-ssl.sh << 'EOF'
+# Tester le renouvellement (mode dry-run)
+sudo certbot renew --dry-run
+
+# Créer un script de renouvellement qui copie les certificats
+sudo nano /etc/letsencrypt/renewal-hooks/deploy/copy-certs.sh
+```
+
+Contenu du script :
+
+```bash
 #!/bin/bash
-# Script de renouvellement SSL pour Le Grimoire
-
-# Arrêter nginx
-cd /home/legrimoire/apps/le-grimoire
-docker-compose -f docker-compose.prod.yml stop nginx
-
-# Renouveler le certificat
-certbot renew --quiet
-
-# Copier les nouveaux certificats
-cp /etc/letsencrypt/live/legrimoireonline.ca/fullchain.pem nginx/ssl/
-cp /etc/letsencrypt/live/legrimoireonline.ca/privkey.pem nginx/ssl/
-
-# Redémarrer nginx
-docker-compose -f docker-compose.prod.yml start nginx
-
-# Log
-echo "$(date): Certificat SSL renouvelé" >> /var/log/ssl-renewal.log
-EOF
-
-# Rendre exécutable
-chmod +x /root/renew-ssl.sh
-
-# Ajouter au cron (s'exécute tous les lundis à 3h du matin)
-(crontab -l 2>/dev/null; echo "0 3 * * 1 /root/renew-ssl.sh") | crontab -
-
-# Ou avec systemd timer (plus moderne)
-# Tester le renouvellement
-certbot renew --dry-run
+cp /etc/letsencrypt/live/legrimoireonline.ca/fullchain.pem /home/legrimoire/apps/le-grimoire/nginx/ssl/
+cp /etc/letsencrypt/live/legrimoireonline.ca/privkey.pem /home/legrimoire/apps/le-grimoire/nginx/ssl/
+chown legrimoire:legrimoire /home/legrimoire/apps/le-grimoire/nginx/ssl/*
+cd /home/legrimoire/apps/le-grimoire && docker compose -f docker-compose.prod.yml restart nginx
 ```
 
-### 4. Vérifier HTTPS
-
-Ouvrez votre navigateur :
-- https://legrimoireonline.ca ✅ (devrait fonctionner avec certificat valide)
-- http://legrimoireonline.ca → devrait rediriger vers HTTPS
-- https://www.legrimoireonline.ca ✅
-
-Testez votre SSL :
-- https://www.ssllabs.com/ssltest/analyze.html?d=legrimoireonline.ca
-
----
-
-## Configuration finale
-
-### 1. Initialiser la base de données MongoDB
-
 ```bash
-cd /home/legrimoire/apps/le-grimoire
+# Rendre le script exécutable
+sudo chmod +x /etc/letsencrypt/renewal-hooks/deploy/copy-certs.sh
 
-# Importer les ingrédients OpenFoodFacts
-docker-compose -f docker-compose.prod.yml exec backend python scripts/import_openfoodfacts.py
-
-# Vérifier le nombre d'ingrédients (devrait être 5942)
-docker-compose -f docker-compose.prod.yml exec mongodb mongosh -u legrimoire -p VOTRE_MONGO_PASSWORD --authenticationDatabase admin --eval "use legrimoire; db.ingredients.countDocuments()"
+# Le renouvellement automatique est géré par un timer systemd
+sudo systemctl status certbot.timer
 ```
 
-### 2. Créer un utilisateur admin (optionnel)
+## 🚢 Étape 6 : Déployer l'application
 
-Si votre application a un système d'authentification :
-
-```bash
-# Accéder au backend
-docker-compose -f docker-compose.prod.yml exec backend bash
-
-# Créer un utilisateur via Python
-python -c "from app.models.mongodb import User; import asyncio; asyncio.run(User.create_admin('admin@legrimoireonline.ca', 'PASSWORD'))"
-```
-
-### 3. Configurer les sauvegardes automatiques
+### 6.1 Construire et démarrer les conteneurs
 
 ```bash
-# Créer un script de sauvegarde
-cat > /root/backup-grimoire.sh << 'EOF'
-#!/bin/bash
-# Script de sauvegarde pour Le Grimoire
+cd ~/apps/le-grimoire
 
-BACKUP_DIR="/home/legrimoire/backups"
-DATE=$(date +%Y%m%d_%H%M%S)
-APP_DIR="/home/legrimoire/apps/le-grimoire"
+# Construire les images
+docker compose -f docker-compose.prod.yml build
 
-mkdir -p $BACKUP_DIR
+# Démarrer les services en arrière-plan
+docker compose -f docker-compose.prod.yml up -d
 
-# Sauvegarder MongoDB
-docker exec le-grimoire-mongodb mongodump --username=legrimoire --password=VOTRE_MONGO_PASSWORD --authenticationDatabase=admin --db=legrimoire --out=/backup
-docker cp le-grimoire-mongodb:/backup $BACKUP_DIR/mongodb_$DATE
-
-# Sauvegarder PostgreSQL (si utilisé)
-docker exec le-grimoire-db-prod pg_dump -U legrimoire_prod le_grimoire > $BACKUP_DIR/postgres_$DATE.sql
-
-# Sauvegarder les uploads
-tar -czf $BACKUP_DIR/uploads_$DATE.tar.gz $APP_DIR/backend/uploads
-
-# Garder seulement les 7 derniers backups
-find $BACKUP_DIR -type f -mtime +7 -delete
-find $BACKUP_DIR -type d -mtime +7 -delete
-
-echo "$(date): Sauvegarde effectuée" >> /var/log/grimoire-backup.log
-EOF
-
-chmod +x /root/backup-grimoire.sh
-
-# Planifier les sauvegardes quotidiennes à 2h du matin
-(crontab -l 2>/dev/null; echo "0 2 * * * /root/backup-grimoire.sh") | crontab -
-```
-
-### 4. Configurer le monitoring (optionnel mais recommandé)
-
-```bash
-# Créer un script de monitoring
-cat > /root/check-grimoire.sh << 'EOF'
-#!/bin/bash
-# Vérifier que tous les services sont actifs
-
-cd /home/legrimoire/apps/le-grimoire
-
-# Vérifier les conteneurs
-if [ $(docker-compose -f docker-compose.prod.yml ps -q | wc -l) -lt 5 ]; then
-    echo "$(date): ALERTE - Certains conteneurs sont arrêtés" >> /var/log/grimoire-monitor.log
-    docker-compose -f docker-compose.prod.yml up -d
-fi
-
-# Vérifier l'accès HTTPS
-if ! curl -f -s https://legrimoireonline.ca/health > /dev/null; then
-    echo "$(date): ALERTE - Site inaccessible" >> /var/log/grimoire-monitor.log
-fi
-EOF
-
-chmod +x /root/check-grimoire.sh
-
-# Vérifier toutes les 5 minutes
-(crontab -l 2>/dev/null; echo "*/5 * * * * /root/check-grimoire.sh") | crontab -
-```
-
----
-
-## Maintenance
-
-### Commandes utiles
-
-```bash
-# Aller dans le répertoire de l'application
-cd /home/legrimoire/apps/le-grimoire
+# Vérifier que tous les conteneurs sont démarrés
+docker compose -f docker-compose.prod.yml ps
 
 # Voir les logs
-docker-compose -f docker-compose.prod.yml logs -f
-docker-compose -f docker-compose.prod.yml logs -f frontend
-docker-compose -f docker-compose.prod.yml logs -f backend
-
-# Redémarrer un service
-docker-compose -f docker-compose.prod.yml restart frontend
-docker-compose -f docker-compose.prod.yml restart backend
-docker-compose -f docker-compose.prod.yml restart nginx
-
-# Mettre à jour l'application
-git pull origin main
-docker-compose -f docker-compose.prod.yml down
-docker-compose -f docker-compose.prod.yml up -d --build
-
-# Voir l'utilisation des ressources
-docker stats
-
-# Nettoyer Docker
-docker system prune -a
+docker compose -f docker-compose.prod.yml logs -f
 ```
 
-### Mise à jour de l'application
+### 6.2 Initialiser la base de données MongoDB
 
 ```bash
-cd /home/legrimoire/apps/le-grimoire
+# Attendre que MongoDB soit prêt (environ 30 secondes)
+sleep 30
 
-# Sauvegarder d'abord
-/root/backup-grimoire.sh
+# Vérifier que MongoDB est accessible
+docker compose -f docker-compose.prod.yml exec mongodb mongosh --eval "db.adminCommand('ping')"
 
-# Tirer les dernières modifications
-git pull origin main
+# Importer les ingrédients OpenFoodFacts (si nécessaire)
+docker compose -f docker-compose.prod.yml exec backend python scripts/import_openfoodfacts.py
 
-# Reconstruire et redémarrer
-docker-compose -f docker-compose.prod.yml down
-docker-compose -f docker-compose.prod.yml up -d --build
-
-# Vérifier
-docker-compose -f docker-compose.prod.yml ps
+# Vérifier que les ingrédients sont importés
+docker compose -f docker-compose.prod.yml exec mongodb mongosh legrimoire --eval "db.ingredients.countDocuments()"
+# Devrait retourner environ 5942
 ```
 
----
+### 6.3 Vérifier le déploiement
 
-## Dépannage
+```bash
+# Vérifier les logs de tous les services
+docker compose -f docker-compose.prod.yml logs
 
-### Le site ne charge pas
+# Vérifier les logs d'un service spécifique
+docker compose -f docker-compose.prod.yml logs frontend
+docker compose -f docker-compose.prod.yml logs backend
+docker compose -f docker-compose.prod.yml logs nginx
 
-1. **Vérifier que les conteneurs sont actifs** :
-   ```bash
-   docker-compose -f docker-compose.prod.yml ps
-   ```
+# Tester l'accès local
+curl http://localhost
+curl http://localhost/api/health
+```
 
-2. **Vérifier les logs** :
-   ```bash
-   docker-compose -f docker-compose.prod.yml logs nginx
-   docker-compose -f docker-compose.prod.yml logs frontend
-   ```
+### 6.4 Tester depuis votre navigateur
 
-3. **Vérifier la configuration DNS** :
-   ```bash
-   nslookup legrimoireonline.ca
-   ```
+1. Ouvrez https://legrimoireonline.ca
+2. Vérifiez que le site charge correctement
+3. Testez la recherche d'ingrédients
+4. Testez la création d'une recette
 
-4. **Vérifier le pare-feu** :
-   ```bash
-   ufw status
-   ```
+## 🔄 Étape 7 : Configuration de la sauvegarde automatique
 
-### Erreur de certificat SSL
+### 7.1 Créer un script de sauvegarde
 
-1. **Vérifier les certificats** :
-   ```bash
-   ls -l nginx/ssl/
-   certbot certificates
-   ```
+```bash
+# Créer le script
+nano ~/apps/le-grimoire/backup.sh
+```
 
-2. **Renouveler manuellement** :
-   ```bash
-   /root/renew-ssl.sh
-   ```
+Contenu du script :
 
-3. **Vérifier la configuration nginx** :
-   ```bash
-   docker-compose -f docker-compose.prod.yml exec nginx nginx -t
-   ```
+```bash
+#!/bin/bash
+BACKUP_DIR="/home/legrimoire/apps/le-grimoire/backups"
+DATE=$(date +%Y%m%d_%H%M%S)
+MONGODB_CONTAINER="le-grimoire-mongodb-prod"
 
-### MongoDB ne démarre pas
+echo "Starting backup at $(date)"
 
-1. **Vérifier les logs** :
-   ```bash
-   docker-compose -f docker-compose.prod.yml logs mongodb
-   ```
+# Créer le répertoire de backup s'il n'existe pas
+mkdir -p "$BACKUP_DIR"
 
-2. **Vérifier l'espace disque** :
-   ```bash
-   df -h
-   ```
+# Sauvegarder MongoDB
+docker exec $MONGODB_CONTAINER mongodump \
+  --out /tmp/backup_$DATE \
+  --authenticationDatabase admin \
+  -u legrimoire \
+  -p "$MONGODB_PASSWORD"
 
-3. **Redémarrer MongoDB** :
-   ```bash
-   docker-compose -f docker-compose.prod.yml restart mongodb
-   ```
+# Copier le backup depuis le conteneur
+docker cp $MONGODB_CONTAINER:/tmp/backup_$DATE "$BACKUP_DIR/mongodb_backup_$DATE"
 
-### Performance lente
+# Nettoyer les anciens backups (garder les 7 derniers jours)
+find "$BACKUP_DIR" -type d -name "mongodb_backup_*" -mtime +7 -exec rm -rf {} \;
 
-1. **Vérifier les ressources** :
-   ```bash
-   htop
-   docker stats
-   ```
+# Compresser le backup
+cd "$BACKUP_DIR"
+tar -czf "mongodb_backup_$DATE.tar.gz" "mongodb_backup_$DATE"
+rm -rf "mongodb_backup_$DATE"
 
-2. **Vérifier l'espace disque** :
-   ```bash
-   df -h
-   ```
+echo "Backup completed at $(date)"
+echo "Backup saved to: $BACKUP_DIR/mongodb_backup_$DATE.tar.gz"
+```
 
-3. **Nettoyer Docker** :
-   ```bash
-   docker system prune -a
-   ```
+```bash
+# Rendre le script exécutable
+chmod +x ~/apps/le-grimoire/backup.sh
 
-4. **Upgrader le serveur Vultr** vers un plan plus puissant.
+# Tester le script
+~/apps/le-grimoire/backup.sh
+```
 
----
+### 7.2 Configurer une tâche cron pour les sauvegardes automatiques
 
-## 🎉 Félicitations !
+```bash
+# Éditer le crontab
+crontab -e
 
-Votre application **Le Grimoire** est maintenant déployée sur :
-- 🌍 https://legrimoireonline.ca
-- 🔒 SSL/TLS activé avec Let's Encrypt
-- 🔄 Renouvellement automatique des certificats
-- 💾 Sauvegardes automatiques quotidiennes
-- 📊 Monitoring automatique
+# Ajouter une ligne pour exécuter le backup tous les jours à 3h du matin
+0 3 * * * /home/legrimoire/apps/le-grimoire/backup.sh >> /home/legrimoire/apps/le-grimoire/backups/backup.log 2>&1
+```
 
-## 📞 Support
+## 📊 Étape 8 : Monitoring et maintenance
 
-En cas de problème :
-1. Consultez les logs : `docker-compose -f docker-compose.prod.yml logs`
-2. Vérifiez la [documentation complète](../README.md)
-3. Ouvrez une [issue sur GitHub](https://github.com/sparck75/le-grimoire/issues)
+### 8.1 Surveiller les logs
+
+```bash
+# Logs en temps réel
+docker compose -f docker-compose.prod.yml logs -f
+
+# Logs d'un service spécifique
+docker compose -f docker-compose.prod.yml logs -f nginx
+docker compose -f docker-compose.prod.yml logs -f backend
+docker compose -f docker-compose.prod.yml logs -f frontend
+
+# Afficher les dernières 100 lignes
+docker compose -f docker-compose.prod.yml logs --tail=100
+```
+
+### 8.2 Surveiller l'utilisation des ressources
+
+```bash
+# Voir l'utilisation CPU/Mémoire des conteneurs
+docker stats
+
+# Voir l'espace disque
+df -h
+
+# Voir l'utilisation de la RAM
+free -h
+
+# Voir les processus
+htop
+```
+
+### 8.3 Redémarrer les services
+
+```bash
+cd ~/apps/le-grimoire
+
+# Redémarrer tous les services
+docker compose -f docker-compose.prod.yml restart
+
+# Redémarrer un service spécifique
+docker compose -f docker-compose.prod.yml restart nginx
+docker compose -f docker-compose.prod.yml restart backend
+docker compose -f docker-compose.prod.yml restart frontend
+```
+
+### 8.4 Mettre à jour l'application
+
+```bash
+cd ~/apps/le-grimoire
+
+# Sauvegarder les données avant la mise à jour
+./backup.sh
+
+# Récupérer les dernières modifications
+git pull origin main
+
+# Reconstruire les images
+docker compose -f docker-compose.prod.yml build
+
+# Redémarrer avec les nouvelles images
+docker compose -f docker-compose.prod.yml up -d
+
+# Vérifier les logs
+docker compose -f docker-compose.prod.yml logs -f
+```
+
+## 🆘 Dépannage
+
+### Le site n'est pas accessible
+
+```bash
+# Vérifier que tous les conteneurs sont en cours d'exécution
+docker compose -f docker-compose.prod.yml ps
+
+# Vérifier les logs de nginx
+docker compose -f docker-compose.prod.yml logs nginx
+
+# Vérifier que les ports sont ouverts
+sudo netstat -tulpn | grep -E ':(80|443)'
+
+# Vérifier le pare-feu
+sudo ufw status
+```
+
+### Erreur SSL/TLS
+
+```bash
+# Vérifier que les certificats existent
+ls -la ~/apps/le-grimoire/nginx/ssl/
+
+# Recopier les certificats si nécessaire
+sudo cp /etc/letsencrypt/live/legrimoireonline.ca/fullchain.pem ~/apps/le-grimoire/nginx/ssl/
+sudo cp /etc/letsencrypt/live/legrimoireonline.ca/privkey.pem ~/apps/le-grimoire/nginx/ssl/
+sudo chown legrimoire:legrimoire ~/apps/le-grimoire/nginx/ssl/*
+
+# Redémarrer nginx
+docker compose -f docker-compose.prod.yml restart nginx
+```
+
+### Le backend ne démarre pas
+
+```bash
+# Vérifier les logs du backend
+docker compose -f docker-compose.prod.yml logs backend
+
+# Vérifier que MongoDB est accessible
+docker compose -f docker-compose.prod.yml exec mongodb mongosh --eval "db.adminCommand('ping')"
+
+# Redémarrer le backend
+docker compose -f docker-compose.prod.yml restart backend
+```
+
+### Manque d'espace disque
+
+```bash
+# Vérifier l'espace disque
+df -h
+
+# Nettoyer les anciennes images Docker
+docker system prune -a
+
+# Nettoyer les anciens backups
+find ~/apps/le-grimoire/backups -type f -name "*.tar.gz" -mtime +30 -delete
+```
 
 ## 📚 Ressources supplémentaires
 
-- [Vultr Documentation](https://www.vultr.com/docs/)
-- [Let's Encrypt Documentation](https://letsencrypt.org/docs/)
-- [Docker Documentation](https://docs.docker.com/)
-- [Nginx Documentation](https://nginx.org/en/docs/)
+- [Configuration GoDaddy DNS](./GODADDY_DNS.md)
+- [Guide de sécurité](./SECURITY.md)
+- [Configuration avancée Nginx](./NGINX_ADVANCED.md)
+- [Documentation officielle Docker](https://docs.docker.com/)
+- [Documentation Let's Encrypt](https://letsencrypt.org/docs/)
+
+## ✅ Checklist de déploiement
+
+- [ ] Serveur Vultr créé et accessible via SSH
+- [ ] Utilisateur non-root créé
+- [ ] Pare-feu UFW configuré
+- [ ] Docker et Docker Compose installés
+- [ ] Dépôt cloné
+- [ ] Variables d'environnement configurées
+- [ ] DNS GoDaddy configuré (voir GODADDY_DNS.md)
+- [ ] Certificats SSL obtenus
+- [ ] Application déployée et accessible
+- [ ] Sauvegardes automatiques configurées
+- [ ] Monitoring mis en place
+- [ ] Documentation lue et comprise
+
+## 🎉 Félicitations !
+
+Votre application Le Grimoire est maintenant déployée et accessible sur https://legrimoireonline.ca !
+
+Pour toute question ou problème, consultez la documentation ou ouvrez une issue sur GitHub.

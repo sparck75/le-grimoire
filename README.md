@@ -69,10 +69,11 @@ le-grimoire/
 - 👨‍💻 [Guide de développement](docs/development/DEVELOPMENT.md)
 - 🤝 [Guide de contribution](docs/getting-started/CONTRIBUTING.md)
 
-### Déploiement
-- 🚀 [Guide de déploiement Vultr](docs/deployment/VULTR_DEPLOYMENT.md) - Déploiement complet sur serveur Vultr
-- ⚡ [Déploiement rapide](docs/deployment/QUICK_DEPLOY.md) - Guide en 10 étapes (45 min)
-- 🌐 [Configuration DNS GoDaddy](docs/deployment/GODADDY_DNS.md) - Configuration du domaine
+### Déploiement en production
+- 🚀 [Guide de déploiement](docs/deployment/README.md)
+- 🌐 [Déploiement sur Vultr](docs/deployment/VULTR_DEPLOYMENT.md)
+- 🔧 [Configuration DNS GoDaddy](docs/deployment/GODADDY_DNS.md)
+- 🔒 [Guide de sécurité](docs/deployment/SECURITY.md)
 
 ### Fonctionnalités
 - 🥕 [Système d'ingrédients](docs/development/INGREDIENTS.md)
