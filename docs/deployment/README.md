@@ -2,6 +2,8 @@
 
 Ce dossier contient toute la documentation nécessaire pour déployer **Le Grimoire** en production sur un serveur Vultr avec le domaine **legrimoireonline.ca**.
 
+> 📖 **Nouveau ici ?** Lisez d'abord la [Vue d'Ensemble du Déploiement](./DEPLOYMENT_OVERVIEW.md) pour choisir le bon guide pour vous.
+
 ## 📚 Guides disponibles
 
 ### Guide rapide ⚡
