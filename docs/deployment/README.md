@@ -29,6 +29,12 @@ Ce dossier contient toute la documentation nécessaire pour déployer et mainten
    - Sauvegardes et restauration
    - Réponse aux incidents
 
+4. **[CHEAT_SHEET.md](./CHEAT_SHEET.md)** - Aide-mémoire des commandes
+   - Commandes Docker courantes
+   - Monitoring et logs
+   - Dépannage rapide
+   - Maintenance
+
 ## 🎯 Démarrage rapide
 
 ### Prérequis
