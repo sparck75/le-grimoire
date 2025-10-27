@@ -83,15 +83,30 @@ ACCESS_TOKEN_EXPIRE_MINUTES=10080
 
 # ===== Frontend Configuration =====
 
-# Public API URL (accessible from browser)
+# IMPORTANT: Must use HTTPS for production!
+# This value is baked into the frontend at build time
 NEXT_PUBLIC_API_URL=https://legrimoireonline.ca
 
 # Backend URL for server-side requests (internal Docker network)
 BACKEND_URL=http://backend:8000
 
+# ===== CORS Configuration =====
+
+# IMPORTANT: Use comma-separated list (no spaces) for production
+# Both www and non-www versions must be included
+ALLOWED_ORIGINS=https://legrimoireonline.ca,https://www.legrimoireonline.ca
+
 # ===== Redis Configuration =====
 
 REDIS_URL=redis://redis:6379
+
+# ===== Performance =====
+
+# Number of Uvicorn workers (recommended: number of CPU cores)
+UVICORN_WORKERS=4
+
+# Logging
+LOG_LEVEL=INFO
 
 # ===== OAuth Configuration (Optional) =====
 
@@ -113,6 +128,7 @@ SMTP_FROM_EMAIL=noreply@legrimoireonline.ca
 
 # ===== Environment =====
 
+NODE_ENV=production
 ENVIRONMENT=production
 DEBUG=false
 EOF
@@ -143,7 +159,11 @@ echo ""
 # Step 5: Build Docker images
 echo "🐳 Step 4: Building Docker images..."
 echo "This may take several minutes..."
-docker compose -f docker-compose.prod.yml build
+echo ""
+echo "⚠️  IMPORTANT: Building with NEXT_PUBLIC_API_URL=https://legrimoireonline.ca"
+echo "   This value will be baked into the frontend JavaScript bundle"
+echo ""
+docker compose -f docker-compose.prod.yml build --no-cache
 echo "✅ Docker images built successfully"
 echo ""
 
