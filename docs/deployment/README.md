@@ -93,8 +93,7 @@ le-grimoire/
 ├── .env.production.example     # Template de configuration
 ├── .env.production            # Configuration réelle (à créer, pas dans Git)
 ├── docker-compose.prod.yml    # Docker Compose production
-├── deploy.sh                  # Script de déploiement
-├── backup.sh                  # Script de sauvegarde (à créer)
+├── deploy.sh                  # Script de déploiement (inclut backup)
 ├── nginx/
 │   ├── nginx.prod.conf       # Config Nginx production
 │   └── ssl/                  # Certificats SSL (à créer)
@@ -278,7 +277,7 @@ Configurez un cron job pour des sauvegardes quotidiennes :
 crontab -e
 
 # Ajouter cette ligne (backup à 3h du matin)
-0 3 * * * /home/legrimoire/apps/le-grimoire/backup.sh >> /home/legrimoire/apps/le-grimoire/backups/backup.log 2>&1
+0 3 * * * cd /home/legrimoire/apps/le-grimoire && ./deploy.sh backup >> /home/legrimoire/apps/le-grimoire/backups/backup.log 2>&1
 ```
 
 ### Sauvegarde manuelle

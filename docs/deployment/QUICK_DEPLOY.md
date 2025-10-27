@@ -34,13 +34,13 @@ ssh root@XXX.XXX.XXX.XXX
 # Mise à jour
 apt update && apt upgrade -y
 
-# Installer Docker
+# Installer Docker (includes Docker Compose plugin)
 curl -fsSL https://get.docker.com -o get-docker.sh
 sh get-docker.sh
 
-# Installer Docker Compose
-curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-chmod +x /usr/local/bin/docker-compose
+# Vérifier l'installation
+docker --version
+docker compose version
 ```
 
 ### 5️⃣ Configurer le pare-feu (2 min)
@@ -60,11 +60,11 @@ git clone https://github.com/sparck75/le-grimoire.git
 cd le-grimoire
 ```
 
-### 7️⃣ Créer le fichier .env (3 min)
+### 7️⃣ Créer le fichier .env.production (3 min)
 
 ```bash
-cp .env.example .env
-nano .env
+cp .env.production.example .env.production
+nano .env.production
 ```
 
 **Modifiez les valeurs suivantes** :

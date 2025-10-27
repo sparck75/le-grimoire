@@ -61,9 +61,6 @@ free -h
 # Sauvegarde manuelle
 ./deploy.sh backup
 
-# Ou avec le script
-./backup.sh
-
 # Lister les sauvegardes
 ls -lh backups/
 

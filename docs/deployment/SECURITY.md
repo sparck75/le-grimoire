@@ -210,9 +210,6 @@ docker system prune -a
 # Sauvegarde manuelle
 cd ~/apps/le-grimoire
 ./deploy.sh backup
-
-# Ou avec le script
-./backup.sh
 ```
 
 ### Restauration

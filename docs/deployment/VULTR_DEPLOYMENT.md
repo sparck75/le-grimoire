@@ -206,7 +206,7 @@ cd le-grimoire
 
 ```bash
 # Copier le fichier d'exemple
-cp .env.example .env.production
+cp .env.production.example .env.production
 
 # Éditer le fichier
 nano .env.production
@@ -403,7 +403,19 @@ curl http://localhost/api/health
 
 ## 🔄 Étape 7 : Configuration de la sauvegarde automatique
 
-### 7.1 Créer un script de sauvegarde
+### 7.1 Sauvegarde avec deploy.sh (Recommandé)
+
+La méthode la plus simple est d'utiliser le script deploy.sh existant :
+
+```bash
+# Sauvegarde manuelle
+cd ~/apps/le-grimoire
+./deploy.sh backup
+```
+
+### 7.2 Créer un script de sauvegarde dédié (Optionnel)
+
+Si vous préférez avoir un script de sauvegarde séparé, créez `backup.sh` :
 
 ```bash
 # Créer le script
@@ -453,14 +465,17 @@ chmod +x ~/apps/le-grimoire/backup.sh
 ~/apps/le-grimoire/backup.sh
 ```
 
-### 7.2 Configurer une tâche cron pour les sauvegardes automatiques
+### 7.3 Configurer une tâche cron pour les sauvegardes automatiques
 
 ```bash
 # Éditer le crontab
 crontab -e
 
-# Ajouter une ligne pour exécuter le backup tous les jours à 3h du matin
-0 3 * * * /home/legrimoire/apps/le-grimoire/backup.sh >> /home/legrimoire/apps/le-grimoire/backups/backup.log 2>&1
+# Option 1: Utiliser deploy.sh (recommandé)
+0 3 * * * cd /home/legrimoire/apps/le-grimoire && ./deploy.sh backup >> /home/legrimoire/apps/le-grimoire/backups/backup.log 2>&1
+
+# Option 2: Utiliser backup.sh (si créé)
+# 0 3 * * * /home/legrimoire/apps/le-grimoire/backup.sh >> /home/legrimoire/apps/le-grimoire/backups/backup.log 2>&1
 ```
 
 ## 📊 Étape 8 : Monitoring et maintenance
@@ -516,7 +531,7 @@ docker compose -f docker-compose.prod.yml restart frontend
 cd ~/apps/le-grimoire
 
 # Sauvegarder les données avant la mise à jour
-./backup.sh
+./deploy.sh backup
 
 # Récupérer les dernières modifications
 git pull origin main
