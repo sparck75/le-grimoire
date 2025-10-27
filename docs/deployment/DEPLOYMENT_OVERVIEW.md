@@ -219,6 +219,17 @@ Voici un aperçu de l'architecture finale après déploiement :
 - Navigateur web
 - Éditeur de texte (pour prendre des notes)
 
+**Versions recommandées** :
+- Ubuntu 22.04 LTS (serveur)
+- Docker Engine 24.0+ 
+- Docker Compose v2.20+ (plugin)
+- MongoDB 7.0 (via Docker)
+- PostgreSQL 15 (via Docker, optionnel)
+- Redis 7 (via Docker)
+- Nginx Alpine (via Docker)
+- Python 3.11 (dans conteneur backend)
+- Node.js 20 (dans conteneur frontend)
+
 ## 📞 Support et Aide
 
 ### Documentation Le Grimoire

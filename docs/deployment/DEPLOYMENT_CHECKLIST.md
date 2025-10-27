@@ -199,9 +199,10 @@ nano .env
 - [ ] Variables modifiées :
 
 **Mots de passe** :
-- [ ] `POSTGRES_PASSWORD` changé : `___________________________`
-- [ ] `MONGO_INITDB_ROOT_PASSWORD` changé : `___________________________`
+- [ ] `MONGODB_USER` : `legrimoire` (par défaut)
+- [ ] `MONGODB_PASSWORD` changé : `___________________________`
 - [ ] `MONGODB_URL` mis à jour avec le bon mot de passe
+- [ ] `POSTGRES_PASSWORD` changé : `___________________________`
 
 **Secrets générés** :
 ```bash

@@ -9,6 +9,19 @@ Ce guide vous accompagnera dans le déploiement de Le Grimoire sur un serveur Vu
 - Accès SSH au serveur
 - Connaissances de base en ligne de commande Linux
 
+### Versions des composants
+
+Le déploiement utilisera les versions suivantes (gérées via Docker) :
+- **Ubuntu** : 22.04 LTS
+- **Docker Engine** : 24.0+ (dernière version stable)
+- **Docker Compose** : v2.20+ (plugin)
+- **MongoDB** : 7.0
+- **PostgreSQL** : 15 (optionnel, legacy)
+- **Redis** : 7
+- **Nginx** : Alpine (dernière)
+- **Python** : 3.11 (backend)
+- **Node.js** : 20 (frontend)
+
 ## 🚀 Étape 1 : Configuration initiale du serveur Vultr
 
 ### 1.1 Créer un serveur Vultr
@@ -216,6 +229,8 @@ Configurez les variables suivantes (voir le fichier `.env.production.example` po
 
 ```bash
 # Database Configuration (MongoDB)
+MONGODB_USER=legrimoire
+MONGODB_PASSWORD=CHANGEZ_CE_MOT_DE_PASSE
 MONGODB_URL=mongodb://legrimoire:CHANGEZ_CE_MOT_DE_PASSE@mongodb:27017/legrimoire?authSource=admin
 MONGODB_DB_NAME=legrimoire
 

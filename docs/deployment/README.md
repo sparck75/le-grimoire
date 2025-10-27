@@ -171,8 +171,9 @@ nano .env.production
 
 ```bash
 # Base de données MongoDB
-MONGODB_URL=mongodb://legrimoire:CHANGEZ_MOT_DE_PASSE@mongodb:27017/legrimoire?authSource=admin
+MONGODB_USER=legrimoire
 MONGODB_PASSWORD=CHANGEZ_MOT_DE_PASSE
+MONGODB_URL=mongodb://legrimoire:CHANGEZ_MOT_DE_PASSE@mongodb:27017/legrimoire?authSource=admin
 
 # Secrets de l'application (générer avec Python)
 SECRET_KEY=$(python3 -c "import secrets; print(secrets.token_urlsafe(32))")

@@ -74,12 +74,16 @@ nano .env.production
 SECRET_KEY=$(python3 -c "import secrets; print(secrets.token_urlsafe(64))")
 JWT_SECRET_KEY=$(python3 -c "import secrets; print(secrets.token_urlsafe(64))")
 
-# Mots de passe
+# Mots de passe MongoDB et PostgreSQL
+MONGODB_USER=legrimoire
+MONGODB_PASSWORD=VotreMotDePasseMongoDB456
 POSTGRES_PASSWORD=VotreMotDePassePostgreSQL123
-MONGO_INITDB_ROOT_PASSWORD=VotreMotDePasseMongoDB456
 
 # URLs
 NEXT_PUBLIC_API_URL=https://legrimoireonline.ca
+
+# Mettre à jour aussi MONGODB_URL avec le mot de passe MongoDB
+# MONGODB_URL=mongodb://legrimoire:VotreMotDePasseMongoDB456@mongodb:27017/legrimoire?authSource=admin
 ```
 
 ### 8️⃣ Configurer Nginx pour le domaine (3 min)
