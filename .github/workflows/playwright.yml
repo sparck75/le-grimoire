@@ -52,9 +52,9 @@ jobs:
 
       - name: Start services with Docker Compose
         run: |
-          docker compose up -d
-          echo "Waiting 10 seconds for containers to initialize..."
-          sleep 10
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d
+          echo "Waiting 15 seconds for containers to initialize..."
+          sleep 15
           echo "Docker containers status:"
           docker compose ps
           
@@ -64,7 +64,7 @@ jobs:
           
           # Check Docker services status
           echo "Docker services status:"
-          docker compose ps
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml ps
           
           # Wait for backend
           echo "Waiting for backend..."
@@ -81,7 +81,9 @@ jobs:
           
           if [ "$BACKEND_READY" = false ]; then
             echo "Backend failed to start. Showing logs:"
-            docker compose logs backend
+            docker compose -f docker-compose.yml -f docker-compose.ci.yml logs backend
+            docker compose -f docker-compose.yml -f docker-compose.ci.yml logs mongodb
+            docker compose -f docker-compose.yml -f docker-compose.ci.yml logs db
             exit 1
           fi
           
@@ -100,9 +102,15 @@ jobs:
           
           if [ "$FRONTEND_READY" = false ]; then
             echo "Frontend failed to start. Showing logs:"
-            docker compose logs frontend
+            docker compose -f docker-compose.yml -f docker-compose.ci.yml logs frontend
             exit 1
           fi
+
+      - name: Seed test data
+        run: |
+          echo "Seeding test data..."
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml exec -T backend python -m scripts.seed_test_data
+          echo "Test data seeded successfully!"
 
       - name: Run Playwright tests
         working-directory: ./frontend
@@ -132,10 +140,14 @@ jobs:
         if: failure()
         run: |
           echo "=== Frontend logs ==="
-          docker compose logs frontend
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml logs frontend
           echo "=== Backend logs ==="
-          docker compose logs backend
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml logs backend
+          echo "=== MongoDB logs ==="
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml logs mongodb
+          echo "=== PostgreSQL logs ==="
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml logs db
 
       - name: Cleanup
         if: always()
-        run: docker compose down -v
+        run: docker compose -f docker-compose.yml -f docker-compose.ci.yml down -v

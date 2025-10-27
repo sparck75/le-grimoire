@@ -1,0 +1,35 @@
+# Docker Compose override for CI/CD environments
+# This removes optional volume mounts that may not exist in CI
+
+services:
+  # MongoDB - Remove optional data volume mounts for CI
+  mongodb:
+    volumes:
+      - mongodb_data:/data/db
+    # Removed: data/openfoodfacts and backend/scripts/mongodb mounts
+    # These are only needed for local development with OpenFoodFacts data
+  
+  # Mongo Express - Not needed in CI
+  mongo-express:
+    profiles:
+      - tools
+    # This service won't start unless explicitly requested
+  
+  # Backend - Use production-like command in CI
+  backend:
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    # Removed --reload flag for better stability in CI
+  
+  # Frontend - Use production build in CI
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: development
+    command: npm run dev
+
+volumes:
+  mongodb_data:
+  postgres_data:
+  redis_data:
+  uploaded_images:
