@@ -1,20 +1,28 @@
 """
-Recipe Backup and Restore Script
+Recipe Backup and Restore Script (MongoDB Version)
 
 This script provides functionality to:
 1. Import recipes from JSON export file
 2. Export all recipes to JSON backup
 3. Restore recipes from backup
+4. List all recipes in database
 
 Usage:
     # Import recipes from file
-    python backup_restore_recipes.py import recipes_export.json
+    python backup_restore_recipes.py import /app/recipes.json
     
     # Export/backup all recipes
-    python backup_restore_recipes.py export backup_recipes.json
+    python backup_restore_recipes.py export /app/backup.json
     
-    # Restore recipes from backup
-    python backup_restore_recipes.py restore backup_recipes.json
+    # Create automatic timestamped backup
+    python backup_restore_recipes.py backup
+    
+    # Restore from backup (add --clear to delete existing first)
+    python backup_restore_recipes.py restore /backups/backup.json
+    python backup_restore_recipes.py restore /backups/backup.json --clear
+    
+    # List all recipes
+    python backup_restore_recipes.py list
 """
 
 import sys
@@ -22,28 +30,26 @@ import json
 import asyncio
 from pathlib import Path
 from datetime import datetime
-from typing import List, Dict, Any
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
-from uuid import UUID
+from typing import Dict, Any
 
 # Add parent directory to path to import app modules
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from app.models.recipe import Recipe
+from motor.motor_asyncio import AsyncIOMotorClient
 from app.core.config import settings
 
 
-def get_db_session() -> Session:
-    """Create database session"""
-    engine = create_engine(settings.DATABASE_URL)
-    SessionLocal = sessionmaker(bind=engine)
-    return SessionLocal()
+def get_mongo_client():
+    """Create MongoDB client and return database"""
+    client = AsyncIOMotorClient(settings.MONGODB_URL)
+    db = client[settings.MONGODB_DB_NAME]
+    return client, db
 
 
 def clean_recipe_data(recipe_data: Dict[str, Any]) -> Dict[str, Any]:
     """Clean and validate recipe data before import"""
-    # Remove id if present (will be auto-generated)
+    # Remove MongoDB _id if present (will be auto-generated)
+    recipe_data.pop('_id', None)
     recipe_data.pop('id', None)
     
     # Ensure required fields
@@ -58,19 +64,22 @@ def clean_recipe_data(recipe_data: Dict[str, Any]) -> Dict[str, Any]:
     
     # Set defaults for optional fields
     recipe_data.setdefault('is_public', True)
-    recipe_data.setdefault('description', None)
+    recipe_data.setdefault('description', "")
     recipe_data.setdefault('servings', None)
     recipe_data.setdefault('prep_time', None)
     recipe_data.setdefault('cook_time', None)
     recipe_data.setdefault('total_time', None)
-    recipe_data.setdefault('category', None)
-    recipe_data.setdefault('cuisine', None)
+    recipe_data.setdefault('category', "")
+    recipe_data.setdefault('cuisine', "")
     recipe_data.setdefault('image_url', None)
+    recipe_data.setdefault('equipment', [])
+    recipe_data.setdefault('created_at', datetime.utcnow())
+    recipe_data.setdefault('updated_at', datetime.utcnow())
     
     return recipe_data
 
 
-def import_recipes(filepath: str) -> None:
+async def import_recipes_async(filepath: str) -> None:
     """Import recipes from JSON file"""
     print(f"📥 Importing recipes from {filepath}...")
     
@@ -80,8 +89,8 @@ def import_recipes(filepath: str) -> None:
     
     print(f"Found {len(recipes_data)} recipes to import")
     
-    # Get database session
-    db = get_db_session()
+    # Get MongoDB connection
+    client, db = get_mongo_client()
     
     imported_count = 0
     skipped_count = 0
@@ -94,69 +103,77 @@ def import_recipes(filepath: str) -> None:
                 cleaned_data = clean_recipe_data(recipe_data.copy())
                 
                 # Check if recipe already exists by title
-                existing = db.query(Recipe).filter(
-                    Recipe.title == cleaned_data['title']
-                ).first()
+                existing = await db.recipes.find_one(
+                    {"title": cleaned_data['title']}
+                )
                 
                 if existing:
-                    print(f"⏭️  Skipping '{cleaned_data['title']}' (already exists)")
+                    title = cleaned_data['title']
+                    print(f"⏭️  Skipping '{title}' (already exists)")
                     skipped_count += 1
                     continue
                 
-                # Create recipe
-                recipe = Recipe(**cleaned_data)
-                db.add(recipe)
-                db.commit()
+                # Insert recipe
+                await db.recipes.insert_one(cleaned_data)
                 
-                print(f"✅ Imported ({i}/{len(recipes_data)}): {recipe.title}")
+                title = cleaned_data['title']
+                print(f"✅ Imported ({i}/{len(recipes_data)}): {title}")
                 imported_count += 1
                 
             except Exception as e:
                 print(f"❌ Error importing recipe {i}: {e}")
                 error_count += 1
-                db.rollback()
                 continue
         
-        print(f"\n📊 Import Summary:")
+        print("\n📊 Import Summary:")
         print(f"   ✅ Imported: {imported_count}")
         print(f"   ⏭️  Skipped: {skipped_count}")
         print(f"   ❌ Errors: {error_count}")
         
     finally:
-        db.close()
+        client.close()
 
 
-def export_recipes(filepath: str) -> None:
+def import_recipes(filepath: str) -> None:
+    """Synchronous wrapper for import_recipes_async"""
+    asyncio.run(import_recipes_async(filepath))
+
+
+async def export_recipes_async(filepath: str) -> None:
     """Export all recipes to JSON file"""
     print(f"📤 Exporting recipes to {filepath}...")
     
-    db = get_db_session()
+    client, db = get_mongo_client()
     
     try:
         # Get all recipes
-        recipes = db.query(Recipe).all()
+        recipes = await db.recipes.find({}).to_list(length=None)
         
         print(f"Found {len(recipes)} recipes to export")
         
         # Convert to dict
         recipes_data = []
         for recipe in recipes:
+            created = recipe.get('created_at')
+            updated = recipe.get('updated_at')
+            
             recipe_dict = {
-                'id': str(recipe.id),
-                'title': recipe.title,
-                'description': recipe.description,
-                'ingredients': recipe.ingredients,
-                'instructions': recipe.instructions,
-                'servings': recipe.servings,
-                'prep_time': recipe.prep_time,
-                'cook_time': recipe.cook_time,
-                'total_time': recipe.total_time,
-                'category': recipe.category,
-                'cuisine': recipe.cuisine,
-                'image_url': recipe.image_url,
-                'is_public': recipe.is_public,
-                'created_at': recipe.created_at.isoformat() if recipe.created_at else None,
-                'updated_at': recipe.updated_at.isoformat() if recipe.updated_at else None,
+                'id': str(recipe['_id']),
+                'title': recipe.get('title', ''),
+                'description': recipe.get('description', ''),
+                'ingredients': recipe.get('ingredients', []),
+                'instructions': recipe.get('instructions', ''),
+                'servings': recipe.get('servings'),
+                'prep_time': recipe.get('prep_time'),
+                'cook_time': recipe.get('cook_time'),
+                'total_time': recipe.get('total_time'),
+                'category': recipe.get('category', ''),
+                'cuisine': recipe.get('cuisine', ''),
+                'image_url': recipe.get('image_url'),
+                'is_public': recipe.get('is_public', True),
+                'equipment': recipe.get('equipment', []),
+                'created_at': created.isoformat() if created else None,
+                'updated_at': updated.isoformat() if updated else None,
             }
             recipes_data.append(recipe_dict)
         
@@ -164,13 +181,22 @@ def export_recipes(filepath: str) -> None:
         with open(filepath, 'w', encoding='utf-8') as f:
             json.dump(recipes_data, f, indent=2, ensure_ascii=False)
         
-        print(f"✅ Successfully exported {len(recipes_data)} recipes to {filepath}")
+        count = len(recipes_data)
+        print(f"✅ Successfully exported {count} recipes to {filepath}")
         
     finally:
-        db.close()
+        client.close()
 
 
-def restore_recipes(filepath: str, clear_existing: bool = False) -> None:
+def export_recipes(filepath: str) -> None:
+    """Synchronous wrapper for export_recipes_async"""
+    asyncio.run(export_recipes_async(filepath))
+
+
+async def restore_recipes_async(
+    filepath: str,
+    clear_existing: bool = False
+) -> None:
     """
     Restore recipes from backup file
     
@@ -181,74 +207,92 @@ def restore_recipes(filepath: str, clear_existing: bool = False) -> None:
     print(f"🔄 Restoring recipes from {filepath}...")
     
     if clear_existing:
-        response = input("⚠️  WARNING: This will DELETE all existing recipes. Continue? (yes/no): ")
+        response = input(
+            "⚠️  WARNING: This will DELETE all existing recipes. "
+            "Continue? (yes/no): "
+        )
         if response.lower() != 'yes':
             print("Restore cancelled")
             return
     
-    db = get_db_session()
+    client, db = get_mongo_client()
     
     try:
         # Clear existing recipes if requested
         if clear_existing:
-            count = db.query(Recipe).count()
-            db.query(Recipe).delete()
-            db.commit()
-            print(f"🗑️  Deleted {count} existing recipes")
+            result = await db.recipes.delete_many({})
+            print(f"🗑️  Deleted {result.deleted_count} existing recipes")
         
         # Import recipes
-        import_recipes(filepath)
+        await import_recipes_async(filepath)
         
     finally:
-        db.close()
+        client.close()
 
 
-def list_recipes() -> None:
+def restore_recipes(filepath: str, clear_existing: bool = False) -> None:
+    """Synchronous wrapper for restore_recipes_async"""
+    asyncio.run(restore_recipes_async(filepath, clear_existing))
+
+
+async def list_recipes_async() -> None:
     """List all recipes in database"""
-    db = get_db_session()
+    client, db = get_mongo_client()
     
     try:
-        recipes = db.query(Recipe).all()
+        recipes = await db.recipes.find({}).to_list(length=None)
         
         print(f"\n📚 Recipes in database: {len(recipes)}")
         print("=" * 80)
         
         for i, recipe in enumerate(recipes, 1):
-            print(f"{i}. {recipe.title}")
-            print(f"   ID: {recipe.id}")
-            print(f"   Category: {recipe.category or 'N/A'} | Cuisine: {recipe.cuisine or 'N/A'}")
-            print(f"   Public: {recipe.is_public}")
+            print(f"{i}. {recipe.get('title', 'NO TITLE')}")
+            print(f"   ID: {recipe['_id']}")
+            category = recipe.get('category', 'N/A')
+            cuisine = recipe.get('cuisine', 'N/A')
+            print(f"   Category: {category} | Cuisine: {cuisine}")
+            print(f"   Public: {recipe.get('is_public', True)}")
             print()
         
     finally:
-        db.close()
+        client.close()
 
 
-def create_automatic_backup() -> str:
+def list_recipes() -> None:
+    """Synchronous wrapper for list_recipes_async"""
+    asyncio.run(list_recipes_async())
+
+
+async def create_automatic_backup_async() -> str:
     """Create automatic timestamped backup"""
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    backup_dir = Path(__file__).parent.parent.parent / "backups"
+    backup_dir = Path("/backups")
     backup_dir.mkdir(exist_ok=True)
     
     filepath = backup_dir / f"recipes_backup_{timestamp}.json"
-    export_recipes(str(filepath))
+    await export_recipes_async(str(filepath))
     
     return str(filepath)
+
+
+def create_automatic_backup() -> str:
+    """Synchronous wrapper for create_automatic_backup_async"""
+    return asyncio.run(create_automatic_backup_async())
 
 
 def main():
     """Main CLI interface"""
     if len(sys.argv) < 2:
-        print("Recipe Backup & Restore Tool")
+        print("Recipe Backup & Restore Tool (MongoDB)")
         print("=" * 50)
         print("\nUsage:")
         print("  python backup_restore_recipes.py import <file.json>")
         print("  python backup_restore_recipes.py export <file.json>")
         print("  python backup_restore_recipes.py restore <file.json>")
-        print("  python backup_restore_recipes.py backup  (creates timestamped backup)")
+        print("  python backup_restore_recipes.py backup")
         print("  python backup_restore_recipes.py list")
         print("\nExamples:")
-        print("  python backup_restore_recipes.py import ../../recipes_export.json")
+        print("  python backup_restore_recipes.py import /app/recipes.json")
         print("  python backup_restore_recipes.py backup")
         print("  python backup_restore_recipes.py list")
         sys.exit(1)
