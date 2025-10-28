@@ -73,7 +73,7 @@ export default function AdminIngredientsPage() {
           page: page.toString(),
           limit: limit.toString(),
         });
-        url = `${apiUrl}/api/admin/ingredients?${params}`;
+        url = `${apiUrl}/api/admin/ingredients/?${params}`;
       }
 
       const response = await fetch(url);
