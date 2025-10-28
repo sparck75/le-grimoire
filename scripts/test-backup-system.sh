@@ -189,11 +189,23 @@ fi
 
 # Cleanup option
 echo ""
-read -p "Clean up test directory? (y/N): " -n 1 -r
-echo
-if [[ $REPLY =~ ^[Yy]$ ]]; then
-    rm -rf "$TEST_DIR"
-    echo "✅ Cleanup complete"
+# Check if running in non-interactive mode
+if [ -t 0 ]; then
+    # Interactive mode
+    read -p "Clean up test directory? (y/N): " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        rm -rf "$TEST_DIR"
+        echo "✅ Cleanup complete"
+    fi
+else
+    # Non-interactive mode - skip cleanup unless --cleanup flag is provided
+    if [[ "$1" == "--cleanup" ]]; then
+        rm -rf "$TEST_DIR"
+        echo "✅ Cleanup complete"
+    else
+        echo "ℹ️  Test directory preserved (use --cleanup to remove): $TEST_DIR"
+    fi
 fi
 
 exit $EXIT_CODE

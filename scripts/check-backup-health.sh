@@ -5,6 +5,40 @@
 
 set -e
 
+# Helper function for cross-platform file modification time
+get_file_mtime() {
+    local file="$1"
+    if [ -f "$file" ]; then
+        # Try GNU stat first (Linux)
+        if stat -c %Y "$file" 2>/dev/null; then
+            return 0
+        # Try BSD stat (macOS)
+        elif stat -f %m "$file" 2>/dev/null; then
+            return 0
+        # Fallback using find
+        else
+            echo $(( $(date +%s) - 86400 ))  # Fallback: assume 1 day old
+        fi
+    fi
+}
+
+# Helper function for human-readable size
+human_readable_size() {
+    local size_kb="$1"
+    if command -v numfmt >/dev/null 2>&1; then
+        numfmt --to=iec-i --suffix=B "$((size_kb * 1024))"
+    else
+        # Fallback for systems without numfmt (e.g., macOS)
+        if [ $size_kb -ge 1048576 ]; then
+            echo "$((size_kb / 1048576))GiB"
+        elif [ $size_kb -ge 1024 ]; then
+            echo "$((size_kb / 1024))MiB"
+        else
+            echo "${size_kb}KiB"
+        fi
+    fi
+}
+
 echo "========================================"
 echo "Le Grimoire - Backup Health Check"
 echo "========================================"
@@ -82,7 +116,8 @@ BACKUP_NAME=$(basename "$LATEST_BACKUP")
 log_info "Latest backup: $BACKUP_NAME"
 
 # Check backup age
-BACKUP_AGE_SECONDS=$(( $(date +%s) - $(stat -c %Y "$LATEST_BACKUP" 2>/dev/null || stat -f %m "$LATEST_BACKUP" 2>/dev/null) ))
+BACKUP_TIMESTAMP=$(get_file_mtime "$LATEST_BACKUP")
+BACKUP_AGE_SECONDS=$(( $(date +%s) - BACKUP_TIMESTAMP ))
 BACKUP_AGE_HOURS=$(( BACKUP_AGE_SECONDS / 3600 ))
 BACKUP_AGE_MINUTES=$(( (BACKUP_AGE_SECONDS % 3600) / 60 ))
 
@@ -143,7 +178,7 @@ echo "💾 Checking disk space..."
 BACKUP_PARTITION=$(df "$BACKUP_DIR" | tail -1)
 DISK_USAGE=$(echo "$BACKUP_PARTITION" | awk '{print $5}' | sed 's/%//')
 DISK_AVAILABLE=$(echo "$BACKUP_PARTITION" | awk '{print $4}')
-DISK_AVAILABLE_HUMAN=$(numfmt --to=iec-i --suffix=B "$((DISK_AVAILABLE * 1024))" 2>/dev/null || echo "${DISK_AVAILABLE}K")
+DISK_AVAILABLE_HUMAN=$(human_readable_size "$DISK_AVAILABLE")
 
 if [ $DISK_USAGE -gt 90 ]; then
     log_error "Disk usage is critical: ${DISK_USAGE}%"
