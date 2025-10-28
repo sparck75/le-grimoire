@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import styles from './profile.module.css';
 
 export default function ProfilePage() {
-  const { user, token } = useAuth();
+  const { user, token, loading } = useAuth();
   const router = useRouter();
   
   // Password change state
@@ -18,8 +18,27 @@ export default function ProfilePage() {
   const [passwordLoading, setPasswordLoading] = useState(false);
 
   // Redirect if not logged in
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login');
+    }
+  }, [user, loading, router]);
+
+  // Show loading state while checking authentication
+  if (loading) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.profileCard}>
+          <div className={styles.header}>
+            <h1 className={styles.title}>Chargement...</h1>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render if not authenticated
   if (!user) {
-    router.push('/login');
     return null;
   }
 

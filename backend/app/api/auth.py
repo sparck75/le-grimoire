@@ -307,7 +307,7 @@ async def change_password(
     if not current_user.password_hash:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cannot change password for OAuth-only accounts. Please set a password first."
+            detail="Password change is not available for OAuth-only accounts (Google/Apple Sign-In). Please contact support if you need to set a password."
         )
     
     # Verify current password
