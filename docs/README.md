@@ -20,6 +20,14 @@ Bienvenue dans la documentation de Le Grimoire, une application web de gestion d
 - [Système de recettes](./development/RECIPES.md)
 - [Frontend Admin](./development/ADMIN.md)
 
+### Déploiement et Opérations
+- [Guide de déploiement](./deployment/README.md)
+- [Déploiement sur Vultr](./deployment/VULTR_DEPLOYMENT.md)
+- [Configuration DNS](./deployment/GODADDY_DNS.md)
+- [Sauvegarde et Restauration](./operations/BACKUP_RESTORE.md)
+- [Opérations quotidiennes](./operations/README.md)
+- [Guide de dépannage](./deployment/TROUBLESHOOTING.md)
+
 ### Fonctionnalités
 - [Système d'ingrédients OpenFoodFacts](./features/OPENFOODFACTS.md)
 - [Traduction française](./features/FRENCH_LOCALIZATION.md)

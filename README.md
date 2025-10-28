@@ -69,11 +69,13 @@ le-grimoire/
 - 👨‍💻 [Guide de développement](docs/development/DEVELOPMENT.md)
 - 🤝 [Guide de contribution](docs/getting-started/CONTRIBUTING.md)
 
-### Déploiement en production
+### Déploiement et Opérations
 - 🚀 [Guide de déploiement](docs/deployment/README.md)
 - 🌐 [Déploiement sur Vultr](docs/deployment/VULTR_DEPLOYMENT.md)
 - 🔧 [Configuration DNS GoDaddy](docs/deployment/GODADDY_DNS.md)
 - 🔒 [Guide de sécurité](docs/deployment/SECURITY.md)
+- 💾 [Sauvegarde et Restauration](docs/operations/BACKUP_RESTORE.md)
+- ⚙️ [Opérations quotidiennes](docs/operations/README.md)
 
 ### Fonctionnalités
 - 🥕 [Système d'ingrédients](docs/development/INGREDIENTS.md)

@@ -21,7 +21,11 @@ if [ -z "$1" ]; then
     echo "   $0 backup_20251028_143022.tar.gz"
     echo ""
     echo "Available backups:"
-    ls -1 backups/*.tar.gz 2>/dev/null | xargs -n1 basename || echo "   No backups found in backups/"
+    if ls backups/*.tar.gz 1> /dev/null 2>&1; then
+        ls -1 backups/*.tar.gz | xargs -n1 basename
+    else
+        echo "   No backups found in backups/"
+    fi
     exit 1
 fi
 
