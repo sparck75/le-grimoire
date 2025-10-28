@@ -30,7 +30,8 @@ app = FastAPI(
     title="Le Grimoire API",
     description="API pour la gestion de recettes avec OCR et intégration des spéciaux d'épiceries",
     version="1.0.0",
-    lifespan=lifespan
+    lifespan=lifespan,
+    redirect_slashes=False  # Disable automatic trailing slash redirects
 )
 
 # Configure CORS
