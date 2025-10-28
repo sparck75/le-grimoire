@@ -12,7 +12,11 @@ interface Unit {
 }
 
 export default function UnitsPage() {
-  // Use HTTPS in production if NEXT_PUBLIC_API_URL is not set or is localhost
+  const [units, setUnits] = useState<Unit[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Get API URL - use HTTPS in production
   const getApiUrl = () => {
     const envUrl = process.env.NEXT_PUBLIC_API_URL;
     if (!envUrl || envUrl.includes('localhost')) {
@@ -20,14 +24,10 @@ export default function UnitsPage() {
       if (typeof window !== 'undefined') {
         return window.location.origin;
       }
-      return 'http://localhost:8000';
+      return 'https://legrimoireonline.ca'; // Default to HTTPS in production
     }
     return envUrl;
   };
-  const apiUrl = getApiUrl();
-  const [units, setUnits] = useState<Unit[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchUnits();
@@ -36,6 +36,7 @@ export default function UnitsPage() {
   async function fetchUnits() {
     try {
       setLoading(true);
+      const apiUrl = getApiUrl();
       const response = await fetch(`${apiUrl}/api/admin/ingredients/units`);
       
       if (!response.ok) {

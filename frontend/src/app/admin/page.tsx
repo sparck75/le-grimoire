@@ -16,7 +16,10 @@ export default function AdminDashboard() {
   const { user } = useAuth();
   const router = useRouter();
   
-  // Use HTTPS in production if NEXT_PUBLIC_API_URL is not set or is localhost
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [loading, setLoading] = useState(true);
+  
+  // Get API URL - use HTTPS in production
   const getApiUrl = () => {
     const envUrl = process.env.NEXT_PUBLIC_API_URL;
     if (!envUrl || envUrl.includes('localhost')) {
@@ -24,13 +27,10 @@ export default function AdminDashboard() {
       if (typeof window !== 'undefined') {
         return window.location.origin;
       }
-      return 'http://localhost:8000';
+      return 'https://legrimoireonline.ca'; // Default to HTTPS in production
     }
     return envUrl;
   };
-  
-  const [stats, setStats] = useState<Stats | null>(null);
-  const [loading, setLoading] = useState(true);
 
   // Check if user is admin
   const isAdmin = user && user.role === 'admin';

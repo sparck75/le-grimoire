@@ -25,19 +25,6 @@ interface PaginatedResponse {
 }
 
 export default function AdminIngredientsPage() {
-  // Use HTTPS in production if NEXT_PUBLIC_API_URL is not set or is localhost
-  const getApiUrl = () => {
-    const envUrl = process.env.NEXT_PUBLIC_API_URL;
-    if (!envUrl || envUrl.includes('localhost')) {
-      // In browser, use current origin (will be https://legrimoireonline.ca)
-      if (typeof window !== 'undefined') {
-        return window.location.origin;
-      }
-      return 'http://localhost:8000';
-    }
-    return envUrl;
-  };
-  const apiUrl = getApiUrl();
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -46,6 +33,19 @@ export default function AdminIngredientsPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const limit = 20;
+  
+  // Get API URL - use HTTPS in production
+  const getApiUrl = () => {
+    const envUrl = process.env.NEXT_PUBLIC_API_URL;
+    if (!envUrl || envUrl.includes('localhost')) {
+      // In browser, use current origin (will be https://legrimoireonline.ca)
+      if (typeof window !== 'undefined') {
+        return window.location.origin;
+      }
+      return 'https://legrimoireonline.ca'; // Default to HTTPS in production
+    }
+    return envUrl;
+  };
 
   useEffect(() => {
     fetchIngredients();
@@ -55,6 +55,8 @@ export default function AdminIngredientsPage() {
   async function fetchIngredients() {
     try {
       setLoading(true);
+      
+      const apiUrl = getApiUrl();
       
       // Use MongoDB search endpoint if searching, otherwise list endpoint
       let url: string;
@@ -103,6 +105,7 @@ export default function AdminIngredientsPage() {
     }
 
     try {
+      const apiUrl = getApiUrl();
       const response = await fetch(
         `${apiUrl}/api/admin/ingredients/ingredients/${id}`,
         { method: 'DELETE' }
