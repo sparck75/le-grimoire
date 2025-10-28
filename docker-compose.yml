@@ -78,6 +78,15 @@ services:
       APPLE_CLIENT_ID: ${APPLE_CLIENT_ID:-}
       APPLE_CLIENT_SECRET: ${APPLE_CLIENT_SECRET:-}
       REDIS_URL: redis://redis:6379
+      # AI Recipe Extraction
+      ENABLE_AI_EXTRACTION: ${ENABLE_AI_EXTRACTION:-false}
+      AI_PROVIDER: ${AI_PROVIDER:-openai}
+      AI_FALLBACK_ENABLED: ${AI_FALLBACK_ENABLED:-true}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o}
+      OPENAI_MAX_TOKENS: ${OPENAI_MAX_TOKENS:-2000}
+      GOOGLE_AI_API_KEY: ${GOOGLE_AI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-1.5-flash}
     volumes:
       - ./backend:/app
       - ./data:/app/data

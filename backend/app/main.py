@@ -9,7 +9,7 @@ from contextlib import asynccontextmanager
 from app.api import (
     recipes, auth, ocr, grocery, shopping_lists,
     admin_ingredients, admin_recipes, admin_users,
-    ingredients, categories, recipe_images
+    ingredients, categories, recipe_images, ai_extraction
 )
 from app.core.config import settings
 from app.core.database import init_mongodb, close_mongodb
@@ -54,6 +54,7 @@ app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(recipes.router, prefix="/api/v2/recipes", tags=["Recipes"])
 app.include_router(recipe_images.router, prefix="/api/recipes", tags=["Recipe Images"])
 app.include_router(ocr.router, prefix="/api/ocr", tags=["OCR"])
+app.include_router(ai_extraction.router, prefix="/api/ai", tags=["AI Extraction"])
 app.include_router(grocery.router, prefix="/api/grocery", tags=["Grocery Specials"])
 app.include_router(shopping_lists.router, prefix="/api/shopping-lists", tags=["Shopping Lists"])
 app.include_router(admin_ingredients.router, prefix="/api/admin/ingredients", tags=["Admin - Ingredients"])
