@@ -12,7 +12,19 @@ interface Unit {
 }
 
 export default function UnitsPage() {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+  // Use HTTPS in production if NEXT_PUBLIC_API_URL is not set or is localhost
+  const getApiUrl = () => {
+    const envUrl = process.env.NEXT_PUBLIC_API_URL;
+    if (!envUrl || envUrl.includes('localhost')) {
+      // In browser, use current origin (will be https://legrimoireonline.ca)
+      if (typeof window !== 'undefined') {
+        return window.location.origin;
+      }
+      return 'http://localhost:8000';
+    }
+    return envUrl;
+  };
+  const apiUrl = getApiUrl();
   const [units, setUnits] = useState<Unit[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

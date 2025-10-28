@@ -15,6 +15,20 @@ interface Stats {
 export default function AdminDashboard() {
   const { user } = useAuth();
   const router = useRouter();
+  
+  // Use HTTPS in production if NEXT_PUBLIC_API_URL is not set or is localhost
+  const getApiUrl = () => {
+    const envUrl = process.env.NEXT_PUBLIC_API_URL;
+    if (!envUrl || envUrl.includes('localhost')) {
+      // In browser, use current origin (will be https://legrimoireonline.ca)
+      if (typeof window !== 'undefined') {
+        return window.location.origin;
+      }
+      return 'http://localhost:8000';
+    }
+    return envUrl;
+  };
+  
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -31,7 +45,7 @@ export default function AdminDashboard() {
     async function fetchStats() {
       try {
         // Use client-side API calls directly to backend
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        const apiUrl = getApiUrl();
         
         // Fetch stats from various endpoints
         const [statsRes, recipesRes] = await Promise.all([

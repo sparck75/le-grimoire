@@ -104,13 +104,18 @@ ssh-keygen -t ed25519 -C "votre_email@example.com"
 # Définissez une phrase de passe (optionnel mais recommandé)
 
 # Copier la clé publique vers le serveur
+
+# Linux/Mac:
 ssh-copy-id legrimoire@YOUR_SERVER_IP
+
+# Windows PowerShell:
+type $env:USERPROFILE\.ssh\id_ed25519.pub | ssh legrimoire@YOUR_SERVER_IP "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys && chmod 700 ~/.ssh && chmod 600 ~/.ssh/authorized_keys"
 
 # Tester la connexion
 ssh legrimoire@YOUR_SERVER_IP
 ```
 
-Si `ssh-copy-id` ne fonctionne pas, faites-le manuellement :
+Si les commandes ci-dessus ne fonctionnent pas, faites-le manuellement :
 
 ```bash
 # Sur votre ordinateur local, afficher votre clé publique
@@ -606,6 +611,35 @@ docker compose -f docker-compose.prod.yml exec mongodb mongosh --eval "db.adminC
 # Redémarrer le backend
 docker compose -f docker-compose.prod.yml restart backend
 ```
+
+### Erreur "Mixed Content" ou frontend utilise http:// au lieu de https://
+
+**Symptôme**: Le navigateur affiche "Mixed Content: The page was loaded over HTTPS, but requested an insecure resource 'http://...'"
+
+**Cause**: Le frontend a été construit sans la bonne valeur de `NEXT_PUBLIC_API_URL`, donc il utilise `http://localhost:8000` ou `http://legrimoireonline.ca` au lieu de `https://legrimoireonline.ca`
+
+**Solution**:
+
+```bash
+# 1. Vérifier que .env.production contient la bonne URL
+cat .env.production | grep NEXT_PUBLIC_API_URL
+# Devrait afficher: NEXT_PUBLIC_API_URL=https://legrimoireonline.ca
+
+# 2. Si incorrect, éditer le fichier
+nano .env.production
+# Ajouter ou modifier: NEXT_PUBLIC_API_URL=https://legrimoireonline.ca
+
+# 3. Reconstruire le frontend (important!)
+docker compose -f docker-compose.prod.yml build --no-cache frontend
+
+# 4. Redémarrer le frontend
+docker compose -f docker-compose.prod.yml up -d frontend
+
+# 5. Vérifier que la reconstruction a fonctionné
+docker compose -f docker-compose.prod.yml logs frontend | grep -i "ready"
+```
+
+**Note importante**: Les variables `NEXT_PUBLIC_*` sont intégrées dans le JavaScript au moment de la construction (`npm run build`), pas au moment de l'exécution. Vous **devez reconstruire** l'image après avoir modifié ces variables.
 
 ### Manque d'espace disque
 

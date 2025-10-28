@@ -289,6 +289,8 @@ docker compose -f docker-compose.prod.yml logs
 - [ ] Site s'affiche (même avec avertissement SSL)
 - [ ] Testé `http://legrimoireonline.ca` (si DNS propagé)
 
+**Note**: Cette URL sera automatiquement redirigée vers HTTPS après configuration SSL.
+
 ---
 
 ## 🔒 Configuration SSL avec Let's Encrypt (20 minutes)
