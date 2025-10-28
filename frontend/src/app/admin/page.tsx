@@ -50,7 +50,7 @@ export default function AdminDashboard() {
         
         // Fetch stats from various endpoints
         const statsUrl = `${apiUrl}/api/admin/ingredients/stats/summary`;
-        const recipesUrl = `${apiUrl}/api/v2/recipes`;
+        const recipesUrl = `${apiUrl}/api/v2/recipes/`;  // Add trailing slash
         
         console.log('📊 Fetching stats from:', statsUrl);
         console.log('📊 Fetching recipes from:', recipesUrl);
