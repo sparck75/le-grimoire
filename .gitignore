@@ -84,3 +84,11 @@ nginx/ssl/
 test-results/
 playwright-report/
 playwright/.cache/
+
+# Temporary debugging files
+recipe_dump.sql
+recipe_dump_clean.sql
+recipe_export/
+backend/recipe_export/
+temp_init.py
+test_encoding.py
