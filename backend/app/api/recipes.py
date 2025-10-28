@@ -1,15 +1,16 @@
 """
 Recipes API routes
 """
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
+import logging
+from datetime import datetime
+from fastapi import APIRouter, HTTPException, Query
 from typing import List, Optional
 from pydantic import BaseModel
-from uuid import UUID
-from app.core.database import get_db
-from app.models.recipe import Recipe
+from bson import ObjectId
+from app.models.mongodb import Recipe
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 class RecipeResponse(BaseModel):
     """Recipe response model"""
@@ -71,174 +72,237 @@ async def list_recipes(
     limit: int = Query(20, ge=1, le=100),
     category: Optional[str] = None,
     cuisine: Optional[str] = None,
-    search: Optional[str] = None,
-    db: Session = Depends(get_db)
+    search: Optional[str] = None
 ):
     """
     List public recipes with optional filtering
     """
-    query = db.query(Recipe).filter(Recipe.is_public == True)
+    from motor.motor_asyncio import AsyncIOMotorClient
+    from app.core.config import settings
     
+    # Direct MongoDB connection (same as working import script)
+    mongo_url = getattr(settings, 'MONGODB_URL', 'mongodb://localhost:27017')
+    client = AsyncIOMotorClient(mongo_url)
+    db_name = getattr(settings, 'MONGODB_DB_NAME', 'legrimoire')
+    db = client[db_name]
+    
+    # Build query
+    query = {}
     if category:
-        query = query.filter(Recipe.category == category)
+        query["category"] = category
     if cuisine:
-        query = query.filter(Recipe.cuisine == cuisine)
+        query["cuisine"] = cuisine
     if search:
-        query = query.filter(Recipe.title.ilike(f"%{search}%"))
+        query["$or"] = [
+            {"title": {"$regex": search, "$options": "i"}},
+            {"description": {"$regex": search, "$options": "i"}}
+        ]
     
-    recipes = query.order_by(Recipe.created_at.desc()).offset(skip).limit(limit).all()
+    # Query MongoDB directly
+    cursor = db.recipes.find(query).skip(skip).limit(limit)
+    raw_recipes = await cursor.to_list(length=limit)
     
+    client.close()
+    
+    # Convert to response format
     return [
         RecipeResponse(
-            id=str(recipe.id),
-            title=recipe.title,
-            description=recipe.description,
-            ingredients=recipe.ingredients,
-            equipment=recipe.equipment,
-            instructions=recipe.instructions,
-            servings=recipe.servings,
-            prep_time=recipe.prep_time,
-            cook_time=recipe.cook_time,
-            total_time=recipe.total_time,
-            category=recipe.category,
-            cuisine=recipe.cuisine,
-            image_url=recipe.image_url,
-            is_public=recipe.is_public
+            id=str(recipe["_id"]),
+            title=recipe.get("title", ""),
+            description=recipe.get("description", ""),
+            ingredients=recipe.get("ingredients", []),
+            equipment=recipe.get("equipment", []),
+            instructions=recipe.get("instructions", ""),
+            servings=recipe.get("servings"),
+            prep_time=recipe.get("prep_time"),
+            cook_time=recipe.get("cook_time"),
+            total_time=recipe.get("total_time"),
+            category=recipe.get("category", ""),
+            cuisine=recipe.get("cuisine", ""),
+            image_url=recipe.get("image_url"),
+            is_public=recipe.get("is_public", True)
         )
-        for recipe in recipes
+        for recipe in raw_recipes
     ]
 
 @router.get("/{recipe_id}", response_model=RecipeResponse)
-async def get_recipe(recipe_id: UUID, db: Session = Depends(get_db)):
+async def get_recipe(recipe_id: str):
     """
     Get a specific recipe by ID
     """
-    recipe = db.query(Recipe).filter(Recipe.id == recipe_id).first()
+    from motor.motor_asyncio import AsyncIOMotorClient
+    from app.core.config import settings
+    
+    # Direct MongoDB connection
+    mongo_url = getattr(settings, 'MONGODB_URL', 'mongodb://localhost:27017')
+    client = AsyncIOMotorClient(mongo_url)
+    db_name = getattr(settings, 'MONGODB_DB_NAME', 'legrimoire')
+    db = client[db_name]
+    
+    try:
+        recipe = await db.recipes.find_one({"_id": ObjectId(recipe_id)})
+    except Exception:
+        recipe = None
+    finally:
+        client.close()
     
     if not recipe:
         raise HTTPException(status_code=404, detail="Recipe not found")
     
-    if not recipe.is_public:
+    if not recipe.get("is_public", True):
         raise HTTPException(status_code=403, detail="Recipe is not public")
     
     return RecipeResponse(
-        id=str(recipe.id),
-        title=recipe.title,
-        description=recipe.description,
-        ingredients=recipe.ingredients,
-        equipment=recipe.equipment,
-        instructions=recipe.instructions,
-        servings=recipe.servings,
-        prep_time=recipe.prep_time,
-        cook_time=recipe.cook_time,
-        total_time=recipe.total_time,
-        category=recipe.category,
-        cuisine=recipe.cuisine,
-        image_url=recipe.image_url,
-        is_public=recipe.is_public
+        id=str(recipe["_id"]),
+        title=recipe.get("title", ""),
+        description=recipe.get("description", ""),
+        ingredients=recipe.get("ingredients", []),
+        equipment=recipe.get("equipment", []),
+        instructions=recipe.get("instructions", ""),
+        servings=recipe.get("servings"),
+        prep_time=recipe.get("prep_time"),
+        cook_time=recipe.get("cook_time"),
+        total_time=recipe.get("total_time"),
+        category=recipe.get("category", ""),
+        cuisine=recipe.get("cuisine", ""),
+        image_url=recipe.get("image_url"),
+        is_public=recipe.get("is_public", True)
     )
 
 
 @router.post("/", response_model=RecipeResponse)
-async def create_recipe(
-    recipe_data: RecipeCreate,
-    db: Session = Depends(get_db)
-):
+async def create_recipe(recipe_data: RecipeCreate):
     """
     Create a new recipe
     """
-    # Create the recipe
-    recipe = Recipe(
-        title=recipe_data.title,
-        description=recipe_data.description,
-        ingredients=recipe_data.ingredients,
-        equipment=recipe_data.equipment,
-        instructions=recipe_data.instructions,
-        servings=recipe_data.servings,
-        prep_time=recipe_data.prep_time,
-        cook_time=recipe_data.cook_time,
-        total_time=recipe_data.total_time,
-        category=recipe_data.category,
-        cuisine=recipe_data.cuisine,
-        image_url=recipe_data.image_url,
-        is_public=recipe_data.is_public
-    )
+    from motor.motor_asyncio import AsyncIOMotorClient
+    from app.core.config import settings
     
-    db.add(recipe)
-    db.commit()
-    db.refresh(recipe)
+    # Direct MongoDB connection
+    mongo_url = getattr(settings, 'MONGODB_URL', 'mongodb://localhost:27017')
+    client = AsyncIOMotorClient(mongo_url)
+    db_name = getattr(settings, 'MONGODB_DB_NAME', 'legrimoire')
+    db = client[db_name]
+    
+    try:
+        # Prepare recipe document
+        recipe_doc = {
+            "title": recipe_data.title,
+            "description": recipe_data.description or "",
+            "ingredients": recipe_data.ingredients,
+            "equipment": recipe_data.equipment or [],
+            "instructions": recipe_data.instructions,
+            "servings": recipe_data.servings,
+            "prep_time": recipe_data.prep_time,
+            "cook_time": recipe_data.cook_time,
+            "total_time": recipe_data.total_time,
+            "category": recipe_data.category or "",
+            "cuisine": recipe_data.cuisine or "",
+            "image_url": recipe_data.image_url,
+            "is_public": recipe_data.is_public,
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow()
+        }
+        
+        result = await db.recipes.insert_one(recipe_doc)
+        recipe_doc["_id"] = result.inserted_id
+        
+    finally:
+        client.close()
     
     return RecipeResponse(
-        id=str(recipe.id),
-        title=recipe.title,
-        description=recipe.description,
-        ingredients=recipe.ingredients,
-        equipment=recipe.equipment,
-        instructions=recipe.instructions,
-        servings=recipe.servings,
-        prep_time=recipe.prep_time,
-        cook_time=recipe.cook_time,
-        total_time=recipe.total_time,
-        category=recipe.category,
-        cuisine=recipe.cuisine,
-        image_url=recipe.image_url,
-        is_public=recipe.is_public
+        id=str(recipe_doc["_id"]),
+        title=recipe_doc["title"],
+        description=recipe_doc["description"],
+        ingredients=recipe_doc["ingredients"],
+        equipment=recipe_doc["equipment"],
+        instructions=recipe_doc["instructions"],
+        servings=recipe_doc["servings"],
+        prep_time=recipe_doc["prep_time"],
+        cook_time=recipe_doc["cook_time"],
+        total_time=recipe_doc["total_time"],
+        category=recipe_doc["category"],
+        cuisine=recipe_doc["cuisine"],
+        image_url=recipe_doc["image_url"],
+        is_public=recipe_doc["is_public"]
     )
 
 
 @router.put("/{recipe_id}", response_model=RecipeResponse)
 async def update_recipe(
-    recipe_id: UUID,
-    recipe_data: RecipeUpdate,
-    db: Session = Depends(get_db)
+    recipe_id: str,
+    recipe_data: RecipeUpdate
 ):
     """
     Update an existing recipe
     """
-    recipe = db.query(Recipe).filter(Recipe.id == recipe_id).first()
+    from motor.motor_asyncio import AsyncIOMotorClient
+    from app.core.config import settings
     
-    if not recipe:
-        raise HTTPException(status_code=404, detail="Recipe not found")
+    # Direct MongoDB connection
+    mongo_url = getattr(settings, 'MONGODB_URL', 'mongodb://localhost:27017')
+    client = AsyncIOMotorClient(mongo_url)
+    db_name = getattr(settings, 'MONGODB_DB_NAME', 'legrimoire')
+    db = client[db_name]
     
-    # Update only provided fields
-    update_data = recipe_data.model_dump(exclude_unset=True)
-    for field, value in update_data.items():
-        setattr(recipe, field, value)
-    
-    db.commit()
-    db.refresh(recipe)
+    try:
+        recipe = await db.recipes.find_one({"_id": ObjectId(recipe_id)})
+        
+        if not recipe:
+            raise HTTPException(status_code=404, detail="Recipe not found")
+        
+        # Update only provided fields
+        update_data = recipe_data.model_dump(exclude_unset=True)
+        if update_data:
+            update_data["updated_at"] = datetime.utcnow()
+            await db.recipes.update_one(
+                {"_id": ObjectId(recipe_id)},
+                {"$set": update_data}
+            )
+            # Fetch updated recipe
+            recipe = await db.recipes.find_one({"_id": ObjectId(recipe_id)})
+        
+    finally:
+        client.close()
     
     return RecipeResponse(
-        id=str(recipe.id),
-        title=recipe.title,
-        description=recipe.description,
-        ingredients=recipe.ingredients,
-        instructions=recipe.instructions,
-        servings=recipe.servings,
-        prep_time=recipe.prep_time,
-        cook_time=recipe.cook_time,
-        total_time=recipe.total_time,
-        category=recipe.category,
-        cuisine=recipe.cuisine,
-        image_url=recipe.image_url,
-        is_public=recipe.is_public
+        id=str(recipe["_id"]),
+        title=recipe.get("title", ""),
+        description=recipe.get("description", ""),
+        ingredients=recipe.get("ingredients", []),
+        equipment=recipe.get("equipment", []),
+        instructions=recipe.get("instructions", ""),
+        servings=recipe.get("servings"),
+        prep_time=recipe.get("prep_time"),
+        cook_time=recipe.get("cook_time"),
+        total_time=recipe.get("total_time"),
+        category=recipe.get("category", ""),
+        cuisine=recipe.get("cuisine", ""),
+        image_url=recipe.get("image_url"),
+        is_public=recipe.get("is_public", True)
     )
 
 
 @router.delete("/{recipe_id}")
-async def delete_recipe(
-    recipe_id: UUID,
-    db: Session = Depends(get_db)
-):
+async def delete_recipe(recipe_id: str):
     """
     Delete a recipe
     """
-    recipe = db.query(Recipe).filter(Recipe.id == recipe_id).first()
+    from motor.motor_asyncio import AsyncIOMotorClient
+    from app.core.config import settings
     
-    if not recipe:
-        raise HTTPException(status_code=404, detail="Recipe not found")
+    # Direct MongoDB connection
+    mongo_url = getattr(settings, 'MONGODB_URL', 'mongodb://localhost:27017')
+    client = AsyncIOMotorClient(mongo_url)
+    db_name = getattr(settings, 'MONGODB_DB_NAME', 'legrimoire')
+    db = client[db_name]
     
-    db.delete(recipe)
-    db.commit()
+    try:
+        result = await db.recipes.delete_one({"_id": ObjectId(recipe_id)})
+        
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Recipe not found")
+    finally:
+        client.close()
     
-    return {"message": "Recipe deleted successfully", "id": str(recipe_id)}
+    return {"message": "Recipe deleted successfully", "id": recipe_id}

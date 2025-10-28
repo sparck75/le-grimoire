@@ -130,24 +130,37 @@ class RecipeListResponse(BaseModel):
 async def list_all_recipes(
     skip: int = 0,
     limit: int = 100,
-    current_user: User = Depends(get_current_active_admin),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_active_admin)
 ):
     """List all recipes (admin view - includes private recipes)"""
-    recipes = db.query(Recipe).order_by(Recipe.created_at.desc()).offset(skip).limit(limit).all()
+    from motor.motor_asyncio import AsyncIOMotorClient
+    from app.core.config import settings
+    
+    # Direct MongoDB connection
+    mongo_url = getattr(settings, 'MONGODB_URL', 'mongodb://localhost:27017')
+    client = AsyncIOMotorClient(mongo_url)
+    db_name = getattr(settings, 'MONGODB_DB_NAME', 'legrimoire')
+    db = client[db_name]
+    
+    try:
+        # Get all recipes (including private ones for admin)
+        cursor = db.recipes.find({}).skip(skip).limit(limit)
+        raw_recipes = await cursor.to_list(length=limit)
+    finally:
+        client.close()
     
     return [
         RecipeListResponse(
-            id=str(recipe.id),
-            title=recipe.title,
-            description=recipe.description,
-            category=recipe.category,
-            cuisine=recipe.cuisine,
-            servings=recipe.servings,
-            total_time=recipe.total_time,
-            is_public=recipe.is_public
+            id=str(recipe["_id"]),
+            title=recipe.get("title", ""),
+            description=recipe.get("description", ""),
+            category=recipe.get("category", ""),
+            cuisine=recipe.get("cuisine", ""),
+            servings=recipe.get("servings"),
+            total_time=recipe.get("total_time"),
+            is_public=recipe.get("is_public", True)
         )
-        for recipe in recipes
+        for recipe in raw_recipes
     ]
 
 

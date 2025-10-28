@@ -31,6 +31,10 @@ def get_db():
 # MongoDB connection
 mongodb_client: AsyncIOMotorClient = None
 
+def get_mongodb():
+    """Get MongoDB client"""
+    return mongodb_client
+
 async def init_mongodb():
     """
     Initialize MongoDB connection and Beanie ODM.
@@ -39,7 +43,7 @@ async def init_mongodb():
     global mongodb_client
     
     # Import here to avoid circular imports
-    from app.models.mongodb import Ingredient, Category
+    from app.models.mongodb import Ingredient, Category, Recipe
     
     # Get MongoDB connection details from settings
     mongodb_url = getattr(settings, 'MONGODB_URL', 'mongodb://localhost:27017')
@@ -48,13 +52,14 @@ async def init_mongodb():
     # Create MongoDB client
     mongodb_client = AsyncIOMotorClient(mongodb_url)
     
+    print(f"✅ MongoDB client created: {mongodb_client is not None}")
+    print(f"✅ MongoDB initialized: {mongodb_db_name}")
+    
     # Initialize Beanie with document models
     await init_beanie(
         database=mongodb_client[mongodb_db_name],
-        document_models=[Ingredient, Category]
+        document_models=[Ingredient, Category, Recipe]
     )
-    
-    print(f"✅ MongoDB initialized: {mongodb_db_name}")
 
 async def close_mongodb():
     """
