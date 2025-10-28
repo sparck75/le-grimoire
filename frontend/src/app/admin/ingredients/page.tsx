@@ -25,6 +25,7 @@ interface PaginatedResponse {
 }
 
 export default function AdminIngredientsPage() {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -52,13 +53,13 @@ export default function AdminIngredientsPage() {
           page: page.toString(),
           limit: limit.toString(),
         });
-        url = `/api/admin/ingredients/search?${params}`;
+        url = `${apiUrl}/api/admin/ingredients/search?${params}`;
       } else {
         const params = new URLSearchParams({
           page: page.toString(),
           limit: limit.toString(),
         });
-        url = `/api/admin/ingredients?${params}`;
+        url = `${apiUrl}/api/admin/ingredients?${params}`;
       }
 
       const response = await fetch(url);
@@ -91,7 +92,7 @@ export default function AdminIngredientsPage() {
 
     try {
       const response = await fetch(
-        `/api/admin/ingredients/ingredients/${id}`,
+        `${apiUrl}/api/admin/ingredients/ingredients/${id}`,
         { method: 'DELETE' }
       );
 

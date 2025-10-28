@@ -12,6 +12,7 @@ interface Unit {
 }
 
 export default function UnitsPage() {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
   const [units, setUnits] = useState<Unit[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -23,7 +24,7 @@ export default function UnitsPage() {
   async function fetchUnits() {
     try {
       setLoading(true);
-      const response = await fetch('/api/admin/ingredients/units');
+      const response = await fetch(`${apiUrl}/api/admin/ingredients/units`);
       
       if (!response.ok) {
         throw new Error('Failed to fetch units');
