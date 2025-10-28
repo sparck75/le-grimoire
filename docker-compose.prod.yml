@@ -11,6 +11,7 @@ services:
     volumes:
       - mongodb_data:/data/db
       - ./data/openfoodfacts:/data/openfoodfacts:ro
+      - ./backend/scripts/mongodb:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
       interval: 10s
