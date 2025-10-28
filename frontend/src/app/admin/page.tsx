@@ -46,15 +46,25 @@ export default function AdminDashboard() {
       try {
         // Use client-side API calls directly to backend
         const apiUrl = getApiUrl();
+        console.log('🔍 Admin Dashboard API URL:', apiUrl);
         
         // Fetch stats from various endpoints
+        const statsUrl = `${apiUrl}/api/admin/ingredients/stats/summary`;
+        const recipesUrl = `${apiUrl}/api/v2/recipes`;
+        
+        console.log('📊 Fetching stats from:', statsUrl);
+        console.log('📊 Fetching recipes from:', recipesUrl);
+        
         const [statsRes, recipesRes] = await Promise.all([
-          fetch(`${apiUrl}/api/admin/ingredients/stats/summary`),
-          fetch(`${apiUrl}/api/v2/recipes`),
+          fetch(statsUrl),
+          fetch(recipesUrl),
         ]);
 
+        console.log('📊 Stats response:', statsRes.status, statsRes.ok);
+        console.log('📊 Recipes response:', recipesRes.status, recipesRes.ok);
+
         if (!statsRes.ok || !recipesRes.ok) {
-          throw new Error('Failed to fetch stats');
+          throw new Error(`Failed to fetch stats: stats=${statsRes.status}, recipes=${recipesRes.status}`);
         }
 
         const statsData = await statsRes.json();
