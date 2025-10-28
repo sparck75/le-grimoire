@@ -173,6 +173,16 @@ export default function Navigation() {
                       {user.role === 'reader' && '👀 Lecteur'}
                     </div>
                   </div>
+                  <Link 
+                    href="/profile" 
+                    className={styles.profileButton}
+                    onClick={() => {
+                      setUserMenuOpen(false);
+                      setIsOpen(false);
+                    }}
+                  >
+                    👤 Mon Profil
+                  </Link>
                   <button 
                     className={styles.logoutButton}
                     onClick={handleLogout}
