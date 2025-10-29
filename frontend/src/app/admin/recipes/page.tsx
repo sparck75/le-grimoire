@@ -605,7 +605,7 @@ export default function RecipesAdmin() {
     }
 
     try {
-      const response = await fetch(`/api/admin/recipes/${recipeId}`, {
+      const response = await fetch(`/api/v2/recipes/${recipeId}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -638,7 +638,7 @@ export default function RecipesAdmin() {
 
     try {
       const deletePromises = Array.from(selectedRecipes).map(recipeId =>
-        fetch(`/api/admin/recipes/${recipeId}`, { 
+        fetch(`/api/v2/recipes/${recipeId}`, { 
           method: 'DELETE',
           headers: {
             'Content-Type': 'application/json',
