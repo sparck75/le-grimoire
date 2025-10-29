@@ -92,7 +92,8 @@ export default function AdminRecipeNewPage() {
         is_public: isPublic,
       };
 
-      const response = await fetch('/api/v2/recipes/', {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${apiUrl}/api/v2/recipes/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(recipeData),

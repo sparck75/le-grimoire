@@ -4,6 +4,8 @@ services:
     image: mongo:7.0
     container_name: le-grimoire-mongodb-prod
     restart: always
+    env_file:
+      - .env
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USER:-legrimoire}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD}
@@ -26,6 +28,8 @@ services:
     image: postgres:15-alpine
     container_name: le-grimoire-db-prod
     restart: always
+    env_file:
+      - .env
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -48,6 +52,8 @@ services:
       dockerfile: Dockerfile
     container_name: le-grimoire-backend-prod
     restart: always
+    env_file:
+      - .env
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/le_grimoire
       MONGODB_URL: ${MONGODB_URL}
@@ -84,6 +90,8 @@ services:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
     container_name: le-grimoire-frontend-prod
     restart: always
+    env_file:
+      - .env
     environment:
       NODE_ENV: production
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}

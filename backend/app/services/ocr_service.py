@@ -126,6 +126,7 @@ class OCRService:
         # Try to find ingredients section
         ingredients_section = False
         instructions_section = False
+        instructions_lines = []
         
         for line in lines[1:]:
             line = line.strip()
@@ -146,7 +147,11 @@ class OCRService:
             if ingredients_section:
                 recipe['ingredients'].append(line)
             elif instructions_section:
-                recipe['instructions'] += line + '\n'
+                # Each line becomes a separate instruction step
+                instructions_lines.append(line)
+        
+        # Join instructions with newlines to ensure each step is on its own line
+        recipe['instructions'] = '\n'.join(instructions_lines)
         
         return recipe
 

@@ -50,7 +50,8 @@ export default function AdminRecipeEditPage() {
       if (!params.id) return;
 
       try {
-        const response = await fetch(`/api/v2/recipes/${params.id}`);
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        const response = await fetch(`${apiUrl}/api/v2/recipes/${params.id}`);
         
         if (!response.ok) {
           throw new Error('Failed to fetch recipe');
@@ -134,7 +135,8 @@ export default function AdminRecipeEditPage() {
         is_public: isPublic,
       };
 
-      const response = await fetch(`/api/v2/recipes/${params.id}`, {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${apiUrl}/api/v2/recipes/${params.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(recipeData),
@@ -158,7 +160,8 @@ export default function AdminRecipeEditPage() {
     if (!confirm('Êtes-vous sûr de vouloir supprimer cette recette?')) return;
 
     try {
-      const response = await fetch(`/api/v2/recipes/${params.id}`, {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${apiUrl}/api/v2/recipes/${params.id}`, {
         method: 'DELETE',
       });
 

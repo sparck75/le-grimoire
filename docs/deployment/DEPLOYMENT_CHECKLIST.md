@@ -249,16 +249,16 @@ openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
 - [ ] Certificats temporaires générés
 - [ ] Fichiers présents dans `nginx/ssl/`
 
-### Vérification docker-compose.prod.yml
+### Vérification docker-compose.yml
 
-- [ ] Fichier `docker-compose.prod.yml` vérifié
-- [ ] Section nginx référence `nginx.prod.conf`
+- [ ] Fichier `docker-compose.yml` vérifié
+- [ ] Section nginx référence `nginx.conf`
 - [ ] Volume certbot présent : `./certbot/www:/var/www/certbot:ro`
 
 ### Démarrage de l'application
 
 ```bash
-docker compose -f docker-compose.prod.yml up -d --build
+docker compose up -d --build
 ```
 
 - [ ] Commande lancée
@@ -269,8 +269,8 @@ docker compose -f docker-compose.prod.yml up -d --build
 ### Vérification
 
 ```bash
-docker compose -f docker-compose.prod.yml ps
-docker compose -f docker-compose.prod.yml logs
+docker compose ps
+docker compose logs
 ```
 
 - [ ] Tous les conteneurs sont "Up" :
@@ -321,7 +321,7 @@ snap install --classic certbot
 ### Obtention du certificat
 
 ```bash
-docker compose -f docker-compose.prod.yml stop nginx
+docker compose stop nginx
 
 certbot certonly --standalone \
   -d legrimoireonline.ca -d www.legrimoireonline.ca \
@@ -331,7 +331,7 @@ certbot certonly --standalone \
 cp /etc/letsencrypt/live/legrimoireonline.ca/fullchain.pem nginx/ssl/
 cp /etc/letsencrypt/live/legrimoireonline.ca/privkey.pem nginx/ssl/
 
-docker compose -f docker-compose.prod.yml start nginx
+docker compose start nginx
 ```
 
 - [ ] Nginx arrêté
@@ -383,14 +383,14 @@ chmod +x /root/renew-ssl.sh
 ### Initialisation MongoDB
 
 ```bash
-docker compose -f docker-compose.prod.yml exec backend python scripts/import_openfoodfacts.py
+docker compose exec backend python scripts/import_openfoodfacts.py
 ```
 
 - [ ] Script d'import lancé
 - [ ] Import terminé sans erreurs
 - [ ] Nombre d'ingrédients vérifié :
   ```bash
-  docker compose -f docker-compose.prod.yml exec mongodb mongosh \
+  docker compose exec mongodb mongosh \
     -u legrimoire -p VOTRE_MONGO_PASSWORD --authenticationDatabase admin \
     --eval "use legrimoire; db.ingredients.countDocuments()"
   ```
@@ -448,9 +448,9 @@ cat > /root/check-grimoire.sh << 'EOF'
 cd /root/apps/le-grimoire
 
 # Vérifier conteneurs
-if [ $(docker compose -f docker-compose.prod.yml ps -q | wc -l) -lt 5 ]; then
+if [ $(docker compose ps -q | wc -l) -lt 5 ]; then
     echo "$(date): ALERTE - Certains conteneurs sont arrêtés" >> /var/log/grimoire-monitor.log
-    docker compose -f docker-compose.prod.yml up -d
+    docker compose up -d
 fi
 
 # Vérifier accès HTTPS

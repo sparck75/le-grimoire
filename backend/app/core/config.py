@@ -43,6 +43,20 @@ class Settings(BaseSettings):
     UPLOAD_DIR: str = "/app/uploads"
     MAX_UPLOAD_SIZE: int = 10 * 1024 * 1024  # 10MB
     
+    # AI Recipe Extraction
+    ENABLE_AI_EXTRACTION: bool = False  # Feature flag
+    AI_PROVIDER: str = "openai"  # openai, gemini, tesseract, auto
+    AI_FALLBACK_ENABLED: bool = True
+    
+    # OpenAI Configuration
+    OPENAI_API_KEY: str = ""
+    OPENAI_MODEL: str = "gpt-4o"
+    OPENAI_MAX_TOKENS: int = 2000
+    
+    # Google Gemini Configuration (future)
+    GOOGLE_AI_API_KEY: str = ""
+    GEMINI_MODEL: str = "gemini-1.5-flash"
+    
     # Scraper
     SCRAPER_USER_AGENT: str = "Mozilla/5.0 (compatible; LeGrimoire/1.0)"
     SCRAPER_RATE_LIMIT_SECONDS: int = 2
