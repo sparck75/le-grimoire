@@ -10,7 +10,7 @@ from app.api import (
     recipes, auth, ocr, grocery, shopping_lists,
     admin_ingredients, admin_recipes, admin_users,
     ingredients, categories, recipe_images, ai_extraction, admin_ai,
-    wines, liquors
+    wines, liquors, admin_wines
 )
 from app.core.config import settings
 from app.core.database import init_mongodb, close_mongodb
@@ -62,6 +62,7 @@ app.include_router(admin_ingredients.router, prefix="/api/admin/ingredients", ta
 app.include_router(admin_recipes.router, prefix="/api/admin", tags=["Admin - Recipes"])
 app.include_router(admin_users.router, prefix="/api/admin/users", tags=["Admin - Users"])
 app.include_router(admin_ai.router, prefix="/api/admin/ai", tags=["Admin - AI"])
+app.include_router(admin_wines.router, prefix="/api/admin", tags=["Admin - Wines"])
 
 # New MongoDB-based endpoints
 app.include_router(ingredients.router, prefix="/api/v2/ingredients", tags=["Ingredients v2"])

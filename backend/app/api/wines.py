@@ -1,12 +1,14 @@
 """
-Wines API routes
+Wines API routes (User's personal cellier)
 """
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 from typing import List, Optional
 from pydantic import BaseModel
 from datetime import datetime
 from app.models.mongodb import Wine
 from app.models.mongodb.wine import GrapeVariety, ProfessionalRating
+from app.core.security import get_current_user, optional_current_user
+from app.models.user import User
 
 router = APIRouter()
 
@@ -109,10 +111,18 @@ async def list_wines(
     region: Optional[str] = None,
     country: Optional[str] = None,
     search: Optional[str] = None,
-    in_stock: bool = False
+    in_stock: bool = False,
+    current_user: Optional[User] = Depends(optional_current_user)
 ):
-    """List wines with optional filtering"""
-    query = {}
+    """
+    List wines in user's personal cellier
+    Requires authentication to see personal wines
+    """
+    # If no user, return empty list (cellier is personal)
+    if not current_user:
+        return []
+    
+    query = {"user_id": str(current_user.id)}  # Only user's wines
     
     if wine_type:
         query["wine_type"] = wine_type
@@ -151,10 +161,13 @@ async def list_wines(
 
 
 @router.get("/{wine_id}", response_model=WineResponse)
-async def get_wine(wine_id: str):
-    """Get specific wine"""
+async def get_wine(
+    wine_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Get specific wine from user's cellier"""
     wine = await Wine.get(wine_id)
-    if not wine:
+    if not wine or wine.user_id != str(current_user.id):
         raise HTTPException(status_code=404, detail="Wine not found")
     
     return WineResponse(
@@ -175,9 +188,16 @@ async def get_wine(wine_id: str):
 
 
 @router.post("/", response_model=WineResponse)
-async def create_wine(wine_data: WineCreate):
-    """Create new wine"""
-    wine = Wine(**wine_data.dict())
+async def create_wine(
+    wine_data: WineCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Create new wine in user's cellier"""
+    wine = Wine(
+        **wine_data.dict(),
+        user_id=str(current_user.id),  # Associate with user
+        is_public=False  # User wines are private
+    )
     await wine.insert()
     
     return WineResponse(
@@ -198,10 +218,14 @@ async def create_wine(wine_data: WineCreate):
 
 
 @router.put("/{wine_id}", response_model=WineResponse)
-async def update_wine(wine_id: str, wine_data: WineUpdate):
-    """Update wine"""
+async def update_wine(
+    wine_id: str,
+    wine_data: WineUpdate,
+    current_user: User = Depends(get_current_user)
+):
+    """Update wine in user's cellier"""
     wine = await Wine.get(wine_id)
-    if not wine:
+    if not wine or wine.user_id != str(current_user.id):
         raise HTTPException(status_code=404, detail="Wine not found")
     
     # Update fields
@@ -230,10 +254,13 @@ async def update_wine(wine_id: str, wine_data: WineUpdate):
 
 
 @router.delete("/{wine_id}")
-async def delete_wine(wine_id: str):
-    """Delete wine"""
+async def delete_wine(
+    wine_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Delete wine from user's cellier"""
     wine = await Wine.get(wine_id)
-    if not wine:
+    if not wine or wine.user_id != str(current_user.id):
         raise HTTPException(status_code=404, detail="Wine not found")
     
     await wine.delete()
@@ -241,12 +268,19 @@ async def delete_wine(wine_id: str):
 
 
 @router.get("/stats/summary")
-async def get_wine_stats():
-    """Get wine statistics"""
-    total = await Wine.count()
+async def get_wine_stats(
+    current_user: Optional[User] = Depends(optional_current_user)
+):
+    """Get wine statistics for user's cellier"""
+    if not current_user:
+        return {"total": 0, "in_stock": 0, "by_type": {}, "by_country": {}}
+    
+    query = {"user_id": str(current_user.id)}
+    total = await Wine.find(query).count()
     
     # Aggregate by type
     pipeline = [
+        {"$match": query},
         {"$group": {"_id": "$wine_type", "count": {"$sum": 1}}}
     ]
     by_type_cursor = Wine.aggregate(pipeline)
@@ -255,6 +289,7 @@ async def get_wine_stats():
     
     # Aggregate by country
     pipeline = [
+        {"$match": query},
         {"$group": {"_id": "$country", "count": {"$sum": 1}}},
         {"$sort": {"count": -1}},
         {"$limit": 10}
@@ -264,11 +299,122 @@ async def get_wine_stats():
     by_country = {item["_id"]: item["count"] for item in by_country_list if item["_id"]}
     
     # Count in stock
-    in_stock = await Wine.find({"current_quantity": {"$gt": 0}}).count()
+    in_stock_query = {**query, "current_quantity": {"$gt": 0}}
+    in_stock = await Wine.find(in_stock_query).count()
     
     return {
         "total": total,
         "in_stock": in_stock,
         "by_type": by_type,
         "by_country": by_country
+    }
+
+
+class AddToCellierRequest(BaseModel):
+    """Request to add wine from master database to user's cellier"""
+    master_wine_id: str
+    current_quantity: int = 1
+    purchase_price: Optional[float] = None
+    purchase_location: Optional[str] = None
+    cellar_location: Optional[str] = None
+    rating: Optional[float] = None
+
+
+@router.post("/from-master", response_model=WineResponse)
+async def add_wine_from_master(
+    request: AddToCellierRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Add a wine from master database to user's cellier
+    Used after barcode scanning or browsing master wines
+    """
+    # Get master wine
+    master_wine = await Wine.get(request.master_wine_id)
+    if not master_wine or master_wine.user_id is not None:
+        raise HTTPException(status_code=404, detail="Master wine not found")
+    
+    # Create user's copy with inventory info
+    user_wine = Wine(
+        # Copy all wine metadata from master
+        name=master_wine.name,
+        producer=master_wine.producer,
+        vintage=master_wine.vintage,
+        country=master_wine.country,
+        region=master_wine.region,
+        appellation=master_wine.appellation,
+        wine_type=master_wine.wine_type,
+        classification=master_wine.classification,
+        grape_varieties=master_wine.grape_varieties,
+        alcohol_content=master_wine.alcohol_content,
+        body=master_wine.body,
+        sweetness=master_wine.sweetness,
+        acidity=master_wine.acidity,
+        tannins=master_wine.tannins,
+        color=master_wine.color,
+        nose=master_wine.nose,
+        palate=master_wine.palate,
+        tasting_notes=master_wine.tasting_notes,
+        food_pairings=master_wine.food_pairings,
+        image_url=master_wine.image_url,
+        barcode=master_wine.barcode,
+        # Add user-specific inventory info
+        user_id=str(current_user.id),
+        current_quantity=request.current_quantity,
+        purchase_price=request.purchase_price,
+        purchase_location=request.purchase_location,
+        cellar_location=request.cellar_location,
+        rating=request.rating,
+        is_public=False
+    )
+    
+    await user_wine.insert()
+    
+    return WineResponse(
+        id=str(user_wine.id),
+        name=user_wine.name,
+        producer=user_wine.producer,
+        vintage=user_wine.vintage,
+        wine_type=user_wine.wine_type,
+        region=user_wine.region,
+        country=user_wine.country,
+        current_quantity=user_wine.current_quantity,
+        image_url=user_wine.image_url,
+        rating=user_wine.rating,
+        appellation=user_wine.appellation,
+        alcohol_content=user_wine.alcohol_content,
+        tasting_notes=user_wine.tasting_notes
+    )
+
+
+@router.get("/search/barcode/{barcode}")
+async def search_wine_by_barcode(
+    barcode: str,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Search for wine by barcode in master database
+    Returns wine info if found, 404 if not
+    """
+    wine = await Wine.find_one({
+        "barcode": barcode,
+        "user_id": None  # Search only master wines
+    })
+    
+    if not wine:
+        raise HTTPException(
+            status_code=404,
+            detail="Wine not found with this barcode. You can create it using AI."
+        )
+    
+    return {
+        "id": str(wine.id),
+        "name": wine.name,
+        "producer": wine.producer,
+        "vintage": wine.vintage,
+        "wine_type": wine.wine_type,
+        "region": wine.region,
+        "country": wine.country,
+        "image_url": wine.image_url,
+        "barcode": wine.barcode
     }
