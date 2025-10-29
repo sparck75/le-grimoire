@@ -52,13 +52,14 @@ async def extract_recipe_from_image(
     upload_dir = getattr(settings, 'UPLOAD_DIR', '/tmp/uploads')
     os.makedirs(upload_dir, exist_ok=True)
     file_id = str(uuid4())
-    file_path = os.path.join(
-        upload_dir,
-        f"{file_id}_{file.filename or 'upload.jpg'}"
-    )
+    filename = file.filename or 'upload.jpg'
+    file_path = os.path.join(upload_dir, f"{file_id}_{filename}")
     
     with open(file_path, "wb") as f:
         f.write(contents)
+    
+    # Generate image URL for frontend
+    image_url = f"/uploads/{file_id}_{filename}"
     
     try:
         # Determine provider
@@ -71,7 +72,7 @@ async def extract_recipe_from_image(
             parsed = ocr_service.parse_recipe(text)
             
             # Convert to ExtractedRecipe format
-            return ExtractedRecipe(
+            result = ExtractedRecipe(
                 title=parsed.get('title', 'Recette sans titre'),
                 ingredients=[
                     {
@@ -83,12 +84,19 @@ async def extract_recipe_from_image(
                     for ing in parsed.get('ingredients', [])
                 ],
                 instructions=parsed.get('instructions', ''),
-                confidence_score=0.5
+                confidence_score=0.5,
+                image_url=image_url,
+                extraction_method='ocr'
             )
+            return result
         
         elif use_provider == "openai":
             # Use AI extraction
-            return await ai_recipe_service.extract_recipe(file_path)
+            result = await ai_recipe_service.extract_recipe(file_path)
+            # Add image URL and method to the result
+            result.image_url = image_url
+            result.extraction_method = 'ai'
+            return result
         
         else:
             raise HTTPException(
@@ -115,7 +123,9 @@ async def extract_recipe_from_image(
                         for ing in parsed.get('ingredients', [])
                     ],
                     instructions=parsed.get('instructions', ''),
-                    confidence_score=0.3
+                    confidence_score=0.3,
+                    image_url=image_url,
+                    extraction_method='ocr_fallback'
                 )
             except Exception as fallback_error:
                 raise HTTPException(
@@ -123,24 +133,10 @@ async def extract_recipe_from_image(
                     detail=f"Extraction failed: {str(e)}. Fallback also failed: {str(fallback_error)}"
                 )
         
-        # Cleanup file on error
-        if os.path.exists(file_path):
-            try:
-                os.remove(file_path)
-            except:
-                pass
-        
         raise HTTPException(
             status_code=500,
             detail=f"Extraction failed: {str(e)}"
         )
-    finally:
-        # Cleanup processed file
-        if os.path.exists(file_path):
-            try:
-                os.remove(file_path)
-            except:
-                pass
 
 
 @router.get("/providers")

@@ -112,6 +112,14 @@ function ManualRecipeForm() {
   const loadAIExtractedData = (recipe: any) => {
     setLoading(true);
     try {
+      // Set the image URL if provided
+      if (recipe.image_url) {
+        setOcrImageUrl(recipe.image_url);
+        if (!imageUrl) {
+          setImageUrl(recipe.image_url);
+        }
+      }
+      
       // Set basic fields
       if (recipe.title) setTitle(recipe.title);
       if (recipe.description) setDescription(recipe.description);
@@ -149,12 +157,14 @@ function ManualRecipeForm() {
         setEquipment(recipe.tools_needed);
       }
       
-      // Show success message with confidence score
+      // Show success message with confidence score and extraction method
       if (recipe.confidence_score) {
         const confidence = Math.round(recipe.confidence_score * 100);
-        setError(`✅ Recette extraite avec ${confidence}% de confiance. Veuillez vérifier et ajuster si nécessaire.`);
-        // Clear the "error" (actually success message) after 5 seconds
-        setTimeout(() => setError(null), 5000);
+        const method = recipe.extraction_method === 'ai' ? 'IA (GPT-4 Vision)' : 
+                       recipe.extraction_method === 'ocr_fallback' ? 'OCR (secours)' : 'OCR';
+        setError(`✅ Recette extraite avec ${method} - ${confidence}% de confiance. Veuillez vérifier et ajuster si nécessaire.`);
+        // Clear the "error" (actually success message) after 8 seconds
+        setTimeout(() => setError(null), 8000);
       }
     } catch (err) {
       console.error('Error loading AI extracted data:', err);

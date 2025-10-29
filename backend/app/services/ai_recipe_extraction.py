@@ -37,6 +37,8 @@ class ExtractedRecipe(BaseModel):
     tools_needed: List[str] = Field(default_factory=list)
     notes: Optional[str] = Field(None, description="Additional notes")
     confidence_score: Optional[float] = Field(None, description="Extraction confidence 0-1")
+    image_url: Optional[str] = Field(None, description="URL of the uploaded image")
+    extraction_method: Optional[str] = Field(None, description="Method used: 'ai' or 'ocr'")
 
 
 class AIRecipeExtractionService:

@@ -70,7 +70,10 @@ export default function UploadPage() {
 
       // For AI extraction, data is already structured
       if (useAI) {
-        setMessage(`Extraction terminée avec ${Math.round((data.confidence_score || 0.5) * 100)}% de confiance! Redirection...`)
+        const confidence = Math.round((data.confidence_score || 0.5) * 100);
+        const method = data.extraction_method === 'ai' ? 'IA (GPT-4 Vision)' : 
+                       data.extraction_method === 'ocr_fallback' ? 'OCR (secours)' : 'OCR';
+        setMessage(`✅ Extraction ${method} terminée avec ${confidence}% de confiance! Redirection...`)
         // Store in sessionStorage for recipe form
         sessionStorage.setItem('extractedRecipe', JSON.stringify(data))
         setTimeout(() => {
