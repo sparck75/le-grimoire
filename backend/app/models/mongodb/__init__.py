@@ -7,5 +7,7 @@ from .ingredient import Ingredient
 from .category import Category
 from .recipe import Recipe
 from .ai_extraction_log import AIExtractionLog
+from .wine import Wine
+from .liquor import Liquor
 
-__all__ = ["Ingredient", "Category", "Recipe", "AIExtractionLog"]
+__all__ = ["Ingredient", "Category", "Recipe", "AIExtractionLog", "Wine", "Liquor"]

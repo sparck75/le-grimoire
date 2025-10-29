@@ -9,7 +9,8 @@ from contextlib import asynccontextmanager
 from app.api import (
     recipes, auth, ocr, grocery, shopping_lists,
     admin_ingredients, admin_recipes, admin_users,
-    ingredients, categories, recipe_images, ai_extraction, admin_ai
+    ingredients, categories, recipe_images, ai_extraction, admin_ai,
+    wines, liquors
 )
 from app.core.config import settings
 from app.core.database import init_mongodb, close_mongodb
@@ -65,6 +66,8 @@ app.include_router(admin_ai.router, prefix="/api/admin/ai", tags=["Admin - AI"])
 # New MongoDB-based endpoints
 app.include_router(ingredients.router, prefix="/api/v2/ingredients", tags=["Ingredients v2"])
 app.include_router(categories.router, prefix="/api/v2/categories", tags=["Categories v2"])
+app.include_router(wines.router, prefix="/api/v2/wines", tags=["Wines"])
+app.include_router(liquors.router, prefix="/api/v2/liquors", tags=["Liquors"])
 
 # Mount static files for ingredient images
 data_path = Path("/app/data")
