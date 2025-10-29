@@ -1,6 +1,23 @@
 # Recipe Backup & Restore System
 
-This system provides comprehensive backup and restore capabilities for your recipe database.
+This system provides comprehensive backup and restore capabilities for your recipe database and images.
+
+## Automated Sync Script (Recommended)
+
+For the easiest way to sync production to development, use the automated script:
+
+```powershell
+# Full sync (MongoDB + images + admin reset)
+.\sync-prod-to-dev.ps1 -ResetAdmin
+
+# MongoDB only
+.\sync-prod-to-dev.ps1 -SkipImages
+
+# Images only
+.\sync-prod-to-dev.ps1 -SkipMongoDB
+```
+
+This script automates all the manual steps described below. For manual step-by-step instructions, continue reading.
 
 ## Quick Reference
 
@@ -378,16 +395,117 @@ ssh legrimoire@legrimoire-prod "ls -lh ~/apps/le-grimoire/backups/ | tail -5"
 ssh legrimoire@legrimoire-prod "cd ~/apps/le-grimoire && docker compose exec backend python scripts/backup_restore_recipes.py restore /backups/recipes_backup_20251026_155043.json --clear"
 ```
 
-## Migration Guide
+## Complete Database & Images Sync
 
-### From Old System to New
-1. Export from old system to JSON
-2. Ensure JSON matches the required format
-3. Import: `backup_restore_recipes.py import <file>`
+### Full Production to Development Sync
 
-### Between Environments
+This process syncs both MongoDB database and recipe images from production to local dev.
 
-**Development to Production:**
+**Step 1: Backup Production MongoDB**
+```bash
+# SSH into production
+ssh legrimoire@149.248.53.57
+cd ~/apps/le-grimoire
+
+# Create backup directory
+mkdir -p ~/backups/mongodb
+
+# Dump MongoDB database
+docker compose -f docker-compose.prod.yml exec -T mongodb mongodump \
+  --authenticationDatabase=admin \
+  --username=legrimoire \
+  --password=9pHOBy6G1_PWF__hYI4QpIe3_TJ8szT4 \
+  --db=legrimoire \
+  --archive > ~/backups/mongodb/legrimoire_$(date +%Y%m%d_%H%M%S).archive
+
+# Verify backup created
+ls -lh ~/backups/mongodb/
+```
+
+**Step 2: Backup Production Images**
+```bash
+# Still on production server
+# Backup from Docker volume (where actual images are stored)
+sudo tar -czf ~/backups/mongodb/uploads_volume_$(date +%Y%m%d_%H%M%S).tar.gz \
+  -C /var/lib/docker/volumes/le-grimoire_uploaded_images/_data .
+
+# Verify backup size
+ls -lh ~/backups/mongodb/
+```
+
+**Step 3: Download Backups to Local**
+```powershell
+# On local machine (PowerShell)
+# Create local backup directory
+mkdir -p d:\Github\le-grimoire\backups
+
+# Download MongoDB backup (replace timestamp with actual filename)
+scp legrimoire@149.248.53.57:~/backups/mongodb/legrimoire_YYYYMMDD_HHMMSS.archive `
+  d:\Github\le-grimoire\backups\
+
+# Download images backup (replace timestamp with actual filename)
+scp legrimoire@149.248.53.57:~/backups/mongodb/uploads_volume_YYYYMMDD_HHMMSS.tar.gz `
+  d:\Github\le-grimoire\backups\
+```
+
+**Step 4: Restore MongoDB to Local**
+```powershell
+# Use cmd for input redirection (PowerShell doesn't support < operator)
+cmd /c "docker compose exec -T mongodb mongorestore \
+  --authenticationDatabase=admin \
+  --username=legrimoire \
+  --password=grimoire_mongo_password \
+  --archive \
+  --drop < d:\Github\le-grimoire\backups\legrimoire_YYYYMMDD_HHMMSS.archive"
+
+# Verify restoration
+docker compose exec mongodb mongosh -u legrimoire -p grimoire_mongo_password \
+  --authenticationDatabase admin legrimoire --eval "db.recipes.countDocuments()"
+```
+
+**Step 5: Extract and Copy Images to Local**
+```powershell
+# Extract images to temp directory
+mkdir d:\Github\le-grimoire\backups\uploads_temp
+tar -xzf d:\Github\le-grimoire\backups\uploads_volume_YYYYMMDD_HHMMSS.tar.gz `
+  -C d:\Github\le-grimoire\backups\uploads_temp
+
+# Copy to backend uploads directory
+Copy-Item -Path "d:\Github\le-grimoire\backups\uploads_temp\*" `
+  -Destination "d:\Github\le-grimoire\backend\uploads\" `
+  -Recurse -Force
+
+# Copy images into Docker volume
+docker compose cp d:\Github\le-grimoire\backend\uploads\. backend:/app/uploads/
+
+# Verify images in container
+docker compose exec backend ls -lah /app/uploads/recipes/
+```
+
+**Step 6: Reset Admin Account (Optional)**
+```powershell
+# Generate password hash
+docker compose exec backend python -c `
+  "from passlib.context import CryptContext; ctx = CryptContext(schemes=['bcrypt'], deprecated='auto'); print(ctx.hash('admin123'))"
+
+# Update PostgreSQL user (save the hash from previous command)
+docker compose exec db psql -U grimoire -d le_grimoire -c `
+  "UPDATE users SET email = 'admin@legrimoireonline.ca', username = 'admin', password_hash = '\$2b\$12\$...' WHERE email = 'admin@test.com'"
+
+# Verify admin user
+docker compose exec db psql -U grimoire -d le_grimoire -c `
+  "SELECT email, username, role FROM users WHERE email = 'admin@legrimoireonline.ca'"
+```
+
+**Login Credentials After Sync:**
+- Email: `admin@legrimoireonline.ca`
+- Password: `admin123` (or whatever you set)
+
+### Production to Development (Recipe-Only Sync)
+
+If you only need recipes (not images):
+
+**Export from Production:**
 ```bash
 # On local development - export recipes
 docker compose exec backend python scripts/backup_restore_recipes.py export /app/dev_recipes.json
