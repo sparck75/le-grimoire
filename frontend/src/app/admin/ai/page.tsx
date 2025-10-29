@@ -178,9 +178,14 @@ export default function AIAdminPage() {
     <div>
       <div className="admin-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h1>🤖 Gestion de l&apos;IA</h1>
-        <Link href="/admin" className="btn btn-secondary">
-          ← Retour au Tableau de Bord
-        </Link>
+        <div style={{ display: 'flex', gap: '1rem' }}>
+          <Link href="/admin/ai/stats" className="btn btn-primary">
+            📊 Voir les statistiques
+          </Link>
+          <Link href="/admin" className="btn btn-secondary">
+            ← Retour au Tableau de Bord
+          </Link>
+        </div>
       </div>
 
       {error && (
