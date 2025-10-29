@@ -41,9 +41,10 @@ export default function UploadPage() {
       formData.append('file', file)
 
       // Check if AI extraction is available
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
       let useAI = false
       try {
-        const providersResponse = await fetch('/api/ai/providers')
+        const providersResponse = await fetch(`${apiUrl}/api/ai/providers`)
         if (providersResponse.ok) {
           const providersData = await providersResponse.json()
           useAI = providersData.ai_enabled && providersData.providers.openai?.available
@@ -54,7 +55,7 @@ export default function UploadPage() {
       }
 
       // Choose endpoint based on availability
-      const endpoint = useAI ? '/api/ai/extract' : '/api/ocr/upload'
+      const endpoint = useAI ? `${apiUrl}/api/ai/extract` : `${apiUrl}/api/ocr/upload`
       setMessage(useAI ? 'Extraction IA en cours... (analyse intelligente)' : 'Extraction OCR en cours...')
 
       const response = await fetch(endpoint, {

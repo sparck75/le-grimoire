@@ -107,10 +107,16 @@ async def extract_recipe_from_image(
             )
             
     except Exception as e:
+        # Log the actual error for debugging
+        print(f"⚠️  AI extraction error: {type(e).__name__}: {str(e)}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
+        
         # Try fallback if enabled
         ai_fallback = getattr(settings, 'AI_FALLBACK_ENABLED', True)
         if ai_fallback and use_provider != "tesseract":
             try:
+                print(f"🔄 Falling back to OCR extraction...")
                 text = ocr_service.extract_text(file_path)
                 parsed = ocr_service.parse_recipe(text)
                 return ExtractedRecipe(

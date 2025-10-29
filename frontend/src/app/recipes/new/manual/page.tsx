@@ -30,6 +30,43 @@ function ManualRecipeForm() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // Helper function to normalize instructions formatting
+  const normalizeInstructions = (text: string): string => {
+    if (!text) return '';
+    
+    // First, try to split by newlines
+    let steps = text.split(/[\n\r]+/);
+    
+    // If we only got one line, try other splitting strategies
+    if (steps.length === 1) {
+      const singleLine = text.trim();
+      
+      // Check if it contains numbered steps like "1. ... 2. ... 3. ..."
+      if (/\d+\.\s/.test(singleLine)) {
+        steps = singleLine.split(/(?=\d+\.\s)/);
+      }
+      // If it's one long paragraph, try to split by sentence-ending patterns
+      // Look for ". " followed by a capital letter (new sentence)
+      else if (singleLine.length > 100) {
+        // Split on ". " but keep the period with the previous sentence
+        steps = singleLine.split(/\.\s+(?=[A-ZÀÂÄÆÇÉÈÊËÏÎÔŒÙÛÜŸ])/);
+        // Add back the periods
+        steps = steps.map((step, index) => 
+          index < steps.length - 1 ? step + '.' : step
+        );
+      }
+    }
+    
+    // Clean up each step - trim, remove leading numbers if present, filter empty lines
+    steps = steps
+      .map(step => step.trim())
+      .map(step => step.replace(/^\d+\.\s*/, '')) // Remove leading "1. ", "2. ", etc.
+      .filter(step => step.length > 0);
+    
+    // Join with newlines to ensure each step is on its own line
+    return steps.join('\n');
+  };
+
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [ingredients, setIngredients] = useState<string[]>(['']);
@@ -130,7 +167,10 @@ function ManualRecipeForm() {
       // Set basic fields
       if (recipe.title) setTitle(recipe.title);
       if (recipe.description) setDescription(recipe.description);
-      if (recipe.instructions) setInstructions(recipe.instructions);
+      if (recipe.instructions) {
+        // Normalize instructions to ensure each step is on its own line
+        setInstructions(normalizeInstructions(recipe.instructions));
+      }
       
       // Set numeric fields
       if (recipe.servings) setServings(recipe.servings);
@@ -263,7 +303,8 @@ function ManualRecipeForm() {
 
       console.log('Creating recipe:', recipeData);
 
-      const response = await fetch('/api/v2/recipes/', {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${apiUrl}/api/v2/recipes/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(recipeData),
@@ -640,12 +681,15 @@ function ManualRecipeForm() {
             <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold', color: '#5c3317' }}>
               Instructions *
             </label>
+            <p style={{ fontSize: '0.875rem', color: '#666', marginBottom: '0.5rem' }}>
+              💡 Conseil: Mettez chaque étape sur une ligne séparée (appuyez sur Entrée entre les étapes)
+            </p>
             <textarea 
               value={instructions} 
               onChange={(e) => setInstructions(e.target.value)} 
               required 
               rows={8}
-              placeholder="Étape 1: ...&#10;Étape 2: ..."
+              placeholder="Préchauffer le four à 180°C&#10;Mélanger les ingrédients secs dans un bol&#10;Ajouter les ingrédients liquides..."
               style={{ 
                 width: '100%', padding: '0.75rem', fontSize: '1rem', 
                 border: '2px solid #ddd', borderRadius: '8px',

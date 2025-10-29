@@ -63,7 +63,14 @@ Extract the following:
    - quantity: Numeric value (number or null)
    - unit: Unit of measure (string: "tasse", "ml", "g", "c. à soupe", etc., or null)
    - preparation_notes: Full text as written (string)
-10. **instructions**: Step-by-step instructions (string, numbered or bulleted)
+10. **instructions**: Step-by-step instructions (string). **CRITICAL: You MUST separate each instruction step with a newline character (\n). Extract each distinct action or step and put it on its own line. Do NOT put all instructions in one paragraph. Do NOT number the steps.**
+   
+   Example of CORRECT format:
+   "Faites fondre le beurre dans une casserole\nAjoutez les oignons et faites-les revenir 5-7 minutes\nIncorporez le bouillon et portez à ébullition\nLaissez mijoter 20-25 minutes"
+   
+   Example of WRONG format (DO NOT DO THIS):
+   "Faites fondre le beurre. Ajoutez les oignons. Incorporez le bouillon."
+
 11. **tools_needed**: Array of required tools/equipment (strings, optional)
 12. **notes**: Additional notes, tips, or variations (string, optional)
 
@@ -75,6 +82,8 @@ IMPORTANT:
 - Be thorough and accurate
 - Look for times written as "15 min", "1h30", "1 heure", etc.
 - Common units: tasse, c. à soupe, c. à thé, ml, L, g, kg, unité, pincée
+- **CRITICAL for instructions**: Each step MUST be on a separate line. Use newline (\n) to separate steps. Do NOT add numbers - just the step text. Example:
+  "Préchauffer le four à 180°C\nMélanger les ingrédients secs\nAjouter les ingrédients liquides"
 
 Return ONLY valid JSON matching this structure, no additional text or markdown.
 """
@@ -197,6 +206,12 @@ Return ONLY valid JSON matching this structure, no additional text or markdown.
                 'total_tokens': response.usage.total_tokens if response.usage else None,
                 'finish_reason': response.choices[0].finish_reason if response.choices else None,
             }
+            
+            # Sanitize list fields: convert None to empty list
+            list_fields = ['tools_needed', 'categories', 'tags']
+            for field in list_fields:
+                if field in recipe_data and recipe_data[field] is None:
+                    recipe_data[field] = []
             
             # Validate and return structured data
             return ExtractedRecipe(**recipe_data)
