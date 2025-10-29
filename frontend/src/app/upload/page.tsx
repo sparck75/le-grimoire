@@ -40,60 +40,87 @@ export default function UploadPage() {
       const formData = new FormData()
       formData.append('file', file)
 
-      // Upload image
-      setMessage('Téléchargement de l\'image...')
-      const response = await fetch('/api/ocr/upload', {
+      // Check if AI extraction is available
+      let useAI = false
+      try {
+        const providersResponse = await fetch('/api/ai/providers')
+        if (providersResponse.ok) {
+          const providersData = await providersResponse.json()
+          useAI = providersData.ai_enabled && providersData.providers.openai?.available
+        }
+      } catch (err) {
+        // If AI check fails, fall back to OCR
+        console.log('AI extraction not available, using OCR')
+      }
+
+      // Choose endpoint based on availability
+      const endpoint = useAI ? '/api/ai/extract' : '/api/ocr/upload'
+      setMessage(useAI ? 'Extraction IA en cours... (analyse intelligente)' : 'Extraction OCR en cours...')
+
+      const response = await fetch(endpoint, {
         method: 'POST',
         body: formData,
       })
 
       if (!response.ok) {
-        throw new Error('Erreur lors du téléchargement')
+        throw new Error('Erreur lors du traitement')
       }
 
       const data = await response.json()
-      const jobId = data.id
-      
-      // Process OCR
-      setUploading(false)
-      setProcessing(true)
-      setMessage('Extraction du texte en cours...')
-      
-      // Poll for OCR completion (simplified - in production use WebSocket or server-sent events)
-      let attempts = 0
-      const maxAttempts = 30 // 30 seconds max
-      
-      const checkStatus = async () => {
-        try {
-          const statusResponse = await fetch(`/api/ocr/jobs/${jobId}`)
-          if (!statusResponse.ok) {
-            throw new Error('Erreur lors de la vérification du statut')
+
+      // For AI extraction, data is already structured
+      if (useAI) {
+        setMessage(`Extraction terminée avec ${Math.round((data.confidence_score || 0.5) * 100)}% de confiance! Redirection...`)
+        // Store in sessionStorage for recipe form
+        sessionStorage.setItem('extractedRecipe', JSON.stringify(data))
+        setTimeout(() => {
+          router.push('/recipes/new/manual')
+        }, 1500)
+      } else {
+        // Old OCR flow
+        const jobId = data.id
+        
+        // Process OCR
+        setUploading(false)
+        setProcessing(true)
+        setMessage('Extraction du texte en cours...')
+        
+        // Poll for OCR completion
+        let attempts = 0
+        const maxAttempts = 30 // 30 seconds max
+        
+        const checkStatus = async () => {
+          try {
+            const statusResponse = await fetch(`/api/ocr/jobs/${jobId}`)
+            if (!statusResponse.ok) {
+              throw new Error('Erreur lors de la vérification du statut')
+            }
+            
+            const statusData = await statusResponse.json()
+            
+            if (statusData.status === 'completed') {
+              setMessage('Extraction terminée! Redirection...')
+              // Redirect to manual recipe form with OCR data
+              setTimeout(() => {
+                router.push(`/recipes/new/manual?ocr=${jobId}`)
+              }, 1500)
+            } else if (statusData.status === 'failed') {
+              throw new Error(statusData.error_message || 'L\'extraction a échoué')
+            } else if (attempts < maxAttempts) {
+              attempts++
+              setTimeout(checkStatus, 1000)
+            } else {
+              throw new Error('Délai d\'attente dépassé. Veuillez réessayer.')
+            }
+          } catch (err) {
+            setProcessing(false)
+            setError(err instanceof Error ? err.message : 'Une erreur est survenue')
           }
-          
-          const statusData = await statusResponse.json()
-          
-          if (statusData.status === 'completed') {
-            setMessage('Extraction terminée! Redirection...')
-            // Redirect to manual recipe form with OCR data
-            setTimeout(() => {
-              router.push(`/recipes/new/manual?ocr=${jobId}`)
-            }, 1500)
-          } else if (statusData.status === 'failed') {
-            throw new Error(statusData.error_message || 'L\'extraction a échoué')
-          } else if (attempts < maxAttempts) {
-            attempts++
-            setTimeout(checkStatus, 1000)
-          } else {
-            throw new Error('Délai d\'attente dépassé. Veuillez réessayer.')
-          }
-        } catch (err) {
-          setProcessing(false)
-          setError(err instanceof Error ? err.message : 'Une erreur est survenue')
         }
+        
+        // Start status checking
+        setTimeout(checkStatus, 1000)
       }
-      
-      // Start status checking
-      setTimeout(checkStatus, 1000)
       
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Une erreur est survenue')
@@ -208,9 +235,14 @@ export default function UploadPage() {
           <ol>
             <li>Prenez une photo avec votre caméra ou choisissez une image existante</li>
             <li>Téléchargez l'image ci-dessus</li>
-            <li>Notre système OCR extrait automatiquement le texte</li>
-            <li>Vous serez redirigé vers le formulaire de création avec le texte pré-rempli</li>
+            <li>Notre système utilise l'IA (si disponible) ou l'OCR pour extraire automatiquement le texte</li>
+            <li>Les ingrédients, quantités, temps et métadonnées sont détectés automatiquement</li>
+            <li>Vous serez redirigé vers le formulaire de création avec les données pré-remplies</li>
+            <li>Vérifiez et ajustez si nécessaire avant de sauvegarder</li>
           </ol>
+          <p className={styles.hint}>
+            💡 <strong>Astuce:</strong> Pour de meilleurs résultats, utilisez des images avec un bon éclairage et du texte lisible.
+          </p>
         </div>
       </div>
     </div>

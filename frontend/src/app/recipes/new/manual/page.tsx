@@ -51,6 +51,19 @@ function ManualRecipeForm() {
     if (ocrJobId) {
       loadOCRData(ocrJobId);
     }
+    
+    // Check for AI-extracted recipe data from sessionStorage
+    const extractedData = sessionStorage.getItem('extractedRecipe');
+    if (extractedData) {
+      try {
+        const recipe = JSON.parse(extractedData);
+        loadAIExtractedData(recipe);
+        // Clear from storage after loading
+        sessionStorage.removeItem('extractedRecipe');
+      } catch (err) {
+        console.error('Failed to load extracted recipe:', err);
+      }
+    }
   }, [searchParams]);
 
   const loadOCRData = async (jobId: string) => {
@@ -91,6 +104,61 @@ function ManualRecipeForm() {
     } catch (err) {
       console.error('Error loading OCR data:', err);
       setError('Erreur lors du chargement des données OCR');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadAIExtractedData = (recipe: any) => {
+    setLoading(true);
+    try {
+      // Set basic fields
+      if (recipe.title) setTitle(recipe.title);
+      if (recipe.description) setDescription(recipe.description);
+      if (recipe.instructions) setInstructions(recipe.instructions);
+      
+      // Set numeric fields
+      if (recipe.servings) setServings(recipe.servings);
+      if (recipe.prep_time) setPrepTime(recipe.prep_time);
+      if (recipe.cook_time) setCookTime(recipe.cook_time);
+      
+      // Set category fields
+      if (recipe.category) setCategory(recipe.category);
+      if (recipe.cuisine) setCuisine(recipe.cuisine);
+      
+      // Set ingredients from structured data
+      if (recipe.ingredients && Array.isArray(recipe.ingredients) && recipe.ingredients.length > 0) {
+        const formattedIngredients = recipe.ingredients.map((ing: any) => {
+          // If we have structured data, format it nicely
+          if (ing.preparation_notes) {
+            return ing.preparation_notes;
+          }
+          // Otherwise build from parts
+          let formatted = '';
+          if (ing.quantity) formatted += `${ing.quantity} `;
+          if (ing.unit) formatted += `${ing.unit} `;
+          if (ing.ingredient_name) formatted += ing.ingredient_name;
+          return formatted.trim() || '';
+        }).filter((ing: string) => ing); // Remove empty strings
+        
+        setIngredients(formattedIngredients.length > 0 ? formattedIngredients : ['']);
+      }
+      
+      // Set equipment/tools
+      if (recipe.tools_needed && Array.isArray(recipe.tools_needed) && recipe.tools_needed.length > 0) {
+        setEquipment(recipe.tools_needed);
+      }
+      
+      // Show success message with confidence score
+      if (recipe.confidence_score) {
+        const confidence = Math.round(recipe.confidence_score * 100);
+        setError(`✅ Recette extraite avec ${confidence}% de confiance. Veuillez vérifier et ajuster si nécessaire.`);
+        // Clear the "error" (actually success message) after 5 seconds
+        setTimeout(() => setError(null), 5000);
+      }
+    } catch (err) {
+      console.error('Error loading AI extracted data:', err);
+      setError('Erreur lors du chargement des données extraites');
     } finally {
       setLoading(false);
     }
