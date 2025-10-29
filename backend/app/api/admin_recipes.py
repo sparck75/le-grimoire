@@ -485,17 +485,33 @@ async def update_recipe(
 
 @router.delete("/recipes/{recipe_id}")
 async def delete_recipe(
-    recipe_id: UUID,
-    current_user: User = Depends(get_current_active_admin),
-    db: Session = Depends(get_db)
+    recipe_id: str,
+    current_user: User = Depends(get_current_active_admin)
 ):
-    """Delete a recipe"""
-    recipe = db.query(Recipe).filter(Recipe.id == recipe_id).first()
+    """Delete a recipe from MongoDB"""
+    from motor.motor_asyncio import AsyncIOMotorClient
+    from app.core.config import settings
+    from bson import ObjectId
     
-    if not recipe:
-        raise HTTPException(status_code=404, detail="Recipe not found")
+    # Direct MongoDB connection
+    mongo_url = getattr(settings, 'MONGODB_URL', 'mongodb://localhost:27017')
+    client = AsyncIOMotorClient(mongo_url)
+    db_name = getattr(settings, 'MONGODB_DB_NAME', 'legrimoire')
+    db = client[db_name]
     
-    db.delete(recipe)
-    db.commit()
-    
-    return {"message": "Recipe deleted successfully"}
+    try:
+        # Convert recipe_id to ObjectId
+        try:
+            object_id = ObjectId(recipe_id)
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid recipe ID format")
+        
+        # Delete the recipe
+        result = await db.recipes.delete_one({"_id": object_id})
+        
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Recipe not found")
+        
+        return {"message": "Recipe deleted successfully"}
+    finally:
+        client.close()

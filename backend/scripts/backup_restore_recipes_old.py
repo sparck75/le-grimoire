@@ -5,24 +5,16 @@ This script provides functionality to:
 1. Import recipes from JSON export file
 2. Export all recipes to JSON backup
 3. Restore recipes from backup
-4. List all recipes in database
 
 Usage:
     # Import recipes from file
-    python backup_restore_recipes.py import /app/recipes.json
+    python backup_restore_recipes.py import recipes_export.json
     
     # Export/backup all recipes
-    python backup_restore_recipes.py export /app/backup.json
+    python backup_restore_recipes.py export backup_recipes.json
     
-    # Create automatic timestamped backup
-    python backup_restore_recipes.py backup
-    
-    # Restore from backup (add --clear to delete existing first)
-    python backup_restore_recipes.py restore /backups/backup.json
-    python backup_restore_recipes.py restore /backups/backup.json --clear
-    
-    # List all recipes
-    python backup_restore_recipes.py list
+    # Restore recipes from backup
+    python backup_restore_recipes.py restore backup_recipes.json
 """
 
 import sys
@@ -30,7 +22,8 @@ import json
 import asyncio
 from pathlib import Path
 from datetime import datetime
-from typing import Dict, Any
+from typing import List, Dict, Any
+from bson import ObjectId
 
 # Add parent directory to path to import app modules
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -103,21 +96,17 @@ async def import_recipes_async(filepath: str) -> None:
                 cleaned_data = clean_recipe_data(recipe_data.copy())
                 
                 # Check if recipe already exists by title
-                existing = await db.recipes.find_one(
-                    {"title": cleaned_data['title']}
-                )
+                existing = await db.recipes.find_one({"title": cleaned_data['title']})
                 
                 if existing:
-                    title = cleaned_data['title']
-                    print(f"⏭️  Skipping '{title}' (already exists)")
+                    print(f"⏭️  Skipping '{cleaned_data['title']}' (already exists)")
                     skipped_count += 1
                     continue
                 
                 # Insert recipe
-                await db.recipes.insert_one(cleaned_data)
+                result = await db.recipes.insert_one(cleaned_data)
                 
-                title = cleaned_data['title']
-                print(f"✅ Imported ({i}/{len(recipes_data)}): {title}")
+                print(f"✅ Imported ({i}/{len(recipes_data)}): {cleaned_data['title']}")
                 imported_count += 1
                 
             except Exception as e:
@@ -125,7 +114,7 @@ async def import_recipes_async(filepath: str) -> None:
                 error_count += 1
                 continue
         
-        print("\n📊 Import Summary:")
+        print(f"\n📊 Import Summary:")
         print(f"   ✅ Imported: {imported_count}")
         print(f"   ⏭️  Skipped: {skipped_count}")
         print(f"   ❌ Errors: {error_count}")
@@ -140,40 +129,92 @@ def import_recipes(filepath: str) -> None:
 
 
 async def export_recipes_async(filepath: str) -> None:
+    """Import recipes from JSON file"""
+    print(f"📥 Importing recipes from {filepath}...")
+    
+    # Load JSON file (handle UTF-8 BOM)
+    with open(filepath, 'r', encoding='utf-8-sig') as f:
+        recipes_data = json.load(f)
+    
+    print(f"Found {len(recipes_data)} recipes to import")
+    
+    # Get database session
+    db = get_db_session()
+    
+    imported_count = 0
+    skipped_count = 0
+    error_count = 0
+    
+    try:
+        for i, recipe_data in enumerate(recipes_data, 1):
+            try:
+                # Clean recipe data
+                cleaned_data = clean_recipe_data(recipe_data.copy())
+                
+                # Check if recipe already exists by title
+                existing = db.query(Recipe).filter(
+                    Recipe.title == cleaned_data['title']
+                ).first()
+                
+                if existing:
+                    print(f"⏭️  Skipping '{cleaned_data['title']}' (already exists)")
+                    skipped_count += 1
+                    continue
+                
+                # Create recipe
+                recipe = Recipe(**cleaned_data)
+                db.add(recipe)
+                db.commit()
+                
+                print(f"✅ Imported ({i}/{len(recipes_data)}): {recipe.title}")
+                imported_count += 1
+                
+            except Exception as e:
+                print(f"❌ Error importing recipe {i}: {e}")
+                error_count += 1
+                db.rollback()
+                continue
+        
+        print(f"\n📊 Import Summary:")
+        print(f"   ✅ Imported: {imported_count}")
+        print(f"   ⏭️  Skipped: {skipped_count}")
+        print(f"   ❌ Errors: {error_count}")
+        
+    finally:
+        db.close()
+
+
+def export_recipes(filepath: str) -> None:
     """Export all recipes to JSON file"""
     print(f"📤 Exporting recipes to {filepath}...")
     
-    client, db = get_mongo_client()
+    db = get_db_session()
     
     try:
         # Get all recipes
-        recipes = await db.recipes.find({}).to_list(length=None)
+        recipes = db.query(Recipe).all()
         
         print(f"Found {len(recipes)} recipes to export")
         
         # Convert to dict
         recipes_data = []
         for recipe in recipes:
-            created = recipe.get('created_at')
-            updated = recipe.get('updated_at')
-            
             recipe_dict = {
-                'id': str(recipe['_id']),
-                'title': recipe.get('title', ''),
-                'description': recipe.get('description', ''),
-                'ingredients': recipe.get('ingredients', []),
-                'instructions': recipe.get('instructions', ''),
-                'servings': recipe.get('servings'),
-                'prep_time': recipe.get('prep_time'),
-                'cook_time': recipe.get('cook_time'),
-                'total_time': recipe.get('total_time'),
-                'category': recipe.get('category', ''),
-                'cuisine': recipe.get('cuisine', ''),
-                'image_url': recipe.get('image_url'),
-                'is_public': recipe.get('is_public', True),
-                'equipment': recipe.get('equipment', []),
-                'created_at': created.isoformat() if created else None,
-                'updated_at': updated.isoformat() if updated else None,
+                'id': str(recipe.id),
+                'title': recipe.title,
+                'description': recipe.description,
+                'ingredients': recipe.ingredients,
+                'instructions': recipe.instructions,
+                'servings': recipe.servings,
+                'prep_time': recipe.prep_time,
+                'cook_time': recipe.cook_time,
+                'total_time': recipe.total_time,
+                'category': recipe.category,
+                'cuisine': recipe.cuisine,
+                'image_url': recipe.image_url,
+                'is_public': recipe.is_public,
+                'created_at': recipe.created_at.isoformat() if recipe.created_at else None,
+                'updated_at': recipe.updated_at.isoformat() if recipe.updated_at else None,
             }
             recipes_data.append(recipe_dict)
         
@@ -181,22 +222,13 @@ async def export_recipes_async(filepath: str) -> None:
         with open(filepath, 'w', encoding='utf-8') as f:
             json.dump(recipes_data, f, indent=2, ensure_ascii=False)
         
-        count = len(recipes_data)
-        print(f"✅ Successfully exported {count} recipes to {filepath}")
+        print(f"✅ Successfully exported {len(recipes_data)} recipes to {filepath}")
         
     finally:
-        client.close()
+        db.close()
 
 
-def export_recipes(filepath: str) -> None:
-    """Synchronous wrapper for export_recipes_async"""
-    asyncio.run(export_recipes_async(filepath))
-
-
-async def restore_recipes_async(
-    filepath: str,
-    clear_existing: bool = False
-) -> None:
+def restore_recipes(filepath: str, clear_existing: bool = False) -> None:
     """
     Restore recipes from backup file
     
@@ -207,92 +239,74 @@ async def restore_recipes_async(
     print(f"🔄 Restoring recipes from {filepath}...")
     
     if clear_existing:
-        response = input(
-            "⚠️  WARNING: This will DELETE all existing recipes. "
-            "Continue? (yes/no): "
-        )
+        response = input("⚠️  WARNING: This will DELETE all existing recipes. Continue? (yes/no): ")
         if response.lower() != 'yes':
             print("Restore cancelled")
             return
     
-    client, db = get_mongo_client()
+    db = get_db_session()
     
     try:
         # Clear existing recipes if requested
         if clear_existing:
-            result = await db.recipes.delete_many({})
-            print(f"🗑️  Deleted {result.deleted_count} existing recipes")
+            count = db.query(Recipe).count()
+            db.query(Recipe).delete()
+            db.commit()
+            print(f"🗑️  Deleted {count} existing recipes")
         
         # Import recipes
-        await import_recipes_async(filepath)
+        import_recipes(filepath)
         
     finally:
-        client.close()
+        db.close()
 
 
-def restore_recipes(filepath: str, clear_existing: bool = False) -> None:
-    """Synchronous wrapper for restore_recipes_async"""
-    asyncio.run(restore_recipes_async(filepath, clear_existing))
-
-
-async def list_recipes_async() -> None:
+def list_recipes() -> None:
     """List all recipes in database"""
-    client, db = get_mongo_client()
+    db = get_db_session()
     
     try:
-        recipes = await db.recipes.find({}).to_list(length=None)
+        recipes = db.query(Recipe).all()
         
         print(f"\n📚 Recipes in database: {len(recipes)}")
         print("=" * 80)
         
         for i, recipe in enumerate(recipes, 1):
-            print(f"{i}. {recipe.get('title', 'NO TITLE')}")
-            print(f"   ID: {recipe['_id']}")
-            category = recipe.get('category', 'N/A')
-            cuisine = recipe.get('cuisine', 'N/A')
-            print(f"   Category: {category} | Cuisine: {cuisine}")
-            print(f"   Public: {recipe.get('is_public', True)}")
+            print(f"{i}. {recipe.title}")
+            print(f"   ID: {recipe.id}")
+            print(f"   Category: {recipe.category or 'N/A'} | Cuisine: {recipe.cuisine or 'N/A'}")
+            print(f"   Public: {recipe.is_public}")
             print()
         
     finally:
-        client.close()
-
-
-def list_recipes() -> None:
-    """Synchronous wrapper for list_recipes_async"""
-    asyncio.run(list_recipes_async())
-
-
-async def create_automatic_backup_async() -> str:
-    """Create automatic timestamped backup"""
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    backup_dir = Path("/backups")
-    backup_dir.mkdir(exist_ok=True)
-    
-    filepath = backup_dir / f"recipes_backup_{timestamp}.json"
-    await export_recipes_async(str(filepath))
-    
-    return str(filepath)
+        db.close()
 
 
 def create_automatic_backup() -> str:
-    """Synchronous wrapper for create_automatic_backup_async"""
-    return asyncio.run(create_automatic_backup_async())
+    """Create automatic timestamped backup"""
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    backup_dir = Path(__file__).parent.parent.parent / "backups"
+    backup_dir.mkdir(exist_ok=True)
+    
+    filepath = backup_dir / f"recipes_backup_{timestamp}.json"
+    export_recipes(str(filepath))
+    
+    return str(filepath)
 
 
 def main():
     """Main CLI interface"""
     if len(sys.argv) < 2:
-        print("Recipe Backup & Restore Tool (MongoDB)")
+        print("Recipe Backup & Restore Tool")
         print("=" * 50)
         print("\nUsage:")
         print("  python backup_restore_recipes.py import <file.json>")
         print("  python backup_restore_recipes.py export <file.json>")
         print("  python backup_restore_recipes.py restore <file.json>")
-        print("  python backup_restore_recipes.py backup")
+        print("  python backup_restore_recipes.py backup  (creates timestamped backup)")
         print("  python backup_restore_recipes.py list")
         print("\nExamples:")
-        print("  python backup_restore_recipes.py import /app/recipes.json")
+        print("  python backup_restore_recipes.py import ../../recipes_export.json")
         print("  python backup_restore_recipes.py backup")
         print("  python backup_restore_recipes.py list")
         sys.exit(1)

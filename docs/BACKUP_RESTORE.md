@@ -1,6 +1,54 @@
 # Recipe Backup & Restore System
 
-This system provides comprehensive backup and restore capabilities for your recipe database.
+This system provides comprehensive backup and restore capabilities for your recipe database and images.
+
+## Automated Sync Script (Recommended)
+
+For the easiest way to sync production to development, use the automated script:
+
+```powershell
+# Full sync (MongoDB + images + admin reset)
+.\sync-prod-to-dev.ps1 -ResetAdmin
+
+# MongoDB only
+.\sync-prod-to-dev.ps1 -SkipImages
+
+# Images only
+.\sync-prod-to-dev.ps1 -SkipMongoDB
+```
+
+This script automates all the manual steps described below. For manual step-by-step instructions, continue reading.
+
+## Quick Reference
+
+### Most Common Commands
+
+**Local Development:**
+```bash
+# List all recipes
+docker compose exec backend python scripts/backup_restore_recipes.py list
+
+# Create backup
+docker compose exec backend python scripts/backup_restore_recipes.py backup
+
+# Import recipes
+docker compose exec backend python scripts/backup_restore_recipes.py import /app/recipes.json
+```
+
+**Production Server:**
+```bash
+# List all recipes
+ssh legrimoire@legrimoire-prod "cd ~/apps/le-grimoire && docker compose exec backend python scripts/backup_restore_recipes.py list"
+
+# Create backup
+ssh legrimoire@legrimoire-prod "cd ~/apps/le-grimoire && docker compose exec backend python scripts/backup_restore_recipes.py backup"
+
+# Export and download
+ssh legrimoire@legrimoire-prod "cd ~/apps/le-grimoire && docker compose exec backend python scripts/backup_restore_recipes.py export /app/production_backup.json"
+scp legrimoire@legrimoire-prod:~/apps/le-grimoire/backend/production_backup.json ./
+```
+
+> **Note**: If `legrimoire-prod` hostname doesn't resolve, use IP address: `legrimoire@149.248.53.57`
 
 ## Features
 
@@ -30,46 +78,91 @@ This system provides comprehensive backup and restore capabilities for your reci
 .\backup-recipes.ps1 export my_backup.json
 ```
 
-### Using Docker directly
+### Using Docker Compose (Local Development)
 
 ```bash
 # Import recipes
-docker-compose exec backend python scripts/backup_restore_recipes.py import /app/recipes_export.json
+docker compose exec backend python scripts/backup_restore_recipes.py import /app/recipes_export.json
 
 # Create automatic timestamped backup
-docker-compose exec backend python scripts/backup_restore_recipes.py backup
+docker compose exec backend python scripts/backup_restore_recipes.py backup
 
 # List all recipes
-docker-compose exec backend python scripts/backup_restore_recipes.py list
+docker compose exec backend python scripts/backup_restore_recipes.py list
 
 # Export to specific file
-docker-compose exec backend python scripts/backup_restore_recipes.py export /app/data/recipes_backup.json
+docker compose exec backend python scripts/backup_restore_recipes.py export /app/data/recipes_backup.json
 
 # Restore from backup (with --clear to delete existing recipes first)
-docker-compose exec backend python scripts/backup_restore_recipes.py restore /backups/recipes_backup_20251026_155043.json
+docker compose exec backend python scripts/backup_restore_recipes.py restore /backups/recipes_backup_20251026_155043.json
 ```
+
+### Using SSH on Production Server
+
+```bash
+# Basic pattern: ssh into production and run docker compose commands
+ssh legrimoire@legrimoire-prod "cd ~/apps/le-grimoire && docker compose exec backend python scripts/backup_restore_recipes.py <command>"
+
+# Create backup on production
+ssh legrimoire@legrimoire-prod "cd ~/apps/le-grimoire && docker compose exec backend python scripts/backup_restore_recipes.py backup"
+
+# List recipes on production
+ssh legrimoire@legrimoire-prod "cd ~/apps/le-grimoire && docker compose exec backend python scripts/backup_restore_recipes.py list"
+
+# Export from production to download locally
+ssh legrimoire@legrimoire-prod "cd ~/apps/le-grimoire && docker compose exec backend python scripts/backup_restore_recipes.py export /app/production_backup.json"
+
+# Download the exported file
+scp legrimoire@legrimoire-prod:~/apps/le-grimoire/backend/production_backup.json ./
+
+# Upload file to production for import
+scp local_recipes.json legrimoire@legrimoire-prod:~/apps/le-grimoire/backend/
+
+# Import on production
+ssh legrimoire@legrimoire-prod "cd ~/apps/le-grimoire && docker compose exec backend python scripts/backup_restore_recipes.py import /app/local_recipes.json"
+```
+
+> **Note**: If `legrimoire-prod` hostname doesn't resolve, replace with IP: `149.248.53.57`
 
 ## Commands
 
 ### import
 Import recipes from a JSON file. Automatically skips recipes that already exist (matched by title).
 
+**Local:**
 ```bash
-docker-compose exec backend python scripts/backup_restore_recipes.py import /app/recipes.json
+docker compose exec backend python scripts/backup_restore_recipes.py import /app/recipes.json
+```
+
+**Production:**
+```bash
+ssh legrimoire@legrimoire-prod "cd ~/apps/le-grimoire && docker compose exec backend python scripts/backup_restore_recipes.py import /app/recipes.json"
 ```
 
 ### export
 Export all recipes to a JSON file with full data including timestamps.
 
+**Local:**
 ```bash
-docker-compose exec backend python scripts/backup_restore_recipes.py export /app/my_recipes.json
+docker compose exec backend python scripts/backup_restore_recipes.py export /app/my_recipes.json
+```
+
+**Production:**
+```bash
+ssh legrimoire@legrimoire-prod "cd ~/apps/le-grimoire && docker compose exec backend python scripts/backup_restore_recipes.py export /app/my_recipes.json"
 ```
 
 ### backup
 Creates an automatic timestamped backup in the `/backups` directory.
 
+**Local:**
 ```bash
-docker-compose exec backend python scripts/backup_restore_recipes.py backup
+docker compose exec backend python scripts/backup_restore_recipes.py backup
+```
+
+**Production:**
+```bash
+ssh legrimoire@legrimoire-prod "cd ~/apps/le-grimoire && docker compose exec backend python scripts/backup_restore_recipes.py backup"
 ```
 
 This creates files like: `recipes_backup_20251026_155043.json`
@@ -77,12 +170,22 @@ This creates files like: `recipes_backup_20251026_155043.json`
 ### restore
 Restore recipes from a backup file. Use `--clear` flag to delete all existing recipes first.
 
+**Local:**
 ```bash
 # Restore without clearing (adds/updates)
-docker-compose exec backend python scripts/backup_restore_recipes.py restore /backups/backup.json
+docker compose exec backend python scripts/backup_restore_recipes.py restore /backups/backup.json
 
 # Restore with clearing (full replace)
-docker-compose exec backend python scripts/backup_restore_recipes.py restore /backups/backup.json --clear
+docker compose exec backend python scripts/backup_restore_recipes.py restore /backups/backup.json --clear
+```
+
+**Production:**
+```bash
+# Restore without clearing
+ssh legrimoire@legrimoire-prod "cd ~/apps/le-grimoire && docker compose exec backend python scripts/backup_restore_recipes.py restore /backups/backup.json"
+
+# Restore with clearing (⚠️ USE WITH CAUTION)
+ssh legrimoire@legrimoire-prod "cd ~/apps/le-grimoire && docker compose exec backend python scripts/backup_restore_recipes.py restore /backups/backup.json --clear"
 ```
 
 ⚠️ **Warning**: The `--clear` flag will delete ALL existing recipes before restoring!
@@ -90,8 +193,14 @@ docker-compose exec backend python scripts/backup_restore_recipes.py restore /ba
 ### list
 Display all recipes in the database with their details.
 
+**Local:**
 ```bash
-docker-compose exec backend python scripts/backup_restore_recipes.py list
+docker compose exec backend python scripts/backup_restore_recipes.py list
+```
+
+**Production:**
+```bash
+ssh legrimoire@legrimoire-prod "cd ~/apps/le-grimoire && docker compose exec backend python scripts/backup_restore_recipes.py list"
 ```
 
 ## JSON Format
@@ -143,12 +252,22 @@ Automatic backups are stored in:
 ### Regular Backups
 Create regular backups before making significant changes:
 
+**Local:**
 ```bash
 # Before importing new recipes
-docker-compose exec backend python scripts/backup_restore_recipes.py backup
+docker compose exec backend python scripts/backup_restore_recipes.py backup
 
 # Before bulk updates
-docker-compose exec backend python scripts/backup_restore_recipes.py backup
+docker compose exec backend python scripts/backup_restore_recipes.py backup
+```
+
+**Production:**
+```bash
+# Before importing new recipes
+ssh legrimoire@legrimoire-prod "cd ~/apps/le-grimoire && docker compose exec backend python scripts/backup_restore_recipes.py backup"
+
+# Before bulk updates
+ssh legrimoire@legrimoire-prod "cd ~/apps/le-grimoire && docker compose exec backend python scripts/backup_restore_recipes.py backup"
 ```
 
 ### Automated Backups
@@ -160,10 +279,14 @@ You can set up automated backups using:
 .\backup-recipes.ps1 backup
 ```
 
-**Linux Cron:**
+**Linux Cron (Production Server):**
 ```bash
-# Add to crontab for daily backup at 2 AM
-0 2 * * * docker-compose -f /path/to/le-grimoire/docker-compose.yml exec -T backend python scripts/backup_restore_recipes.py backup
+# SSH into production and edit crontab
+ssh legrimoire@legrimoire-prod
+crontab -e
+
+# Add this line for daily backup at 2 AM
+0 2 * * * cd ~/apps/le-grimoire && docker compose exec -T backend python scripts/backup_restore_recipes.py backup
 ```
 
 ### Version Control
@@ -190,65 +313,234 @@ If you get permission errors, make sure Docker has access to the directories.
 ## Examples
 
 ### Import from Initial Export
+
+**Local:**
 ```bash
 # Copy your export file to backend directory
 cp recipes_export.json backend/
 
 # Import
-docker-compose exec backend python scripts/backup_restore_recipes.py import /app/recipes_export.json
+docker compose exec backend python scripts/backup_restore_recipes.py import /app/recipes_export.json
+```
+
+**Production:**
+```bash
+# Upload file to production
+scp recipes_export.json legrimoire@legrimoire-prod:~/apps/le-grimoire/backend/
+
+# Import on production
+ssh legrimoire@legrimoire-prod "cd ~/apps/le-grimoire && docker compose exec backend python scripts/backup_restore_recipes.py import /app/recipes_export.json"
 ```
 
 ### Weekly Backup Routine
+
+**Local:**
 ```bash
 # Create backup
-docker-compose exec backend python scripts/backup_restore_recipes.py backup
+docker compose exec backend python scripts/backup_restore_recipes.py backup
 
 # List to verify
-docker-compose exec backend python scripts/backup_restore_recipes.py list
+docker compose exec backend python scripts/backup_restore_recipes.py list
+```
+
+**Production:**
+```bash
+# Create backup on production
+ssh legrimoire@legrimoire-prod "cd ~/apps/le-grimoire && docker compose exec backend python scripts/backup_restore_recipes.py backup"
+
+# List to verify
+ssh legrimoire@legrimoire-prod "cd ~/apps/le-grimoire && docker compose exec backend python scripts/backup_restore_recipes.py list"
 ```
 
 ### Restore from Specific Date
+
+**Local:**
 ```bash
 # Find backup file
 ls backups/
 
 # Restore
-docker-compose exec backend python scripts/backup_restore_recipes.py restore /backups/recipes_backup_20251026_155043.json
+docker compose exec backend python scripts/backup_restore_recipes.py restore /backups/recipes_backup_20251026_155043.json
+```
+
+**Production:**
+```bash
+# List backups on production
+ssh legrimoire@legrimoire-prod "ls ~/apps/le-grimoire/backups/"
+
+# Restore specific backup
+ssh legrimoire@legrimoire-prod "cd ~/apps/le-grimoire && docker compose exec backend python scripts/backup_restore_recipes.py restore /backups/recipes_backup_20251026_155043.json"
 ```
 
 ### Full Database Reset
+
+**Local:**
 ```bash
 # Create backup first!
-docker-compose exec backend python scripts/backup_restore_recipes.py backup
+docker compose exec backend python scripts/backup_restore_recipes.py backup
 
 # Restore with clearing all existing data
-docker-compose exec backend python scripts/backup_restore_recipes.py restore /backups/recipes_backup_20251026_155043.json --clear
+docker compose exec backend python scripts/backup_restore_recipes.py restore /backups/recipes_backup_20251026_155043.json --clear
 ```
 
-## Migration Guide
-
-### From Old System to New
-1. Export from old system to JSON
-2. Ensure JSON matches the required format
-3. Import: `backup_restore_recipes.py import <file>`
-
-### Between Environments
+**Production (⚠️ USE WITH EXTREME CAUTION):**
 ```bash
-# On production
-docker-compose exec backend python scripts/backup_restore_recipes.py export /app/production_recipes.json
+# Create backup first!
+ssh legrimoire@legrimoire-prod "cd ~/apps/le-grimoire && docker compose exec backend python scripts/backup_restore_recipes.py backup"
 
-# Copy file to development
+# Verify backup was created
+ssh legrimoire@legrimoire-prod "ls -lh ~/apps/le-grimoire/backups/ | tail -5"
 
-# On development
-docker-compose exec backend python scripts/backup_restore_recipes.py import /app/production_recipes.json
+# Restore with clearing all existing data
+ssh legrimoire@legrimoire-prod "cd ~/apps/le-grimoire && docker compose exec backend python scripts/backup_restore_recipes.py restore /backups/recipes_backup_20251026_155043.json --clear"
+```
+
+## Complete Database & Images Sync
+
+### Full Production to Development Sync
+
+This process syncs both MongoDB database and recipe images from production to local dev.
+
+**Step 1: Backup Production MongoDB**
+```bash
+# SSH into production
+ssh legrimoire@149.248.53.57
+cd ~/apps/le-grimoire
+
+# Create backup directory
+mkdir -p ~/backups/mongodb
+
+# Dump MongoDB database
+docker compose -f docker-compose.prod.yml exec -T mongodb mongodump \
+  --authenticationDatabase=admin \
+  --username=legrimoire \
+  --password=9pHOBy6G1_PWF__hYI4QpIe3_TJ8szT4 \
+  --db=legrimoire \
+  --archive > ~/backups/mongodb/legrimoire_$(date +%Y%m%d_%H%M%S).archive
+
+# Verify backup created
+ls -lh ~/backups/mongodb/
+```
+
+**Step 2: Backup Production Images**
+```bash
+# Still on production server
+# Backup from Docker volume (where actual images are stored)
+sudo tar -czf ~/backups/mongodb/uploads_volume_$(date +%Y%m%d_%H%M%S).tar.gz \
+  -C /var/lib/docker/volumes/le-grimoire_uploaded_images/_data .
+
+# Verify backup size
+ls -lh ~/backups/mongodb/
+```
+
+**Step 3: Download Backups to Local**
+```powershell
+# On local machine (PowerShell)
+# Create local backup directory
+mkdir -p d:\Github\le-grimoire\backups
+
+# Download MongoDB backup (replace timestamp with actual filename)
+scp legrimoire@149.248.53.57:~/backups/mongodb/legrimoire_YYYYMMDD_HHMMSS.archive `
+  d:\Github\le-grimoire\backups\
+
+# Download images backup (replace timestamp with actual filename)
+scp legrimoire@149.248.53.57:~/backups/mongodb/uploads_volume_YYYYMMDD_HHMMSS.tar.gz `
+  d:\Github\le-grimoire\backups\
+```
+
+**Step 4: Restore MongoDB to Local**
+```powershell
+# Use cmd for input redirection (PowerShell doesn't support < operator)
+cmd /c "docker compose exec -T mongodb mongorestore \
+  --authenticationDatabase=admin \
+  --username=legrimoire \
+  --password=grimoire_mongo_password \
+  --archive \
+  --drop < d:\Github\le-grimoire\backups\legrimoire_YYYYMMDD_HHMMSS.archive"
+
+# Verify restoration
+docker compose exec mongodb mongosh -u legrimoire -p grimoire_mongo_password \
+  --authenticationDatabase admin legrimoire --eval "db.recipes.countDocuments()"
+```
+
+**Step 5: Extract and Copy Images to Local**
+```powershell
+# Extract images to temp directory
+mkdir d:\Github\le-grimoire\backups\uploads_temp
+tar -xzf d:\Github\le-grimoire\backups\uploads_volume_YYYYMMDD_HHMMSS.tar.gz `
+  -C d:\Github\le-grimoire\backups\uploads_temp
+
+# Copy to backend uploads directory
+Copy-Item -Path "d:\Github\le-grimoire\backups\uploads_temp\*" `
+  -Destination "d:\Github\le-grimoire\backend\uploads\" `
+  -Recurse -Force
+
+# Copy images into Docker volume
+docker compose cp d:\Github\le-grimoire\backend\uploads\. backend:/app/uploads/
+
+# Verify images in container
+docker compose exec backend ls -lah /app/uploads/recipes/
+```
+
+**Step 6: Reset Admin Account (Optional)**
+```powershell
+# Generate password hash
+docker compose exec backend python -c `
+  "from passlib.context import CryptContext; ctx = CryptContext(schemes=['bcrypt'], deprecated='auto'); print(ctx.hash('admin123'))"
+
+# Update PostgreSQL user (save the hash from previous command)
+docker compose exec db psql -U grimoire -d le_grimoire -c `
+  "UPDATE users SET email = 'admin@legrimoireonline.ca', username = 'admin', password_hash = '\$2b\$12\$...' WHERE email = 'admin@test.com'"
+
+# Verify admin user
+docker compose exec db psql -U grimoire -d le_grimoire -c `
+  "SELECT email, username, role FROM users WHERE email = 'admin@legrimoireonline.ca'"
+```
+
+**Login Credentials After Sync:**
+- Email: `admin@legrimoireonline.ca`
+- Password: `admin123` (or whatever you set)
+
+### Production to Development (Recipe-Only Sync)
+
+If you only need recipes (not images):
+
+**Export from Production:**
+```bash
+# On local development - export recipes
+docker compose exec backend python scripts/backup_restore_recipes.py export /app/dev_recipes.json
+
+# Copy exported file from local to your machine
+cp backend/dev_recipes.json ~/
+
+# Upload to production server
+scp ~/dev_recipes.json legrimoire@149.248.53.57:~/apps/le-grimoire/backend/
+
+# Import on production
+ssh legrimoire@149.248.53.57 "cd ~/apps/le-grimoire && docker compose exec backend python scripts/backup_restore_recipes.py import /app/dev_recipes.json"
+```
+
+**Production to Development:**
+```bash
+# On production - export recipes
+ssh legrimoire@149.248.53.57 "cd ~/apps/le-grimoire && docker compose exec backend python scripts/backup_restore_recipes.py export /app/prod_recipes.json"
+
+# Download from production to local machine
+scp legrimoire@149.248.53.57:~/apps/le-grimoire/backend/prod_recipes.json ./
+
+# Copy to local backend directory
+cp prod_recipes.json backend/
+
+# Import on local development
+docker compose exec backend python scripts/backup_restore_recipes.py import /app/prod_recipes.json
 ```
 
 ## Technical Details
 
 ### Database
-- Uses PostgreSQL via SQLAlchemy
-- Connects using `settings.DATABASE_URL`
-- Handles UUID generation automatically
+- Uses MongoDB with motor (async driver)
+- Connects using `settings.MONGODB_URL`
+- Handles ObjectId generation automatically for new recipes
 
 ### Error Handling
 - Validates required fields
@@ -258,6 +550,51 @@ docker-compose exec backend python scripts/backup_restore_recipes.py import /app
 
 ### Duplicate Detection
 Checks for existing recipes by `title` field. Case-sensitive match.
+
+## Production Server Information
+
+- **IP Address**: `149.248.53.57`
+- **User**: `legrimoire`
+- **App Directory**: `~/apps/le-grimoire`
+- **Backup Directory**: `~/apps/le-grimoire/backups/`
+- **Docker Compose**: Uses modern `docker compose` (not `docker-compose`)
+- **Website**: https://legrimoireonline.ca
+
+### SSH Connection
+```bash
+# Connect to production server
+ssh legrimoire@149.248.53.57
+
+# Navigate to app directory
+cd ~/apps/le-grimoire
+
+# View Docker containers
+docker compose ps
+
+# View recent backups
+ls -lh backups/ | tail -10
+```
+
+### Adding SSH Host Alias (Optional)
+To use `legrimoire-prod` as a shortcut instead of typing the IP address:
+
+**Windows (`C:\Users\<username>\.ssh\config`):**
+```
+Host legrimoire-prod
+    HostName 149.248.53.57
+    User legrimoire
+    IdentityFile ~/.ssh/id_ed25519
+```
+
+**Linux/Mac (`~/.ssh/config`):**
+```
+Host legrimoire-prod
+    HostName 149.248.53.57
+    User legrimoire
+    IdentityFile ~/.ssh/id_ed25519
+```
+
+After adding this, you can use: `ssh legrimoire-prod`
 
 ## Support
 
