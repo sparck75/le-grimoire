@@ -66,8 +66,13 @@ async def extract_recipe_from_image(
     # Start timing for logging
     start_time = time.time()
     
-    # Initialize log entry
+    # Determine provider first (needed for log entry)
+    ai_provider = getattr(settings, 'AI_PROVIDER', 'openai')
+    use_provider = provider or ai_provider
+    
+    # Initialize log entry with required extraction_method field
     log_entry = AIExtractionLog(
+        extraction_method=use_provider,  # Required field
         original_image_path=file_path,
         image_url=image_url,
         image_size_bytes=len(contents),
@@ -75,9 +80,6 @@ async def extract_recipe_from_image(
     )
     
     try:
-        # Determine provider
-        ai_provider = getattr(settings, 'AI_PROVIDER', 'openai')
-        use_provider = provider or ai_provider
         
         if use_provider == "tesseract":
             # Fallback to Tesseract OCR
@@ -106,7 +108,6 @@ async def extract_recipe_from_image(
             
             # Log the extraction
             processing_time = int((time.time() - start_time) * 1000)
-            log_entry.extraction_method = 'ocr'
             log_entry.provider = 'tesseract'
             log_entry.model_name = 'tesseract'
             log_entry.recipe_title = result.title
@@ -128,7 +129,6 @@ async def extract_recipe_from_image(
             
             # Log the extraction
             processing_time = int((time.time() - start_time) * 1000)
-            log_entry.extraction_method = 'ai'
             log_entry.provider = 'openai'
             log_entry.model_name = result.model_metadata.get('model', 'gpt-4o') if result.model_metadata else 'gpt-4o'
             log_entry.recipe_title = result.title
@@ -169,7 +169,6 @@ async def extract_recipe_from_image(
         
         # Log the failed extraction
         processing_time = int((time.time() - start_time) * 1000)
-        log_entry.extraction_method = use_provider
         log_entry.provider = use_provider
         log_entry.success = False
         log_entry.error_message = str(e)
