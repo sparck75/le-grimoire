@@ -39,6 +39,8 @@ class ExtractedRecipe(BaseModel):
     confidence_score: Optional[float] = Field(None, description="Extraction confidence 0-1")
     image_url: Optional[str] = Field(None, description="URL of the uploaded image")
     extraction_method: Optional[str] = Field(None, description="Method used: 'ai' or 'ocr'")
+    raw_text: Optional[str] = Field(None, description="Raw extracted text from AI/OCR")
+    model_metadata: Optional[Dict[str, Any]] = Field(None, description="Metadata from AI model response")
 
 
 class AIRecipeExtractionService:
@@ -183,6 +185,18 @@ Return ONLY valid JSON matching this structure, no additional text or markdown.
             # Calculate confidence based on completeness
             confidence = self._calculate_confidence(recipe_data)
             recipe_data['confidence_score'] = confidence
+            
+            # Add raw text for debugging/review
+            recipe_data['raw_text'] = content
+            
+            # Add model metadata
+            recipe_data['model_metadata'] = {
+                'model': self.model,
+                'completion_tokens': response.usage.completion_tokens if response.usage else None,
+                'prompt_tokens': response.usage.prompt_tokens if response.usage else None,
+                'total_tokens': response.usage.total_tokens if response.usage else None,
+                'finish_reason': response.choices[0].finish_reason if response.choices else None,
+            }
             
             # Validate and return structured data
             return ExtractedRecipe(**recipe_data)

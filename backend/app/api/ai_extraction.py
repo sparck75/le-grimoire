@@ -86,7 +86,9 @@ async def extract_recipe_from_image(
                 instructions=parsed.get('instructions', ''),
                 confidence_score=0.5,
                 image_url=image_url,
-                extraction_method='ocr'
+                extraction_method='ocr',
+                raw_text=text,  # Include raw OCR text
+                model_metadata={'engine': 'tesseract'}
             )
             return result
         
@@ -125,7 +127,9 @@ async def extract_recipe_from_image(
                     instructions=parsed.get('instructions', ''),
                     confidence_score=0.3,
                     image_url=image_url,
-                    extraction_method='ocr_fallback'
+                    extraction_method='ocr_fallback',
+                    raw_text=text,  # Include raw OCR text
+                    model_metadata={'engine': 'tesseract', 'fallback': True, 'original_error': str(e)}
                 )
             except Exception as fallback_error:
                 raise HTTPException(

@@ -44,6 +44,13 @@ function ManualRecipeForm() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isPublic, setIsPublic] = useState(true);
   const [ocrImageUrl, setOcrImageUrl] = useState<string | null>(null);
+  const [extractionData, setExtractionData] = useState<{
+    raw_text?: string;
+    model_metadata?: any;
+    extraction_method?: string;
+    confidence_score?: number;
+  } | null>(null);
+  const [showExtractionDetails, setShowExtractionDetails] = useState(false);
 
   // Load OCR data if present
   useEffect(() => {
@@ -156,6 +163,14 @@ function ManualRecipeForm() {
       if (recipe.tools_needed && Array.isArray(recipe.tools_needed) && recipe.tools_needed.length > 0) {
         setEquipment(recipe.tools_needed);
       }
+      
+      // Store extraction data for display
+      setExtractionData({
+        raw_text: recipe.raw_text,
+        model_metadata: recipe.model_metadata,
+        extraction_method: recipe.extraction_method,
+        confidence_score: recipe.confidence_score
+      });
       
       // Show success message with confidence score and extraction method
       if (recipe.confidence_score) {
@@ -347,6 +362,131 @@ function ManualRecipeForm() {
               fontSize: '0.875rem', textAlign: 'center' 
             }}>
               Référez-vous à cette image pendant que vous complétez la recette
+            </p>
+          </div>
+        )}
+
+        {extractionData && (extractionData.raw_text || extractionData.model_metadata) && (
+          <div style={{ 
+            marginBottom: '1.5rem', background: 'rgba(255, 255, 255, 0.95)', 
+            padding: '1.5rem', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)',
+            border: '2px solid #17a2b8'
+          }}>
+            <div style={{ 
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              marginBottom: '1rem'
+            }}>
+              <h3 style={{ margin: 0, color: '#5c3317', fontSize: '1.25rem' }}>
+                🤖 Détails de l'extraction
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowExtractionDetails(!showExtractionDetails)}
+                style={{
+                  padding: '0.5rem 1rem',
+                  backgroundColor: '#17a2b8',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem',
+                  fontWeight: 'bold',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#138496'}
+                onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#17a2b8'}
+              >
+                {showExtractionDetails ? '▲ Masquer' : '▼ Afficher'}
+              </button>
+            </div>
+
+            {showExtractionDetails && (
+              <div>
+                {/* Metadata */}
+                {extractionData.model_metadata && (
+                  <div style={{ 
+                    marginBottom: '1rem', 
+                    padding: '1rem', 
+                    backgroundColor: '#e7f3f5',
+                    borderRadius: '8px',
+                    border: '1px solid #bee5eb'
+                  }}>
+                    <h4 style={{ marginTop: 0, marginBottom: '0.75rem', color: '#0c5460', fontSize: '1rem' }}>
+                      📊 Métadonnées du modèle
+                    </h4>
+                    <div style={{ fontSize: '0.875rem', color: '#0c5460' }}>
+                      {extractionData.extraction_method === 'ai' && (
+                        <>
+                          <p style={{ margin: '0.25rem 0' }}>
+                            <strong>Modèle:</strong> {extractionData.model_metadata.model || 'N/A'}
+                          </p>
+                          <p style={{ margin: '0.25rem 0' }}>
+                            <strong>Tokens utilisés:</strong>{' '}
+                            {extractionData.model_metadata.total_tokens || 'N/A'}{' '}
+                            (prompt: {extractionData.model_metadata.prompt_tokens || 'N/A'}, 
+                            réponse: {extractionData.model_metadata.completion_tokens || 'N/A'})
+                          </p>
+                          <p style={{ margin: '0.25rem 0' }}>
+                            <strong>Statut:</strong> {extractionData.model_metadata.finish_reason || 'N/A'}
+                          </p>
+                        </>
+                      )}
+                      {extractionData.extraction_method !== 'ai' && (
+                        <>
+                          <p style={{ margin: '0.25rem 0' }}>
+                            <strong>Moteur:</strong> {extractionData.model_metadata.engine || 'N/A'}
+                          </p>
+                          {extractionData.model_metadata.fallback && (
+                            <p style={{ margin: '0.25rem 0', color: '#856404' }}>
+                              <strong>⚠️ Mode secours:</strong> L'extraction IA a échoué, OCR utilisé en secours
+                            </p>
+                          )}
+                        </>
+                      )}
+                      <p style={{ margin: '0.25rem 0' }}>
+                        <strong>Confiance:</strong> {Math.round((extractionData.confidence_score || 0) * 100)}%
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Raw extracted text */}
+                {extractionData.raw_text && (
+                  <div style={{ 
+                    padding: '1rem', 
+                    backgroundColor: '#f8f9fa',
+                    borderRadius: '8px',
+                    border: '1px solid #dee2e6'
+                  }}>
+                    <h4 style={{ marginTop: 0, marginBottom: '0.75rem', color: '#495057', fontSize: '1rem' }}>
+                      📝 Texte brut extrait
+                    </h4>
+                    <pre style={{ 
+                      margin: 0,
+                      padding: '0.75rem',
+                      backgroundColor: '#ffffff',
+                      borderRadius: '6px',
+                      border: '1px solid #ced4da',
+                      fontSize: '0.8rem',
+                      lineHeight: '1.4',
+                      color: '#212529',
+                      overflow: 'auto',
+                      maxHeight: '300px',
+                      whiteSpace: 'pre-wrap',
+                      wordWrap: 'break-word'
+                    }}>
+                      {extractionData.raw_text}
+                    </pre>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <p style={{ 
+              marginTop: '1rem', marginBottom: 0, color: '#6c757d', 
+              fontSize: '0.875rem', fontStyle: 'italic' 
+            }}>
+              💡 Ces détails vous permettent de vérifier la qualité de l'extraction et d'identifier d'éventuels problèmes.
             </p>
           </div>
         )}
