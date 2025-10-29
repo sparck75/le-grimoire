@@ -160,6 +160,14 @@ export default function AdminDashboard() {
             Gérer l&apos;IA
           </Link>
         </div>
+
+        <div className="stat-card">
+          <h3>🍷 Vins (Base de Données)</h3>
+          <div className="stat-value">📚</div>
+          <Link href="/admin/wines" className="btn btn-primary" style={{ marginTop: '1rem' }}>
+            Gérer les Vins
+          </Link>
+        </div>
       </div>
 
       <div className="admin-card">
@@ -176,6 +184,9 @@ export default function AdminDashboard() {
             </Link>
             <Link href="/admin/categories/new" className="btn btn-success">
               ➕ Ajouter une Catégorie
+            </Link>
+            <Link href="/admin/wines/new" className="btn btn-success">
+              ➕ Ajouter un Vin
             </Link>
           </div>
         </div>
