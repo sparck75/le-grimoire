@@ -252,8 +252,15 @@ Les vins peuvent être associés aux recettes via:
 
 ```python
 # Trouver des vins pour une recette de boeuf
+# Note: Pour de grandes bases de données, considérer l'utilisation d'index texte
+# ou de recherche plus spécifique pour de meilleures performances
 wines = await Wine.find({
     "food_pairings": {"$regex": "boeuf", "$options": "i"}
+}).to_list()
+
+# Alternative avec recherche exacte (plus performante)
+wines = await Wine.find({
+    "food_pairings": {"$in": ["Boeuf", "Bœuf bourguignon", "Filet mignon"]}
 }).to_list()
 ```
 
@@ -266,8 +273,14 @@ Les spiritueux peuvent suggérer des cocktails:
 
 ```python
 # Spiritueux pour un Mojito
+# Note: Pour production, préférer recherche exacte ou index texte
 liquors = await Liquor.find({
     "cocktail_suggestions": {"$regex": "mojito", "$options": "i"}
+}).to_list()
+
+# Alternative avec recherche exacte (plus performante en production)
+liquors = await Liquor.find({
+    "cocktail_suggestions": {"$in": ["Mojito", "Daiquiri", "Cuba Libre"]}
 }).to_list()
 ```
 
