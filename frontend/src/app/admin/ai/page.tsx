@@ -49,6 +49,23 @@ interface ProvidersData {
   fallback_enabled: boolean;
 }
 
+interface OpenAIModel {
+  name: string;
+  description: string;
+  input_price: number;
+  output_price: number;
+  context_window: number;
+  max_output_tokens: number;
+  vision: boolean;
+  recommended: boolean;
+}
+
+interface ModelsData {
+  models: { [key: string]: OpenAIModel };
+  current_model: string;
+  recommended: { [key: string]: OpenAIModel };
+}
+
 export default function AIAdminPage() {
   const { user } = useAuth();
   const router = useRouter();
@@ -56,6 +73,7 @@ export default function AIAdminPage() {
   const [status, setStatus] = useState<AIStatus | null>(null);
   const [openaiUsage, setOpenaiUsage] = useState<OpenAIUsage | null>(null);
   const [providers, setProviders] = useState<ProvidersData | null>(null);
+  const [models, setModels] = useState<ModelsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -85,10 +103,11 @@ export default function AIAdminPage() {
       try {
         const apiUrl = getApiUrl();
         
-        const [statusRes, usageRes, providersRes] = await Promise.all([
+        const [statusRes, usageRes, providersRes, modelsRes] = await Promise.all([
           fetch(`${apiUrl}/api/admin/ai/status`),
           fetch(`${apiUrl}/api/admin/ai/openai/usage`),
-          fetch(`${apiUrl}/api/admin/ai/providers`)
+          fetch(`${apiUrl}/api/admin/ai/providers`),
+          fetch(`${apiUrl}/api/admin/ai/models`)
         ]);
 
         if (statusRes.ok) {
@@ -99,6 +118,9 @@ export default function AIAdminPage() {
         }
         if (providersRes.ok) {
           setProviders(await providersRes.json());
+        }
+        if (modelsRes.ok) {
+          setModels(await modelsRes.json());
         }
       } catch (err) {
         console.error('Error fetching AI data:', err);
@@ -133,10 +155,17 @@ export default function AIAdminPage() {
       const result = await response.json();
       setSuccess(result.message);
       
-      // Refresh status
-      const statusRes = await fetch(`${apiUrl}/api/admin/ai/status`);
+      // Refresh status and models
+      const [statusRes, modelsRes] = await Promise.all([
+        fetch(`${apiUrl}/api/admin/ai/status`),
+        fetch(`${apiUrl}/api/admin/ai/models`)
+      ]);
+      
       if (statusRes.ok) {
         setStatus(await statusRes.json());
+      }
+      if (modelsRes.ok) {
+        setModels(await modelsRes.json());
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur de mise à jour');
@@ -293,6 +322,93 @@ export default function AIAdminPage() {
                 </div>
               </div>
             </div>
+
+            {/* Model Selector */}
+            {models && (
+              <div style={{ marginBottom: '1.5rem' }}>
+                <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>🎯 Sélection du Modèle</h3>
+                <div style={{ marginBottom: '1rem' }}>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+                    Modèle OpenAI:
+                  </label>
+                  <select
+                    value={models.current_model}
+                    onChange={(e) => updateConfig({ model: e.target.value })}
+                    disabled={updating}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      fontSize: '1rem',
+                      border: '2px solid #dee2e6',
+                      borderRadius: '8px',
+                      backgroundColor: '#fff',
+                      cursor: updating ? 'not-allowed' : 'pointer'
+                    }}
+                  >
+                    {Object.entries(models.models).map(([modelId, model]) => (
+                      <option key={modelId} value={modelId}>
+                        {model.name} {model.recommended ? '⭐' : ''} 
+                        {!model.vision ? ' (sans vision)' : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Current Model Details */}
+                {models.models[models.current_model] && (
+                  <div style={{ padding: '1rem', backgroundColor: '#f8f9fa', borderRadius: '8px', fontSize: '0.9rem' }}>
+                    <div style={{ marginBottom: '0.75rem' }}>
+                      <strong>📝 Description:</strong>
+                      <div style={{ marginTop: '0.25rem', color: '#666' }}>
+                        {models.models[models.current_model].description}
+                      </div>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem' }}>
+                      <div>
+                        <strong>💰 Entrée:</strong> ${models.models[models.current_model].input_price.toFixed(2)}/1M tokens
+                      </div>
+                      <div>
+                        <strong>💸 Sortie:</strong> ${models.models[models.current_model].output_price.toFixed(2)}/1M tokens
+                      </div>
+                      <div>
+                        <strong>📊 Contexte:</strong> {models.models[models.current_model].context_window.toLocaleString()} tokens
+                      </div>
+                      <div>
+                        <strong>📤 Sortie Max:</strong> {models.models[models.current_model].max_output_tokens.toLocaleString()} tokens
+                      </div>
+                    </div>
+                    {models.models[models.current_model].vision && (
+                      <div style={{ marginTop: '0.75rem', padding: '0.5rem', backgroundColor: '#d4edda', borderRadius: '6px', color: '#155724' }}>
+                        ✅ Ce modèle supporte l&apos;analyse d&apos;images (vision)
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Recommended Models */}
+                {Object.keys(models.recommended).length > 0 && (
+                  <div style={{ marginTop: '1rem', padding: '0.75rem', backgroundColor: '#fff3cd', borderRadius: '8px', border: '1px solid #ffc107' }}>
+                    <strong>⭐ Modèles recommandés:</strong>
+                    <div style={{ marginTop: '0.5rem', fontSize: '0.875rem' }}>
+                      {Object.entries(models.recommended).map(([modelId, model]) => (
+                        <div key={modelId} style={{ marginTop: '0.25rem' }}>
+                          • <strong>{model.name}</strong> - {model.description}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Persistence Warning */}
+                <div style={{ marginTop: '1rem', padding: '0.75rem', backgroundColor: '#f8d7da', borderRadius: '8px', border: '1px solid #f5c6cb', fontSize: '0.875rem' }}>
+                  <strong>⚠️ Note importante:</strong>
+                  <div style={{ marginTop: '0.5rem', color: '#721c24' }}>
+                    Les changements de modèle sont appliqués immédiatement mais ne persistent pas après un redémarrage. 
+                    Pour rendre le changement permanent, mettez à jour la variable <code style={{ padding: '0.2rem 0.4rem', backgroundColor: '#fff', borderRadius: '4px' }}>OPENAI_MODEL</code> dans le fichier <code style={{ padding: '0.2rem 0.4rem', backgroundColor: '#fff', borderRadius: '4px' }}>.env</code>.
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div style={{ padding: '1rem', backgroundColor: '#e7f3ff', borderRadius: '8px', border: '1px solid #bee5eb' }}>
               <h4 style={{ marginTop: 0, marginBottom: '0.75rem', color: '#004085' }}>

@@ -9,6 +9,11 @@ import os
 
 from app.core.config import settings
 from app.services.ai_recipe_extraction import ai_recipe_service
+from app.core.openai_models import (
+    get_available_models,
+    get_recommended_models,
+    OPENAI_MODELS
+)
 
 router = APIRouter()
 
@@ -29,6 +34,7 @@ class AIConfigUpdate(BaseModel):
     """AI configuration update request"""
     enabled: Optional[bool] = None
     provider: Optional[str] = None
+    model: Optional[str] = None
     fallback_enabled: Optional[bool] = None
 
 
@@ -133,13 +139,31 @@ async def update_ai_config(config: AIConfigUpdate):
         updates['enabled'] = config.enabled
     
     if config.provider is not None:
-        if config.provider not in ['openai', 'gemini', 'tesseract', 'auto']:
+        valid_providers = ['openai', 'gemini', 'tesseract', 'auto']
+        if config.provider not in valid_providers:
             raise HTTPException(
                 status_code=400,
-                detail=f"Invalid provider: {config.provider}. Must be one of: openai, gemini, tesseract, auto"
+                detail=(
+                    f"Invalid provider: {config.provider}. "
+                    f"Must be one of: {', '.join(valid_providers)}"
+                )
             )
         settings.AI_PROVIDER = config.provider
         updates['provider'] = config.provider
+    
+    if config.model is not None:
+        # Validate model exists
+        if config.model not in OPENAI_MODELS:
+            available = ', '.join(OPENAI_MODELS.keys())
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"Invalid model: {config.model}. "
+                    f"Available models: {available}"
+                )
+            )
+        settings.OPENAI_MODEL = config.model
+        updates['model'] = config.model
     
     if config.fallback_enabled is not None:
         settings.AI_FALLBACK_ENABLED = config.fallback_enabled
@@ -147,11 +171,15 @@ async def update_ai_config(config: AIConfigUpdate):
     
     return {
         "success": True,
-        "message": "Configuration updated successfully. Note: Changes are runtime only. Update .env for persistence.",
+        "message": (
+            "Configuration updated successfully. "
+            "Note: Changes are runtime only. Update .env for persistence."
+        ),
         "updates": updates,
         "current_status": {
             "enabled": settings.ENABLE_AI_EXTRACTION,
             "provider": settings.AI_PROVIDER,
+            "model": settings.OPENAI_MODEL,
             "fallback_enabled": settings.AI_FALLBACK_ENABLED
         }
     }
@@ -400,3 +428,30 @@ async def get_extraction_logs(
         )
         for log in logs
     ]
+
+
+@router.get("/models")
+async def list_available_models(
+    vision_only: bool = Query(
+        True,
+        description="Only return models with vision capabilities"
+    )
+):
+    """
+    List available OpenAI models with pricing information
+    
+    Returns models that can be used for recipe extraction.
+    Vision models are required for image-based extraction.
+    """
+    if vision_only:
+        models = get_available_models(vision_required=True)
+    else:
+        models = OPENAI_MODELS
+    
+    return {
+        "models": models,
+        "current_model": settings.OPENAI_MODEL,
+        "recommended": get_recommended_models()
+    }
+
+

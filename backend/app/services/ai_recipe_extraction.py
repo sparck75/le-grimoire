@@ -95,13 +95,18 @@ Return ONLY valid JSON matching this structure, no additional text or markdown.
             self.client = None
         else:
             self.client = OpenAI(api_key=self.api_key)
-        
-        self.model = getattr(settings, 'OPENAI_MODEL', 'gpt-4o')
-        self.max_tokens = getattr(settings, 'OPENAI_MAX_TOKENS', 2000)
     
     def is_available(self) -> bool:
         """Check if AI service is available"""
         return self.client is not None
+    
+    def get_current_model(self) -> str:
+        """Get current model from settings (allows runtime changes)"""
+        return getattr(settings, 'OPENAI_MODEL', 'gpt-4o')
+    
+    def get_max_tokens(self) -> int:
+        """Get max tokens from settings (allows runtime changes)"""
+        return getattr(settings, 'OPENAI_MAX_TOKENS', 2000)
     
     def _encode_image(self, image_path: str) -> str:
         """Encode image to base64"""
@@ -162,9 +167,13 @@ Return ONLY valid JSON matching this structure, no additional text or markdown.
             # Encode image
             base64_image = self._encode_image(processed_image)
             
+            # Get current model and max_tokens from settings (allows runtime changes)
+            current_model = self.get_current_model()
+            max_tokens = self.get_max_tokens()
+            
             # Call GPT-4 Vision API
             response = self.client.chat.completions.create(
-                model=self.model,
+                model=current_model,
                 messages=[
                     {
                         "role": "user",
@@ -183,7 +192,7 @@ Return ONLY valid JSON matching this structure, no additional text or markdown.
                     }
                 ],
                 response_format={"type": "json_object"},
-                max_tokens=self.max_tokens,
+                max_tokens=max_tokens,
                 temperature=0.1  # Low temperature for consistent extraction
             )
             
@@ -200,7 +209,7 @@ Return ONLY valid JSON matching this structure, no additional text or markdown.
             
             # Add model metadata
             recipe_data['model_metadata'] = {
-                'model': self.model,
+                'model': current_model,
                 'completion_tokens': response.usage.completion_tokens if response.usage else None,
                 'prompt_tokens': response.usage.prompt_tokens if response.usage else None,
                 'total_tokens': response.usage.total_tokens if response.usage else None,

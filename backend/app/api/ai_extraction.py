@@ -144,12 +144,14 @@ async def extract_recipe_from_image(
                 log_entry.completion_tokens = result.model_metadata.get('completion_tokens')
                 log_entry.total_tokens = result.model_metadata.get('total_tokens')
                 
-                # Calculate estimated cost for GPT-4o
-                # GPT-4o pricing: $2.50 per 1M input tokens, $10 per 1M output tokens
-                if log_entry.total_tokens:
-                    input_cost = (log_entry.prompt_tokens or 0) * 2.50 / 1_000_000
-                    output_cost = (log_entry.completion_tokens or 0) * 10.00 / 1_000_000
-                    log_entry.estimated_cost_usd = input_cost + output_cost
+                # Calculate estimated cost using dynamic pricing
+                if log_entry.total_tokens and log_entry.model_name:
+                    from app.core.openai_models import calculate_cost
+                    log_entry.estimated_cost_usd = calculate_cost(
+                        log_entry.model_name,
+                        log_entry.prompt_tokens or 0,
+                        log_entry.completion_tokens or 0
+                    )
             
             await log_entry.insert()
             
