@@ -607,6 +607,10 @@ export default function RecipesAdmin() {
     try {
       const response = await fetch(`/api/admin/recipes/${recipeId}`, {
         method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
       });
 
       if (!response.ok) {
@@ -634,7 +638,13 @@ export default function RecipesAdmin() {
 
     try {
       const deletePromises = Array.from(selectedRecipes).map(recipeId =>
-        fetch(`/api/admin/recipes/${recipeId}`, { method: 'DELETE' })
+        fetch(`/api/admin/recipes/${recipeId}`, { 
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+        })
       );
 
       await Promise.all(deletePromises);
