@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import styles from './cellier.module.css'
+import BarcodeScanner from './components/BarcodeScanner'
 
 interface Wine {
   id: string
@@ -32,6 +34,7 @@ interface Liquor {
 type ViewType = 'wines' | 'liquors'
 
 export default function CellierPage() {
+  const router = useRouter()
   const [wines, setWines] = useState<Wine[]>([])
   const [liquors, setLiquors] = useState<Liquor[]>([])
   const [loading, setLoading] = useState(true)
@@ -40,6 +43,7 @@ export default function CellierPage() {
   const [filterType, setFilterType] = useState<string>('all')
   const [viewType, setViewType] = useState<ViewType>('wines')
   const [inStockOnly, setInStockOnly] = useState(false)
+  const [showScanner, setShowScanner] = useState(false)
 
   useEffect(() => {
     fetchData()
@@ -96,19 +100,77 @@ export default function CellierPage() {
     ? wines.filter(w => w.current_quantity > 0).length
     : liquors.filter(l => l.current_quantity > 0).length
 
+  async function handleBarcodeDetected(barcode: string) {
+    setShowScanner(false)
+    setLoading(true)
+    setError(null)
+
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+      const token = localStorage.getItem('access_token')
+
+      if (!token) {
+        setError('Vous devez être connecté pour scanner des vins')
+        setLoading(false)
+        return
+      }
+
+      // Search for wine by barcode in master database
+      const response = await fetch(`${apiUrl}/api/v2/wines/search/barcode/${barcode}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (response.ok) {
+        const wineData = await response.json()
+        // Wine found! Navigate to add-to-cellier page with pre-filled data
+        router.push(`/cellier/wines/new?from_master=${wineData.id}&barcode=${barcode}`)
+      } else if (response.status === 404) {
+        // Wine not found - suggest AI creation
+        if (confirm('Vin non trouvé dans la base de données. Voulez-vous le créer avec une photo de l\'étiquette?')) {
+          router.push(`/cellier/wines/new?barcode=${barcode}&use_ai=true`)
+        }
+      } else {
+        setError('Erreur lors de la recherche du code-barres')
+      }
+    } catch (err) {
+      setError('Erreur lors de la recherche du code-barres')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   if (loading && items.length === 0) {
     return <div className={styles.container}>Chargement...</div>
   }
 
   return (
     <div className={styles.container}>
+      {showScanner && (
+        <BarcodeScanner
+          onBarcodeDetected={handleBarcodeDetected}
+          onClose={() => setShowScanner(false)}
+        />
+      )}
+
       <div className={styles.header}>
         <h1>🍷 Mon Cellier</h1>
-        <Link href={`/cellier/${viewType}/new`}>
-          <button className={styles.addButton}>
-            {viewType === 'wines' ? 'Ajouter un vin' : 'Ajouter un spiritueux'}
-          </button>
-        </Link>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          {viewType === 'wines' && (
+            <button
+              onClick={() => setShowScanner(true)}
+              className={styles.scanButton}
+            >
+              📷 Scanner
+            </button>
+          )}
+          <Link href={`/cellier/${viewType}/new`}>
+            <button className={styles.addButton}>
+              {viewType === 'wines' ? 'Ajouter un vin' : 'Ajouter un spiritueux'}
+            </button>
+          </Link>
+        </div>
       </div>
 
       <div className={styles.tabs}>
