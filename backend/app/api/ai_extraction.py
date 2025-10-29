@@ -6,11 +6,13 @@ from sqlalchemy.orm import Session
 from typing import Optional
 import os
 from uuid import uuid4
+import time
 
 from app.core.database import get_db
 from app.core.config import settings
 from app.services.ai_recipe_extraction import ai_recipe_service, ExtractedRecipe
 from app.services.ocr_service import ocr_service
+from app.models.mongodb import AIExtractionLog
 
 router = APIRouter()
 
@@ -61,6 +63,17 @@ async def extract_recipe_from_image(
     # Generate image URL for frontend
     image_url = f"/uploads/{file_id}_{filename}"
     
+    # Start timing for logging
+    start_time = time.time()
+    
+    # Initialize log entry
+    log_entry = AIExtractionLog(
+        original_image_path=file_path,
+        image_url=image_url,
+        image_size_bytes=len(contents),
+        success=False  # Will update on success
+    )
+    
     try:
         # Determine provider
         ai_provider = getattr(settings, 'AI_PROVIDER', 'openai')
@@ -90,6 +103,20 @@ async def extract_recipe_from_image(
                 raw_text=text,  # Include raw OCR text
                 model_metadata={'engine': 'tesseract'}
             )
+            
+            # Log the extraction
+            processing_time = int((time.time() - start_time) * 1000)
+            log_entry.extraction_method = 'ocr'
+            log_entry.provider = 'tesseract'
+            log_entry.model_name = 'tesseract'
+            log_entry.recipe_title = result.title
+            log_entry.confidence_score = result.confidence_score
+            log_entry.success = True
+            log_entry.processing_time_ms = processing_time
+            log_entry.raw_response = text
+            log_entry.model_metadata = result.model_metadata or {}
+            await log_entry.insert()
+            
             return result
         
         elif use_provider == "openai":
@@ -98,6 +125,34 @@ async def extract_recipe_from_image(
             # Add image URL and method to the result
             result.image_url = image_url
             result.extraction_method = 'ai'
+            
+            # Log the extraction
+            processing_time = int((time.time() - start_time) * 1000)
+            log_entry.extraction_method = 'ai'
+            log_entry.provider = 'openai'
+            log_entry.model_name = result.model_metadata.get('model', 'gpt-4o') if result.model_metadata else 'gpt-4o'
+            log_entry.recipe_title = result.title
+            log_entry.confidence_score = result.confidence_score
+            log_entry.success = True
+            log_entry.processing_time_ms = processing_time
+            log_entry.raw_response = result.raw_text
+            log_entry.model_metadata = result.model_metadata or {}
+            
+            # Extract token usage if available
+            if result.model_metadata:
+                log_entry.prompt_tokens = result.model_metadata.get('prompt_tokens')
+                log_entry.completion_tokens = result.model_metadata.get('completion_tokens')
+                log_entry.total_tokens = result.model_metadata.get('total_tokens')
+                
+                # Calculate estimated cost for GPT-4o
+                # GPT-4o pricing: $2.50 per 1M input tokens, $10 per 1M output tokens
+                if log_entry.total_tokens:
+                    input_cost = (log_entry.prompt_tokens or 0) * 2.50 / 1_000_000
+                    output_cost = (log_entry.completion_tokens or 0) * 10.00 / 1_000_000
+                    log_entry.estimated_cost_usd = input_cost + output_cost
+            
+            await log_entry.insert()
+            
             return result
         
         else:
@@ -112,14 +167,24 @@ async def extract_recipe_from_image(
         import traceback
         print(f"Traceback: {traceback.format_exc()}")
         
+        # Log the failed extraction
+        processing_time = int((time.time() - start_time) * 1000)
+        log_entry.extraction_method = use_provider
+        log_entry.provider = use_provider
+        log_entry.success = False
+        log_entry.error_message = str(e)
+        log_entry.processing_time_ms = processing_time
+        await log_entry.insert()
+        
         # Try fallback if enabled
         ai_fallback = getattr(settings, 'AI_FALLBACK_ENABLED', True)
         if ai_fallback and use_provider != "tesseract":
             try:
                 print(f"🔄 Falling back to OCR extraction...")
+                fallback_start = time.time()
                 text = ocr_service.extract_text(file_path)
                 parsed = ocr_service.parse_recipe(text)
-                return ExtractedRecipe(
+                result = ExtractedRecipe(
                     title=parsed.get('title', 'Recette sans titre'),
                     ingredients=[
                         {
@@ -137,7 +202,42 @@ async def extract_recipe_from_image(
                     raw_text=text,  # Include raw OCR text
                     model_metadata={'engine': 'tesseract', 'fallback': True, 'original_error': str(e)}
                 )
+                
+                # Log the successful fallback
+                fallback_time = int((time.time() - fallback_start) * 1000)
+                fallback_log = AIExtractionLog(
+                    extraction_method='ocr_fallback',
+                    provider='tesseract',
+                    model_name='tesseract',
+                    original_image_path=file_path,
+                    image_url=image_url,
+                    image_size_bytes=len(contents),
+                    recipe_title=result.title,
+                    confidence_score=result.confidence_score,
+                    success=True,
+                    processing_time_ms=fallback_time,
+                    raw_response=text,
+                    model_metadata=result.model_metadata or {}
+                )
+                await fallback_log.insert()
+                
+                return result
             except Exception as fallback_error:
+                # Log the failed fallback
+                fallback_time = int((time.time() - fallback_start) * 1000) if 'fallback_start' in locals() else 0
+                fallback_log = AIExtractionLog(
+                    extraction_method='ocr_fallback',
+                    provider='tesseract',
+                    original_image_path=file_path,
+                    image_url=image_url,
+                    image_size_bytes=len(contents),
+                    success=False,
+                    error_message=str(fallback_error),
+                    processing_time_ms=fallback_time,
+                    model_metadata={'original_error': str(e)}
+                )
+                await fallback_log.insert()
+                
                 raise HTTPException(
                     status_code=500,
                     detail=f"Extraction failed: {str(e)}. Fallback also failed: {str(fallback_error)}"

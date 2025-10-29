@@ -1,9 +1,9 @@
 """
 Admin API for AI extraction management
 """
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Query
 from pydantic import BaseModel
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from datetime import datetime
 import os
 
@@ -43,6 +43,24 @@ class OpenAIUsageResponse(BaseModel):
     # Users need to check platform.openai.com for detailed usage
     usage_dashboard_url: str = "https://platform.openai.com/usage"
     billing_url: str = "https://platform.openai.com/account/billing"
+
+
+class ExtractionLogResponse(BaseModel):
+    """Single extraction log entry"""
+    id: str
+    extraction_method: str
+    provider: Optional[str] = None
+    model_name: Optional[str] = None
+    recipe_title: Optional[str] = None
+    recipe_id: Optional[str] = None
+    confidence_score: Optional[float] = None
+    success: bool
+    error_message: Optional[str] = None
+    total_tokens: Optional[int] = None
+    estimated_cost_usd: Optional[float] = None
+    processing_time_ms: Optional[int] = None
+    image_url: Optional[str] = None
+    created_at: datetime
 
 
 @router.get("/status", response_model=AIStatusResponse)
@@ -197,33 +215,188 @@ async def list_available_providers():
 
 
 @router.get("/stats")
-async def get_extraction_stats():
+async def get_extraction_stats(
+    days: int = 30,
+    provider: Optional[str] = None
+):
     """
-    Get extraction statistics (placeholder for future implementation)
+    Get AI extraction usage statistics
     
-    In a full implementation, this would track:
-    - Total extractions performed
-    - Extractions by provider (AI vs OCR)
-    - Average confidence scores
-    - Token usage over time
-    - Cost tracking
-    
-    For now, returns basic info and notes for future enhancement.
+    Args:
+        days: Number of days to include in stats (default: 30)
+        provider: Filter by provider (openai, tesseract, etc.)
+        
+    Returns:
+        Comprehensive usage statistics including costs, tokens, and success rates
     """
+    from datetime import datetime, timedelta
+    from app.models.mongodb import AIExtractionLog
+    
+    # Calculate date range
+    start_date = datetime.utcnow() - timedelta(days=days)
+    
+    # Build query
+    query = {"created_at": {"$gte": start_date}}
+    if provider:
+        query["provider"] = provider
+    
+    # Get all logs in date range
+    logs = await AIExtractionLog.find(query).to_list()
+    
+    # Calculate statistics
+    total_extractions = len(logs)
+    successful_extractions = sum(1 for log in logs if log.success)
+    failed_extractions = sum(1 for log in logs if not log.success)
+    
+    # By provider
+    by_provider = {}
+    for log in logs:
+        prov = log.provider or "unknown"
+        if prov not in by_provider:
+            by_provider[prov] = {
+                "count": 0,
+                "successful": 0,
+                "failed": 0,
+                "total_tokens": 0,
+                "total_cost_usd": 0.0
+            }
+        by_provider[prov]["count"] += 1
+        if log.success:
+            by_provider[prov]["successful"] += 1
+        else:
+            by_provider[prov]["failed"] += 1
+        if log.total_tokens:
+            by_provider[prov]["total_tokens"] += log.total_tokens
+        if log.estimated_cost_usd:
+            by_provider[prov]["total_cost_usd"] += log.estimated_cost_usd
+    
+    # Token usage (AI only)
+    ai_logs = [log for log in logs if log.extraction_method == 'ai' and log.total_tokens]
+    total_tokens = sum(log.total_tokens for log in ai_logs)
+    total_prompt_tokens = sum(log.prompt_tokens or 0 for log in ai_logs)
+    total_completion_tokens = sum(log.completion_tokens or 0 for log in ai_logs)
+    
+    # Cost calculation
+    total_cost = sum(log.estimated_cost_usd or 0 for log in logs)
+    
+    # Average confidence
+    confidence_logs = [log for log in logs if log.confidence_score is not None]
+    avg_confidence = sum(log.confidence_score for log in confidence_logs) / len(confidence_logs) if confidence_logs else 0
+    
+    # Average processing time
+    processing_logs = [log for log in logs if log.processing_time_ms is not None]
+    avg_processing_time = sum(log.processing_time_ms for log in processing_logs) / len(processing_logs) if processing_logs else 0
+    
+    # By extraction method
+    by_method = {}
+    for log in logs:
+        method = log.extraction_method or "unknown"
+        if method not in by_method:
+            by_method[method] = 0
+        by_method[method] += 1
+    
+    # Daily breakdown (last 7 days for chart)
+    daily_stats = []
+    for i in range(min(7, days)):
+        day_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=i)
+        day_end = day_start + timedelta(days=1)
+        day_logs = [log for log in logs if day_start <= log.created_at < day_end]
+        daily_stats.append({
+            "date": day_start.strftime("%Y-%m-%d"),
+            "total": len(day_logs),
+            "successful": sum(1 for log in day_logs if log.success),
+            "failed": sum(1 for log in day_logs if not log.success),
+            "cost_usd": sum(log.estimated_cost_usd or 0 for log in day_logs)
+        })
+    daily_stats.reverse()
+    
     return {
-        "note": "Statistics tracking not yet implemented",
-        "current_session": {
+        "period": {
+            "days": days,
+            "start_date": start_date.isoformat(),
+            "end_date": datetime.utcnow().isoformat()
+        },
+        "summary": {
+            "total_extractions": total_extractions,
+            "successful": successful_extractions,
+            "failed": failed_extractions,
+            "success_rate": (successful_extractions / total_extractions * 100) if total_extractions > 0 else 0,
+            "average_confidence": round(avg_confidence, 3),
+            "average_processing_time_ms": round(avg_processing_time, 0)
+        },
+        "by_provider": by_provider,
+        "by_method": by_method,
+        "tokens": {
+            "total": total_tokens,
+            "prompt": total_prompt_tokens,
+            "completion": total_completion_tokens,
+            "ai_extractions": len(ai_logs)
+        },
+        "costs": {
+            "total_usd": round(total_cost, 4),
+            "average_per_extraction_usd": round(total_cost / total_extractions, 4) if total_extractions > 0 else 0,
+            "by_provider": {
+                prov: round(stats["total_cost_usd"], 4) 
+                for prov, stats in by_provider.items()
+            }
+        },
+        "daily_breakdown": daily_stats,
+        "current_config": {
             "enabled": settings.ENABLE_AI_EXTRACTION,
             "provider": settings.AI_PROVIDER,
-            "service_available": ai_recipe_service.is_available()
-        },
-        "future_features": [
-            "Total extraction count",
-            "Extractions by provider (AI/OCR)",
-            "Average confidence scores",
-            "Token usage tracking",
-            "Cost estimation",
-            "Success/failure rates"
-        ],
-        "implementation_note": "To track stats, implement logging in ai_extraction.py endpoint and store in database"
+            "fallback_enabled": settings.AI_FALLBACK_ENABLED
+        }
     }
+
+
+@router.get("/logs", response_model=List[ExtractionLogResponse])
+async def get_extraction_logs(
+    limit: int = Query(50, ge=1, le=500),
+    skip: int = Query(0, ge=0),
+    success_only: Optional[bool] = None,
+    provider: Optional[str] = None
+):
+    """
+    Get recent extraction logs with full details
+    
+    Args:
+        limit: Maximum number of logs to return (1-500)
+        skip: Number of logs to skip for pagination
+        success_only: Filter by success status (true/false/null for all)
+        provider: Filter by provider (openai, tesseract, etc.)
+        
+    Returns:
+        List of extraction log entries with full details
+    """
+    from app.models.mongodb import AIExtractionLog
+    
+    # Build query
+    query = {}
+    if success_only is not None:
+        query["success"] = success_only
+    if provider:
+        query["provider"] = provider
+    
+    # Get logs sorted by most recent first
+    logs = await AIExtractionLog.find(query).sort("-created_at").skip(skip).limit(limit).to_list()
+    
+    # Convert to response format
+    return [
+        ExtractionLogResponse(
+            id=str(log.id),
+            extraction_method=log.extraction_method,
+            provider=log.provider,
+            model_name=log.model_name,
+            recipe_title=log.recipe_title,
+            recipe_id=log.recipe_id,
+            confidence_score=log.confidence_score,
+            success=log.success,
+            error_message=log.error_message,
+            total_tokens=log.total_tokens,
+            estimated_cost_usd=log.estimated_cost_usd,
+            processing_time_ms=log.processing_time_ms,
+            image_url=log.image_url,
+            created_at=log.created_at
+        )
+        for log in logs
+    ]
