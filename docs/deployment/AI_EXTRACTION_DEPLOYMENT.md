@@ -104,12 +104,12 @@ OPENAI_MAX_TOKENS=2000
 # Pull latest changes
 git pull origin copilot/add-ai-agent-integration
 
-# Rebuild containers with updated code
-docker-compose -f docker-compose.prod.yml down
-docker-compose -f docker-compose.prod.yml up -d --build
+# Rebuild containers with updated code (Docker Compose V2)
+docker compose down
+docker compose up -d --build
 
 # Verify services are running
-docker-compose -f docker-compose.prod.yml ps
+docker compose ps
 ```
 
 ### 4. Verify Deployment
@@ -117,7 +117,7 @@ docker-compose -f docker-compose.prod.yml ps
 #### 4.1 Check Backend Logs
 ```bash
 # Check if AI provider is initialized correctly
-docker-compose -f docker-compose.prod.yml logs backend | grep -i "ai\|openai"
+docker compose logs backend | grep -i "ai\|openai"
 
 # Should see:
 # - No errors about missing OPENAI_API_KEY
@@ -173,7 +173,7 @@ Check:
 #### 5.2 Backend Logs
 ```bash
 # Monitor extraction attempts
-docker-compose -f docker-compose.prod.yml logs -f backend | grep "extraction"
+docker compose logs -f backend | grep "extraction"
 
 # Look for:
 # - "AI extraction succeeded"
@@ -187,7 +187,7 @@ docker-compose -f docker-compose.prod.yml logs -f backend | grep "extraction"
 cat > /home/legrimoire/monitor-ai-usage.sh << 'EOF'
 #!/bin/bash
 # Check for AI extraction errors in last hour
-ERRORS=$(docker-compose -f docker-compose.prod.yml logs backend --since 1h | grep -c "AI extraction error")
+ERRORS=$(docker compose logs backend --since 1h | grep -c "AI extraction error")
 
 if [ $ERRORS -gt 10 ]; then
     echo "High AI extraction error rate: $ERRORS errors in last hour"
@@ -240,16 +240,16 @@ If issues occur in production:
 #### 8.1 Disable AI Extraction
 ```bash
 # Quick disable - switch to OCR only
-docker-compose -f docker-compose.prod.yml exec backend \
+docker compose exec backend \
   sed -i 's/ENABLE_AI_EXTRACTION=true/ENABLE_AI_EXTRACTION=false/' /app/.env
 
-docker-compose -f docker-compose.prod.yml restart backend
+docker compose restart backend
 ```
 
 #### 8.2 Revert to Previous Version
 ```bash
 git checkout main
-docker-compose -f docker-compose.prod.yml up -d --build
+docker compose up -d --build
 ```
 
 ### 9. Security Considerations

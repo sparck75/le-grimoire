@@ -35,14 +35,14 @@ Required variables:
 
 ### 2. Deploy Code
 - [ ] `git pull origin copilot/add-ai-agent-integration`
-- [ ] `docker-compose -f docker-compose.prod.yml down`
-- [ ] `docker-compose -f docker-compose.prod.yml up -d --build`
-- [ ] Wait for containers to start (check with `docker-compose ps`)
+- [ ] `docker compose down`
+- [ ] `docker compose up -d --build`
+- [ ] Wait for containers to start (check with `docker compose ps`)
 
 ### 3. Verification
-- [ ] Backend container running: `docker-compose ps backend`
-- [ ] Frontend container running: `docker-compose ps frontend`
-- [ ] No errors in logs: `docker-compose logs backend | grep -i error`
+- [ ] Backend container running: `docker compose ps backend`
+- [ ] Frontend container running: `docker compose ps frontend`
+- [ ] No errors in logs: `docker compose logs backend | grep -i error`
 - [ ] Test providers endpoint: `curl https://legrimoireonline.ca/api/ai/providers`
   - Should show `"ai_enabled": true`
   - Should show OpenAI as available
@@ -65,7 +65,7 @@ Required variables:
 - [ ] Set up usage alerts (soft limit at 80% of budget)
 - [ ] Monitor backend logs for errors:
   ```bash
-  docker-compose -f docker-compose.prod.yml logs -f backend | grep "extraction"
+  docker compose logs -f backend | grep "extraction"
   ```
 
 ## Post-Deployment
@@ -96,15 +96,15 @@ If issues occur:
 
 ### Quick Disable AI (Keep OCR)
 ```bash
-docker-compose exec backend sed -i 's/ENABLE_AI_EXTRACTION=true/ENABLE_AI_EXTRACTION=false/' .env
-docker-compose restart backend
+docker compose exec backend sed -i 's/ENABLE_AI_EXTRACTION=true/ENABLE_AI_EXTRACTION=false/' .env
+docker compose restart backend
 ```
 
 ### Full Rollback to Previous Version
 ```bash
 git checkout main
-docker-compose -f docker-compose.prod.yml down
-docker-compose -f docker-compose.prod.yml up -d --build
+docker compose down
+docker compose up -d --build
 ```
 
 ## Common Issues & Solutions

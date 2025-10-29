@@ -67,29 +67,27 @@ OPENAI_MAX_TOKENS=2000
 ### 5. Deploy with Docker Compose
 
 ```bash
-# Check which docker compose file you're using
-ls -la docker-compose*.yml
+# Check which docker compose version you have
+docker compose version  # V2 (modern - recommended)
+# OR
+docker-compose version  # V1 (legacy)
 
-# If using docker-compose.prod.yml:
-docker-compose -f docker-compose.prod.yml down
-docker-compose -f docker-compose.prod.yml up -d --build
-
-# OR if using regular docker-compose.yml:
-docker-compose down
-docker-compose up -d --build
+# Using Docker Compose V2 (modern - with space):
+docker compose down
+docker compose up -d --build
 
 # Wait for services to start
 sleep 30
 
 # Check status
-docker-compose ps
+docker compose ps
 ```
 
 ### 6. Verify Deployment
 
 ```bash
 # Check backend logs
-docker-compose logs backend | tail -50
+docker compose logs backend | tail -50
 
 # Test AI providers endpoint
 curl http://localhost:8000/api/ai/providers
@@ -146,13 +144,13 @@ git log --oneline -5
 
 ```bash
 # See what's currently running
-docker-compose ps
+docker compose ps
 
-# Check which compose file is being used
-ps aux | grep docker-compose
+# Check Docker Compose version
+docker compose version
 
 # View current environment
-docker-compose config
+docker compose config
 ```
 
 ## Quick Status Check
@@ -167,10 +165,10 @@ echo "=== Git Status ==="
 git status
 
 echo "=== Docker Containers ==="
-docker-compose ps
+docker compose ps
 
 echo "=== Backend Logs (last 20 lines) ==="
-docker-compose logs backend | tail -20
+docker compose logs backend | tail -20
 ```
 
 ## Need Help?

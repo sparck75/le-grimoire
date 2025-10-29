@@ -29,8 +29,8 @@ git commit -m "Merge remote AI extraction branch"
 
 ```bash
 # Create backup of current running containers
-docker-compose ps > ~/backup-$(date +%Y%m%d-%H%M%S)-containers.txt
-docker-compose config > ~/backup-$(date +%Y%m%d-%H%M%S)-compose.yml
+docker compose ps > ~/backup-$(date +%Y%m%d-%H%M%S)-containers.txt
+docker compose config > ~/backup-$(date +%Y%m%d-%H%M%S)-compose.yml
 
 # Backup current .env
 cp .env ~/backup-$(date +%Y%m%d-%H%M%S)-.env
@@ -57,23 +57,23 @@ OPENAI_MAX_TOKENS=2000
 
 ```bash
 # Stop current containers
-docker-compose down
+docker compose down
 
 # Rebuild with new code
-docker-compose up -d --build
+docker compose up -d --build
 
 # Wait 30 seconds for services to start
 sleep 30
 
 # Check status
-docker-compose ps
+docker compose ps
 ```
 
 ## Step 5: Verify Deployment
 
 ```bash
 # Check backend logs for errors
-docker-compose logs backend | tail -50
+docker compose logs backend | tail -50
 
 # Test AI providers endpoint
 curl http://localhost:8000/api/ai/providers | jq
@@ -131,18 +131,18 @@ git reset --hard origin/copilot/add-ai-agent-integration
 ```bash
 # Rollback to previous version
 git checkout main
-docker-compose down
-docker-compose up -d --build
+docker compose down
+docker compose up -d --build
 ```
 
 ## Post-Deployment Monitoring
 
 ```bash
 # Monitor extraction attempts (leave running)
-docker-compose logs -f backend | grep "extraction"
+docker compose logs -f backend | grep "extraction"
 
 # Check for errors
-docker-compose logs backend | grep -i error | tail -20
+docker compose logs backend | grep -i error | tail -20
 
 # Monitor OpenAI usage
 # Go to: https://platform.openai.com/usage
@@ -158,7 +158,7 @@ docker-compose logs backend | grep -i error | tail -20
 ## Support
 
 If issues occur:
-1. Check logs: `docker-compose logs backend | tail -100`
+1. Check logs: `docker compose logs backend | tail -100`
 2. Verify .env has correct OPENAI_API_KEY
 3. Test with OCR-only mode: Set `AI_PROVIDER=tesseract` in .env
 4. Contact support with log output
