@@ -152,6 +152,14 @@ export default function AdminDashboard() {
             Gérer les Utilisateurs
           </Link>
         </div>
+
+        <div className="stat-card">
+          <h3>🤖 Intelligence Artificielle</h3>
+          <div className="stat-value">⚙️</div>
+          <Link href="/admin/ai" className="btn btn-primary" style={{ marginTop: '1rem' }}>
+            Gérer l&apos;IA
+          </Link>
+        </div>
       </div>
 
       <div className="admin-card">
