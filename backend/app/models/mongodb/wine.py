@@ -76,11 +76,16 @@ class Wine(Document):
     qr_code: Optional[str] = None
     barcode: Optional[str] = None
     
+    # LWIN (Liv-ex Wine Identification Number)
+    lwin7: Optional[str] = None  # 7-digit code for wine label/producer
+    lwin11: Optional[str] = None  # 11-digit code includes vintage
+    lwin18: Optional[str] = None  # 18-digit code includes bottle size/pack
+    
     # External Data
     vivino_id: Optional[str] = None
     wine_searcher_id: Optional[str] = None
     external_data: dict = Field(default_factory=dict)
-    data_source: str = "manual"
+    data_source: str = "manual"  # manual, lwin, vivino, etc.
     external_id: Optional[str] = None
     last_synced: Optional[datetime] = None
     sync_enabled: bool = False
@@ -99,7 +104,10 @@ class Wine(Document):
             "region",
             "country",
             "vintage",
-            "user_id"
+            "user_id",
+            "lwin7",
+            "lwin11",
+            "lwin18"
         ]
     
     @validator('vintage')
@@ -128,6 +136,27 @@ class Wine(Document):
     def validate_quantity(cls, v):
         if v < 0:
             raise ValueError('Quantity cannot be negative')
+        return v
+    
+    @validator('lwin7')
+    def validate_lwin7(cls, v):
+        if v is not None:
+            if not v.isdigit() or len(v) != 7:
+                raise ValueError('LWIN7 must be exactly 7 digits')
+        return v
+    
+    @validator('lwin11')
+    def validate_lwin11(cls, v):
+        if v is not None:
+            if not v.isdigit() or len(v) != 11:
+                raise ValueError('LWIN11 must be exactly 11 digits')
+        return v
+    
+    @validator('lwin18')
+    def validate_lwin18(cls, v):
+        if v is not None:
+            if not v.isdigit() or len(v) != 18:
+                raise ValueError('LWIN18 must be exactly 18 digits')
         return v
     
     def __repr__(self) -> str:
