@@ -6,6 +6,7 @@ Application web moderne de gestion de recettes avec reconnaissance OCR, intégra
 
 - 🔍 **Bibliothèque de recettes** - Parcourez, recherchez et filtrez des recettes avec interface moderne
 - 🥕 **Ingrédients OpenFoodFacts** - 5,942 ingrédients multilingues (50+ langues) avec autocomplete
+- 🍷 **Base de données Vins & Spiritueux** - Gestion complète de vins et spiritueux avec accords mets-vins
 - 📝 **Éditeur avancé** - Créez et modifiez des recettes avec liaison optionnelle aux ingrédients
 - 📊 **Tableau de bord admin** - Statistiques, filtres multiples, sélection et suppression en masse
 - 🛒 **Listes de courses** - Génération automatique avec intégration des spéciaux IGA/Metro
@@ -79,6 +80,7 @@ le-grimoire/
 
 ### Fonctionnalités
 - 🥕 [Système d'ingrédients](docs/development/INGREDIENTS.md)
+- 🍷 [Base de données Vins & Spiritueux](docs/features/WINE_LIQUOR_DATABASE.md)
 - 📊 [API Reference](docs/architecture/API_REFERENCE.md)
 - 🌍 [Localisation française](docs/features/FRENCH_LOCALIZATION.md)
 - 📈 [Statut du projet](docs/PROJECT_STATUS.md)
@@ -152,6 +154,8 @@ npm run dev
 ## 📊 Collections MongoDB
 
 - **ingredients** (5,942) - Taxonomie OpenFoodFacts avec noms multilingues
+- **wines** - Base de données de vins avec accords et caractéristiques
+- **liquors** - Base de données de spiritueux avec suggestions de cocktails
 - **recipes** - Recettes avec ingrédients et instructions
 - **users** - Utilisateurs authentifiés (OAuth)
 - **shopping_lists** - Listes de courses
@@ -162,6 +166,8 @@ npm run dev
 **v2 API**:
 - `GET /api/v2/recipes/` - Liste et recherche de recettes
 - `GET /api/v2/ingredients/?search={term}&language={lang}` - Recherche d'ingrédients
+- `GET /api/v2/wines/` - Recherche de vins (avec filtres type/région)
+- `GET /api/v2/liquors/` - Recherche de spiritueux (avec filtres type/origine)
 - `POST /api/v2/recipes/` - Créer une recette
 - `GET /api/stats/dashboard` - Statistiques
 
