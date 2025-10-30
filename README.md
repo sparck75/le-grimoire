@@ -7,6 +7,7 @@ Application web moderne de gestion de recettes avec reconnaissance OCR, intégra
 - 🔍 **Bibliothèque de recettes** - Parcourez, recherchez et filtrez des recettes avec interface moderne
 - 🥕 **Ingrédients OpenFoodFacts** - 5,942 ingrédients multilingues (50+ langues) avec autocomplete
 - 🍷 **Cave à vin LWIN** - Intégration base de données LWIN (200,000+ vins) avec identification universelle
+- 📸 **AI Wine Extraction** - Scan d'étiquettes de vin avec GPT-4 Vision et enrichissement automatique
 - 📝 **Éditeur avancé** - Créez et modifiez des recettes avec liaison optionnelle aux ingrédients
 - 📊 **Tableau de bord admin** - Statistiques, filtres multiples, sélection et suppression en masse
 - 🛒 **Listes de courses** - Génération automatique avec intégration des spéciaux IGA/Metro
@@ -82,6 +83,7 @@ le-grimoire/
 ### Fonctionnalités
 - 🥕 [Système d'ingrédients](docs/development/INGREDIENTS.md)
 - 🍷 [Intégration LWIN (Cave à vin)](docs/features/LWIN_INTEGRATION.md)
+- 📸 [AI Wine Extraction (Scan d'étiquettes)](docs/features/AI_WINE_EXTRACTION.md)
 - 📊 [API Reference](docs/architecture/API_REFERENCE.md)
 - 🌍 [Localisation française](docs/features/FRENCH_LOCALIZATION.md)
 - 📈 [Statut du projet](docs/PROJECT_STATUS.md)
