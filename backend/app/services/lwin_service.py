@@ -72,16 +72,20 @@ class LWINService:
         logger.info(f"Parsing LWIN CSV from {csv_path}")
         
         # Security: Validate path is within LWIN data directory
+        # This prevents path traversal attacks (e.g., ../../etc/passwd)
         try:
+            # Resolve to absolute path to prevent symlink attacks
             resolved_path = csv_path.resolve()
             lwin_data_dir = self.lwin_data_path.resolve()
-            # Check if path is within allowed directory
+            # Verify path is within allowed directory - raises ValueError if not
+            # This is the security check that prevents directory traversal
             resolved_path.relative_to(lwin_data_dir)
         except (ValueError, OSError) as e:
             raise ValueError(f"Invalid CSV path - must be within LWIN data directory: {e}")
         
         wines = []
         
+        # After validation, safe to open file
         with open(resolved_path, 'r', encoding='utf-8') as f:
             reader = csv.DictReader(f)
             

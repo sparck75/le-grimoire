@@ -206,10 +206,13 @@ async def import_lwin_database(
             csv_path = Path(request.file_path)
             
             # Security: Only allow files within the LWIN data directory
+            # This prevents path traversal attacks (e.g., ../../etc/passwd)
             lwin_data_dir = lwin_service.lwin_data_path.resolve()
             try:
+                # Resolve to absolute path to prevent symlink attacks
                 resolved_path = csv_path.resolve()
-                # Check if path is within allowed directory
+                # Verify path is within allowed directory - raises ValueError if not
+                # This is the security check that prevents directory traversal
                 resolved_path.relative_to(lwin_data_dir)
             except (ValueError, OSError):
                 raise HTTPException(
@@ -217,9 +220,11 @@ async def import_lwin_database(
                     detail="Invalid file path. File must be in LWIN data directory."
                 )
             
+            # After validation, safe to check existence
             if not resolved_path.exists():
                 raise HTTPException(status_code=400, detail="File not found")
             
+            # Use validated path for parsing
             csv_path = resolved_path
         else:
             raise HTTPException(
