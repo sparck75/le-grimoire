@@ -9,7 +9,8 @@ from contextlib import asynccontextmanager
 from app.api import (
     recipes, auth, ocr, grocery, shopping_lists,
     admin_ingredients, admin_recipes, admin_users,
-    ingredients, categories, recipe_images, ai_extraction, admin_ai
+    ingredients, categories, recipe_images, ai_extraction, admin_ai,
+    wines, liquors, admin_wines
 )
 from app.core.config import settings
 from app.core.database import init_mongodb, close_mongodb
@@ -36,10 +37,19 @@ app = FastAPI(
 
 # Configure CORS
 # Parse ALLOWED_ORIGINS - can be "*" or comma-separated list
-allowed_origins = (
-    ["*"] if settings.ALLOWED_ORIGINS == "*"
-    else [origin.strip() for origin in settings.ALLOWED_ORIGINS.split(",")]
-)
+# Note: allow_credentials=True is incompatible with allow_origins=["*"]
+# For development, we explicitly list allowed origins
+if settings.ALLOWED_ORIGINS == "*":
+    # Development: allow common local/network origins
+    allowed_origins = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://192.168.1.100:3000",
+        "http://192.168.1.133:3000",
+        "http://192.168.1.205:3000",
+    ]
+else:
+    allowed_origins = [origin.strip() for origin in settings.ALLOWED_ORIGINS.split(",")]
 
 app.add_middleware(
     CORSMiddleware,
@@ -61,10 +71,13 @@ app.include_router(admin_ingredients.router, prefix="/api/admin/ingredients", ta
 app.include_router(admin_recipes.router, prefix="/api/admin", tags=["Admin - Recipes"])
 app.include_router(admin_users.router, prefix="/api/admin/users", tags=["Admin - Users"])
 app.include_router(admin_ai.router, prefix="/api/admin/ai", tags=["Admin - AI"])
+app.include_router(admin_wines.router, prefix="/api/admin", tags=["Admin - Wines"])
 
 # New MongoDB-based endpoints
 app.include_router(ingredients.router, prefix="/api/v2/ingredients", tags=["Ingredients v2"])
 app.include_router(categories.router, prefix="/api/v2/categories", tags=["Categories v2"])
+app.include_router(wines.router, prefix="/api/v2/wines", tags=["Wines"])
+app.include_router(liquors.router, prefix="/api/v2/liquors", tags=["Liquors"])
 
 # Mount static files for ingredient images
 data_path = Path("/app/data")

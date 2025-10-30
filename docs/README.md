@@ -32,6 +32,12 @@ Bienvenue dans la documentation de Le Grimoire, une application web de gestion d
 - [Système d'ingrédients OpenFoodFacts](./features/OPENFOODFACTS.md)
 - [Traduction française](./features/FRENCH_LOCALIZATION.md)
 - [Listes de courses](./features/SHOPPING_LISTS.md)
+- [**Cellier (Cave à Vin)** - Nouveau!](./features/CELLIER.md)
+  - [Guide de démarrage rapide](./features/CELLIER_QUICKSTART.md)
+  - [Plan d'implémentation](./development/CELLIER_IMPLEMENTATION.md)
+  - [Feuille de route](./features/CELLIER_ROADMAP.md)
+  - [Sources de données vins](./development/WINE_DATA_SOURCES.md)
+  - [Schéma de base de données](./architecture/CELLIER_DATABASE_SCHEMA.md)
 
 ### Historique des migrations
 - [Migration vers MongoDB](./migrations/MONGODB_MIGRATION.md)

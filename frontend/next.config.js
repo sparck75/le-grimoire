@@ -11,7 +11,7 @@ const nextConfig = {
     ignoreBuildErrors: false, // Keep type checking enabled
   },
   images: {
-    domains: ['localhost', '192.168.1.100', '192.168.1.133'],
+    domains: ['localhost', '192.168.1.100', '192.168.1.133', '192.168.1.205'],
     remotePatterns: [
       {
         protocol: 'http',

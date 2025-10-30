@@ -129,6 +129,13 @@ export default function Navigation() {
                 <span className={styles.navBadge}>{itemCount}</span>
               )}
             </Link>
+            <Link 
+              href="/cellier" 
+              className={pathname?.startsWith('/cellier') ? styles.navLinkActive : styles.navLink}
+              onClick={() => setIsOpen(false)}
+            >
+              🍷 <span>Cellier</span>
+            </Link>
             
             {/* Show "Add Recipe" for collaborators and admins */}
             {isCollaborator() && (
