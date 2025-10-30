@@ -65,11 +65,24 @@ class LWINService:
             
         Returns:
             List of wine dictionaries
+            
+        Raises:
+            ValueError: If path is outside allowed directory or invalid
         """
         logger.info(f"Parsing LWIN CSV from {csv_path}")
+        
+        # Security: Validate path is within LWIN data directory
+        try:
+            resolved_path = csv_path.resolve()
+            lwin_data_dir = self.lwin_data_path.resolve()
+            # Check if path is within allowed directory
+            resolved_path.relative_to(lwin_data_dir)
+        except (ValueError, OSError) as e:
+            raise ValueError(f"Invalid CSV path - must be within LWIN data directory: {e}")
+        
         wines = []
         
-        with open(csv_path, 'r', encoding='utf-8') as f:
+        with open(resolved_path, 'r', encoding='utf-8') as f:
             reader = csv.DictReader(f)
             
             for row in reader:

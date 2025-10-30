@@ -61,7 +61,11 @@ async def import_from_file(file_path: str):
     
     # Parse CSV
     logger.info(f"Parsing CSV file: {csv_path}")
-    wines_data = lwin_service.parse_lwin_csv(csv_path)
+    try:
+        wines_data = lwin_service.parse_lwin_csv(csv_path)
+    except ValueError as e:
+        logger.error(f"Invalid file path: {e}")
+        sys.exit(1)
     
     if not wines_data:
         logger.error("No valid wine data found in CSV")

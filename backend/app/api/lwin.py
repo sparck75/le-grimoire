@@ -202,10 +202,25 @@ async def import_lwin_database(
             # Download from URL
             csv_path = await lwin_service.download_lwin_database(request.url)
         elif request.file_path:
-            # Use existing file
+            # Use existing file - validate path to prevent path traversal
             csv_path = Path(request.file_path)
-            if not csv_path.exists():
+            
+            # Security: Only allow files within the LWIN data directory
+            lwin_data_dir = lwin_service.lwin_data_path.resolve()
+            try:
+                resolved_path = csv_path.resolve()
+                # Check if path is within allowed directory
+                resolved_path.relative_to(lwin_data_dir)
+            except (ValueError, OSError):
+                raise HTTPException(
+                    status_code=400,
+                    detail="Invalid file path. File must be in LWIN data directory."
+                )
+            
+            if not resolved_path.exists():
                 raise HTTPException(status_code=400, detail="File not found")
+            
+            csv_path = resolved_path
         else:
             raise HTTPException(
                 status_code=400,
