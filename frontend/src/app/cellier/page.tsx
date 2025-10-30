@@ -173,7 +173,12 @@ export default function CellierPage() {
               </button>
               <Link href="/cellier/wines/browse">
                 <button className={styles.browseButton}>
-                  📖 Parcourir
+                  📖 Mes vins
+                </button>
+              </Link>
+              <Link href="/cellier/wines/lwin-browse">
+                <button className={styles.lwinButton}>
+                  🍷 Base LWIN
                 </button>
               </Link>
             </>

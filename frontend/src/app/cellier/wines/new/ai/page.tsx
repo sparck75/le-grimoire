@@ -6,14 +6,20 @@ import Link from 'next/link'
 import styles from '../wine-form.module.css'
 
 interface ExtractedWineData {
-  name?: string
+  name: string
   producer?: string
   vintage?: number
-  wine_type?: string
+  wine_type: string
   country?: string
   region?: string
   appellation?: string
   alcohol_content?: number
+  grape_varieties?: string[]
+  classification?: string
+  tasting_notes?: string
+  suggested_lwin7?: string
+  confidence_score?: number
+  image_url?: string
 }
 
 export default function NewWineAIPage() {
@@ -136,8 +142,10 @@ export default function NewWineAIPage() {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
       const formDataUpload = new FormData()
       formDataUpload.append('file', selectedImage)
+      formDataUpload.append('enrich_with_lwin', 'true')
 
-      const response = await fetch(`${apiUrl}/api/ai/extract-wine`, {
+      // Use new AI wine extraction endpoint with LWIN enrichment
+      const response = await fetch(`${apiUrl}/api/v2/ai-wine/extract`, {
         method: 'POST',
         body: formDataUpload
       })
@@ -150,7 +158,7 @@ export default function NewWineAIPage() {
       const extracted = await response.json()
       setExtractedData(extracted)
       
-      // Populate form with extracted data
+      // Populate form with extracted data (enriched with LWIN if available)
       setFormData(prev => ({
         ...prev,
         name: extracted.name || prev.name,
@@ -384,7 +392,39 @@ export default function NewWineAIPage() {
               L&apos;IA a extrait les informations ci-dessous. Vous pouvez les modifier si nécessaire
               avant d&apos;ajouter le vin à votre cellier.
             </p>
+            {extractedData.confidence_score && (
+              <div style={{ marginTop: '1rem', fontSize: '0.9rem', color: '#555' }}>
+                <strong>Score de confiance:</strong> {(extractedData.confidence_score * 100).toFixed(0)}%
+                {extractedData.confidence_score < 0.7 && (
+                  <span style={{ color: '#f57c00', marginLeft: '0.5rem' }}>
+                    ⚠️ Vérifiez attentivement les données extraites
+                  </span>
+                )}
+              </div>
+            )}
           </div>
+
+          {extractedData.suggested_lwin7 && (
+            <div className={styles.section} style={{ background: '#e3f2fd', borderLeft: '4px solid #2196f3' }}>
+              <h2>🍷 Enrichissement LWIN</h2>
+              <p style={{ color: '#1565c0', marginBottom: '0.5rem' }}>
+                Ce vin a été enrichi avec la base de données LWIN (Liv-ex Wine Identification Number)
+              </p>
+              <div style={{ fontSize: '0.9rem', color: '#555' }}>
+                <strong>Code LWIN7:</strong> {extractedData.suggested_lwin7}
+              </div>
+              {extractedData.grape_varieties && extractedData.grape_varieties.length > 0 && (
+                <div style={{ fontSize: '0.9rem', color: '#555', marginTop: '0.5rem' }}>
+                  <strong>Cépages:</strong> {extractedData.grape_varieties.join(', ')}
+                </div>
+              )}
+              {extractedData.classification && (
+                <div style={{ fontSize: '0.9rem', color: '#555', marginTop: '0.5rem' }}>
+                  <strong>Classification:</strong> {extractedData.classification}
+                </div>
+              )}
+            </div>
+          )}
 
           <div className={styles.section}>
             <h2>Informations de base</h2>
