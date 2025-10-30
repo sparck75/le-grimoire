@@ -14,6 +14,7 @@ interface Wine {
   region: string;
   country: string;
   barcode?: string;
+  image_url?: string;
   data_source: string;
   created_at: string;
 }
@@ -33,6 +34,7 @@ export default function AdminWinesPage() {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
+  const [uploadingImageFor, setUploadingImageFor] = useState<string | null>(null);
 
   const isAdmin = user && user.role === 'admin';
 
@@ -90,6 +92,46 @@ export default function AdminWinesPage() {
       setError(err instanceof Error ? err.message : 'Error loading wines');
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function uploadImage(wineId: string, file: File) {
+    try {
+      const apiUrl = getApiUrl();
+      const token = localStorage.getItem('access_token');
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      setUploadingImageFor(wineId);
+
+      const response = await fetch(`${apiUrl}/api/admin/wines/${wineId}/image`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Update wine in local state with new image_url
+        setWines(wines.map(w => w.id === wineId ? { ...w, image_url: data.url } : w));
+        alert('Image téléchargée avec succès!');
+      } else {
+        alert('Erreur lors du téléchargement de l\'image');
+      }
+    } catch (err) {
+      alert('Erreur lors du téléchargement de l\'image');
+    } finally {
+      setUploadingImageFor(null);
+    }
+  }
+
+  function handleImageUpload(wineId: string, event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (file) {
+      uploadImage(wineId, file);
     }
   }
 
@@ -237,19 +279,57 @@ export default function AdminWinesPage() {
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ borderBottom: '2px solid #e0e0e0' }}>
+                  <th style={{ padding: '0.75rem', textAlign: 'left', width: '80px' }}>Photo</th>
                   <th style={{ padding: '0.75rem', textAlign: 'left' }}>Nom</th>
                   <th style={{ padding: '0.75rem', textAlign: 'left' }}>Producteur</th>
                   <th style={{ padding: '0.75rem', textAlign: 'left' }}>Millésime</th>
                   <th style={{ padding: '0.75rem', textAlign: 'left' }}>Type</th>
                   <th style={{ padding: '0.75rem', textAlign: 'left' }}>Région</th>
                   <th style={{ padding: '0.75rem', textAlign: 'left' }}>Code-Barres</th>
-                  <th style={{ padding: '0.75rem', textAlign: 'left' }}>Source</th>
                   <th style={{ padding: '0.75rem', textAlign: 'center' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredWines.map((wine) => (
                   <tr key={wine.id} style={{ borderBottom: '1px solid #e0e0e0' }}>
+                    <td style={{ padding: '0.75rem' }}>
+                      <div style={{ position: 'relative', width: '60px', height: '80px', background: '#f5f5f5', borderRadius: '4px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {wine.image_url ? (
+                          <img
+                            src={getApiUrl() + wine.image_url}
+                            alt={wine.name}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          />
+                        ) : (
+                          <span style={{ fontSize: '2rem' }}>🍷</span>
+                        )}
+                        <label
+                          htmlFor={`upload-${wine.id}`}
+                          style={{
+                            position: 'absolute',
+                            bottom: 0,
+                            left: 0,
+                            right: 0,
+                            background: 'rgba(0,0,0,0.7)',
+                            color: 'white',
+                            fontSize: '0.7rem',
+                            padding: '2px',
+                            textAlign: 'center',
+                            cursor: uploadingImageFor === wine.id ? 'wait' : 'pointer'
+                          }}
+                        >
+                          {uploadingImageFor === wine.id ? '...' : '📷'}
+                        </label>
+                        <input
+                          id={`upload-${wine.id}`}
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleImageUpload(wine.id, e)}
+                          disabled={uploadingImageFor === wine.id}
+                          style={{ display: 'none' }}
+                        />
+                      </div>
+                    </td>
                     <td style={{ padding: '0.75rem' }}>{wine.name}</td>
                     <td style={{ padding: '0.75rem' }}>{wine.producer || '-'}</td>
                     <td style={{ padding: '0.75rem' }}>{wine.vintage || 'NV'}</td>
@@ -267,16 +347,6 @@ export default function AdminWinesPage() {
                     <td style={{ padding: '0.75rem' }}>{wine.region || '-'}</td>
                     <td style={{ padding: '0.75rem', fontFamily: 'monospace', fontSize: '0.9rem' }}>
                       {wine.barcode || '-'}
-                    </td>
-                    <td style={{ padding: '0.75rem' }}>
-                      <span style={{
-                        background: '#f0f0f0',
-                        padding: '0.25rem 0.5rem',
-                        borderRadius: '4px',
-                        fontSize: '0.85rem'
-                      }}>
-                        {wine.data_source}
-                      </span>
                     </td>
                     <td style={{ padding: '0.75rem', textAlign: 'center' }}>
                       <Link

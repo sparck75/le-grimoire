@@ -55,12 +55,18 @@ export default function CellierPage() {
     
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+      const token = localStorage.getItem('access_token')
+      
+      const headers: Record<string, string> = {}
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
       
       if (viewType === 'wines') {
         const params = new URLSearchParams()
         if (inStockOnly) params.append('in_stock', 'true')
         
-        const response = await fetch(`${apiUrl}/api/v2/wines/?${params}`)
+        const response = await fetch(`${apiUrl}/api/v2/wines/?${params}`, { headers })
         if (!response.ok) throw new Error('Failed to fetch wines')
         const data = await response.json()
         setWines(data)
@@ -68,7 +74,7 @@ export default function CellierPage() {
         const params = new URLSearchParams()
         if (inStockOnly) params.append('in_stock', 'true')
         
-        const response = await fetch(`${apiUrl}/api/v2/liquors/?${params}`)
+        const response = await fetch(`${apiUrl}/api/v2/liquors/?${params}`, { headers })
         if (!response.ok) throw new Error('Failed to fetch liquors')
         const data = await response.json()
         setLiquors(data)
@@ -158,12 +164,19 @@ export default function CellierPage() {
         <h1>🍷 Mon Cellier</h1>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           {viewType === 'wines' && (
-            <button
-              onClick={() => setShowScanner(true)}
-              className={styles.scanButton}
-            >
-              📷 Scanner
-            </button>
+            <>
+              <button
+                onClick={() => setShowScanner(true)}
+                className={styles.scanButton}
+              >
+                📷 Scanner
+              </button>
+              <Link href="/cellier/wines/browse">
+                <button className={styles.browseButton}>
+                  📖 Parcourir
+                </button>
+              </Link>
+            </>
           )}
           <Link href={`/cellier/${viewType}/new`}>
             <button className={styles.addButton}>
@@ -255,36 +268,36 @@ export default function CellierPage() {
       <div className={styles.grid}>
         {viewType === 'wines' ? (
           filteredWines.map(wine => (
-            <Link key={wine.id} href={`/cellier/wines/${wine.id}`}>
+            <Link key={wine.id} href={`/cellier/wines/${wine.id}`} className={styles.cardLink}>
               <div className={styles.card}>
                 <div className={styles.cardImage}>
-                  {wine.image_url ? (
-                    <img src={wine.image_url} alt={wine.name} />
+                {wine.image_url ? (
+                  <img src={wine.image_url} alt={wine.name} />
+                ) : (
+                  <div className={styles.placeholder}>🍷</div>
+                )}
+              </div>
+              <div className={styles.cardContent}>
+                <h3>{wine.name}</h3>
+                {wine.producer && <p className={styles.producer}>{wine.producer}</p>}
+                <div className={styles.cardMeta}>
+                  <span className={styles.badge}>{wine.wine_type}</span>
+                  <span>{wine.vintage || 'NV'}</span>
+                  <span>{wine.region}</span>
+                </div>
+                <div className={styles.quantity}>
+                  {wine.current_quantity > 0 ? (
+                    <span className={styles.inStock}>
+                      ✓ {wine.current_quantity} bouteille{wine.current_quantity > 1 ? 's' : ''}
+                    </span>
                   ) : (
-                    <div className={styles.placeholder}>🍷</div>
+                    <span className={styles.outOfStock}>Aucune en stock</span>
                   )}
                 </div>
-                <div className={styles.cardContent}>
-                  <h3>{wine.name}</h3>
-                  {wine.producer && <p className={styles.producer}>{wine.producer}</p>}
-                  <div className={styles.cardMeta}>
-                    <span className={styles.badge}>{wine.wine_type}</span>
-                    <span>{wine.vintage || 'NV'}</span>
-                    <span>{wine.region}</span>
+                {wine.rating && (
+                  <div className={styles.rating}>
+                    {'⭐'.repeat(Math.round(wine.rating))}
                   </div>
-                  <div className={styles.quantity}>
-                    {wine.current_quantity > 0 ? (
-                      <span className={styles.inStock}>
-                        ✓ {wine.current_quantity} bouteille{wine.current_quantity > 1 ? 's' : ''}
-                      </span>
-                    ) : (
-                      <span className={styles.outOfStock}>Aucune en stock</span>
-                    )}
-                  </div>
-                  {wine.rating && (
-                    <div className={styles.rating}>
-                      {'⭐'.repeat(Math.round(wine.rating))}
-                    </div>
                   )}
                 </div>
               </div>
@@ -292,7 +305,7 @@ export default function CellierPage() {
           ))
         ) : (
           filteredLiquors.map(liquor => (
-            <Link key={liquor.id} href={`/cellier/liquors/${liquor.id}`}>
+            <Link key={liquor.id} href={`/cellier/liquors/${liquor.id}`} className={styles.cardLink}>
               <div className={styles.card}>
                 <div className={styles.cardImage}>
                   {liquor.image_url ? (

@@ -37,10 +37,19 @@ app = FastAPI(
 
 # Configure CORS
 # Parse ALLOWED_ORIGINS - can be "*" or comma-separated list
-allowed_origins = (
-    ["*"] if settings.ALLOWED_ORIGINS == "*"
-    else [origin.strip() for origin in settings.ALLOWED_ORIGINS.split(",")]
-)
+# Note: allow_credentials=True is incompatible with allow_origins=["*"]
+# For development, we explicitly list allowed origins
+if settings.ALLOWED_ORIGINS == "*":
+    # Development: allow common local/network origins
+    allowed_origins = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://192.168.1.100:3000",
+        "http://192.168.1.133:3000",
+        "http://192.168.1.205:3000",
+    ]
+else:
+    allowed_origins = [origin.strip() for origin in settings.ALLOWED_ORIGINS.split(",")]
 
 app.add_middleware(
     CORSMiddleware,
