@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import styles from '../wine-form.module.css'
+import styles from '../wine-admin.module.css'
 
 interface ExtractedWineData {
   name: string

@@ -279,8 +279,27 @@ Example for Château Margaux 2015:
             logger.error(f"Raw response: {content}")
             raise RuntimeError(f"AI returned invalid JSON: {e}")
         except Exception as e:
-            logger.error(f"Error extracting wine data: {e}")
-            raise RuntimeError(f"Wine extraction failed: {e}")
+            error_msg = str(e)
+            logger.error(f"Error extracting wine data: {error_msg}")
+            
+            # Provide more helpful error messages
+            if "Connection error" in error_msg or "ConnectionError" in error_msg:
+                raise RuntimeError(
+                    "Cannot connect to OpenAI API. Please check your internet connection "
+                    "and ensure api.openai.com is accessible. If you're behind a proxy or firewall, "
+                    "you may need to configure network settings."
+                )
+            elif "API key" in error_msg or "authentication" in error_msg.lower():
+                raise RuntimeError(
+                    "OpenAI API key is invalid or expired. Please check your OPENAI_API_KEY "
+                    "in the .env file."
+                )
+            elif "rate limit" in error_msg.lower():
+                raise RuntimeError(
+                    "OpenAI API rate limit exceeded. Please wait a moment and try again."
+                )
+            else:
+                raise RuntimeError(f"Wine extraction failed: {error_msg}")
     
     async def match_to_lwin(
         self,

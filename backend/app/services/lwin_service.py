@@ -108,29 +108,97 @@ class LWINService:
             Wine data dictionary or None if invalid
         """
         try:
+            # Get LWIN code (base code, could be LWIN7 or other format)
+            lwin_base = self._get_field(row, ['LWIN', 'lwin', 'lwin7', 'LWIN7', 'lwin_7'])
+            
+            # Get vintage
+            vintage_str = self._get_field(row, ['vintage', 'Vintage', 'year', 'Year', 'FIRST_VINTAGE'])
+            vintage = None
+            if vintage_str and vintage_str.isdigit():
+                vintage = int(vintage_str)
+            
+            # Generate LWIN codes
+            # LWIN7: 7-digit producer code (base code)
+            # LWIN11: LWIN7 + 4-digit vintage (e.g., 1012361 + 2015 = 10123612015)
+            # LWIN18: LWIN11 + 7-digit package info (for future use)
+            lwin7 = lwin_base[:7] if lwin_base and len(lwin_base) >= 7 else lwin_base
+            lwin11 = None
+            lwin18 = None
+            
+            if lwin7 and vintage:
+                # Generate LWIN11 from LWIN7 + vintage
+                lwin11 = f"{lwin7}{vintage}"
+            
+            # If LWIN already has 11+ digits, use it as is
+            if lwin_base and len(lwin_base) >= 11:
+                lwin11 = lwin_base[:11]
+                lwin7 = lwin_base[:7]
+            
+            # If LWIN has 18+ digits, extract all codes
+            if lwin_base and len(lwin_base) >= 18:
+                lwin18 = lwin_base[:18]
+                lwin11 = lwin_base[:11]
+                lwin7 = lwin_base[:7]
+            
             # Map CSV columns to Wine model fields
-            # Column names may vary, so we try multiple variations
             wine_data = {
-                'lwin7': self._get_field(row, ['lwin7', 'LWIN7', 'lwin_7']),
-                'lwin11': self._get_field(row, ['lwin11', 'LWIN11', 'lwin_11']),
-                'lwin18': self._get_field(row, ['lwin18', 'LWIN18', 'lwin_18']),
-                'name': self._get_field(row, ['name', 'Name', 'wine_name', 'Wine Name']),
-                'producer': self._get_field(row, ['producer', 'Producer']),
-                'country': self._get_field(row, ['country', 'Country']) or '',
-                'region': self._get_field(row, ['region', 'Region']) or '',
-                'appellation': self._get_field(row, ['appellation', 'Appellation']),
+                # LWIN Codes
+                'lwin7': lwin7,
+                'lwin11': lwin11,
+                'lwin18': lwin18,
+                
+                # Basic Wine Info
+                'name': self._get_field(row, ['WINE', 'name', 'Name']),
+                'producer': self._get_field(row, ['PRODUCER_NAME', 'producer']),
+                'country': self._get_field(row, ['COUNTRY', 'country']) or '',
+                'region': self._get_field(row, ['REGION', 'region']) or '',
                 'wine_type': self._normalize_wine_type(
-                    self._get_field(row, ['type', 'Type', 'wine_type', 'Wine Type', 'color', 'Color'])
+                    self._get_field(row, ['COLOUR', 'TYPE', 'type'])
                 ),
+                
+                # Extended LWIN Fields
+                'lwin_status': self._get_field(row, ['STATUS']),
+                'lwin_display_name': self._get_field(row, ['DISPLAY_NAME']),
+                'producer_title': self._get_field(row, ['PRODUCER_TITLE']),
+                'sub_region': self._get_field(row, ['SUB_REGION']),
+                'site': self._get_field(row, ['SITE']),
+                'parcel': self._get_field(row, ['PARCEL']),
+                'sub_type': self._get_field(row, ['SUB_TYPE']),
+                'designation': self._get_field(row, ['DESIGNATION']),
+                'classification': self._get_field(row, ['CLASSIFICATION']),
+                'vintage_config': self._get_field(row, ['VINTAGE_CONFIG']),
+                'lwin_first_vintage': self._get_field(row, ['FIRST_VINTAGE']),
+                'lwin_final_vintage': self._get_field(row, ['FINAL_VINTAGE']),
+                'lwin_reference': self._get_field(row, ['REFERENCE']),
+                
+                # Metadata
                 'data_source': 'lwin',
                 'user_id': None,  # Master wine, not user-specific
-                'is_public': False,  # Master wines are not public by default
+                'is_public': False,  # Master wines are not public
             }
             
-            # Parse vintage if available
-            vintage_str = self._get_field(row, ['vintage', 'Vintage', 'year', 'Year'])
-            if vintage_str and vintage_str.isdigit():
-                wine_data['vintage'] = int(vintage_str)
+            # Parse dates
+            date_added = self._get_field(row, ['DATE_ADDED'])
+            if date_added:
+                try:
+                    wine_data['lwin_date_added'] = datetime.fromisoformat(
+                        date_added.replace(' ', 'T')
+                    )
+                except (ValueError, AttributeError):
+                    pass
+            
+            date_updated = self._get_field(row, ['DATE_UPDATED'])
+            if date_updated:
+                try:
+                    wine_data['lwin_date_updated'] = datetime.fromisoformat(
+                        date_updated.replace(' ', 'T')
+                    )
+                except (ValueError, AttributeError):
+                    pass
+            
+            # Add vintage to wine data
+            if vintage:
+                wine_data['vintage'] = vintage
             
             # Parse alcohol content if available
             alcohol_str = self._get_field(row, ['alcohol', 'Alcohol', 'alcohol_content', 'ABV'])
@@ -146,11 +214,8 @@ class LWINService:
                 grape_list = [g.strip() for g in grapes_str.split(',')]
                 wine_data['grape_varieties'] = [{'name': g} for g in grape_list if g]
             
-            # Classification
-            wine_data['classification'] = self._get_field(row, ['classification', 'Classification'])
-            
-            # Description/notes
-            wine_data['tasting_notes'] = self._get_field(row, ['description', 'Description', 'notes', 'Notes']) or ''
+
+
             
             # At minimum, we need a name or LWIN code
             if not wine_data.get('name') and not wine_data.get('lwin7'):

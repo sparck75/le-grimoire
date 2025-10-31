@@ -37,6 +37,7 @@ class AdminWineResponse(BaseModel):
     region: str
     country: str
     appellation: Optional[str] = None
+    classification: Optional[str] = None
     alcohol_content: Optional[float] = None
     grape_varieties: List[GrapeVariety] = []
     tasting_notes: str = ""
@@ -44,6 +45,28 @@ class AdminWineResponse(BaseModel):
     is_public: bool
     data_source: str
     barcode: Optional[str] = None
+    
+    # LWIN codes
+    lwin7: Optional[str] = None
+    lwin11: Optional[str] = None
+    lwin18: Optional[str] = None
+    
+    # Extended LWIN data
+    lwin_status: Optional[str] = None
+    lwin_display_name: Optional[str] = None
+    producer_title: Optional[str] = None
+    sub_region: Optional[str] = None
+    site: Optional[str] = None
+    parcel: Optional[str] = None
+    sub_type: Optional[str] = None
+    designation: Optional[str] = None
+    vintage_config: Optional[str] = None
+    lwin_first_vintage: Optional[str] = None
+    lwin_final_vintage: Optional[str] = None
+    lwin_date_added: Optional[datetime] = None
+    lwin_date_updated: Optional[datetime] = None
+    lwin_reference: Optional[str] = None
+    
     created_at: datetime
     updated_at: datetime
     

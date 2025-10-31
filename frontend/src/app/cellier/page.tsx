@@ -6,6 +6,21 @@ import { useRouter } from 'next/navigation'
 import styles from './cellier.module.css'
 import BarcodeScanner from './components/BarcodeScanner'
 
+// Translation map for wine types
+const wineTypeTranslations: { [key: string]: string } = {
+  'red': 'Rouge',
+  'white': 'Blanc',
+  'rosé': 'Rosé',
+  'rose': 'Rosé',
+  'sparkling': 'Effervescent',
+  'dessert': 'Dessert',
+  'fortified': 'Fortifié'
+}
+
+const translateWineType = (type: string): string => {
+  return wineTypeTranslations[type.toLowerCase()] || type
+}
+
 interface Wine {
   id: string
   name: string
@@ -172,13 +187,8 @@ export default function CellierPage() {
                 📷 Scanner
               </button>
               <Link href="/cellier/wines/browse">
-                <button className={styles.browseButton}>
-                  📖 Mes vins
-                </button>
-              </Link>
-              <Link href="/cellier/wines/lwin-browse">
                 <button className={styles.lwinButton}>
-                  🍷 Base LWIN
+                  🍷 Base LWIN (200K+ vins)
                 </button>
               </Link>
             </>
@@ -277,7 +287,14 @@ export default function CellierPage() {
               <div className={styles.card}>
                 <div className={styles.cardImage}>
                 {wine.image_url ? (
-                  <img src={wine.image_url} alt={wine.name} />
+                  <img 
+                    src={wine.image_url} 
+                    alt={wine.name}
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                      e.currentTarget.parentElement!.innerHTML = '<div class="' + styles.placeholder + '">🍷</div>';
+                    }}
+                  />
                 ) : (
                   <div className={styles.placeholder}>🍷</div>
                 )}
@@ -286,7 +303,7 @@ export default function CellierPage() {
                 <h3>{wine.name}</h3>
                 {wine.producer && <p className={styles.producer}>{wine.producer}</p>}
                 <div className={styles.cardMeta}>
-                  <span className={styles.badge}>{wine.wine_type}</span>
+                  <span className={styles.badge}>{translateWineType(wine.wine_type)}</span>
                   <span>{wine.vintage || 'NV'}</span>
                   <span>{wine.region}</span>
                 </div>
@@ -314,7 +331,14 @@ export default function CellierPage() {
               <div className={styles.card}>
                 <div className={styles.cardImage}>
                   {liquor.image_url ? (
-                    <img src={liquor.image_url} alt={liquor.name} />
+                    <img 
+                      src={liquor.image_url} 
+                      alt={liquor.name}
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        e.currentTarget.parentElement!.innerHTML = '<div class="' + styles.placeholder + '">🥃</div>';
+                      }}
+                    />
                   ) : (
                     <div className={styles.placeholder}>🥃</div>
                   )}

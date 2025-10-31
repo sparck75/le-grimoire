@@ -10,7 +10,7 @@ from app.api import (
     recipes, auth, ocr, grocery, shopping_lists,
     admin_ingredients, admin_recipes, admin_users,
     ingredients, categories, recipe_images, ai_extraction, admin_ai,
-    wines, liquors, admin_wines, lwin, ai_wine
+    wines, liquors, admin_wines, lwin, ai_wine, barcodes
 )
 from app.core.config import settings
 from app.core.database import init_mongodb, close_mongodb
@@ -45,6 +45,7 @@ if settings.ALLOWED_ORIGINS == "*":
         "http://localhost:3000",
         "http://127.0.0.1:3000",
         "http://192.168.1.100:3000",
+        "http://192.168.1.101:3000",
         "http://192.168.1.133:3000",
         "http://192.168.1.205:3000",
     ]
@@ -80,6 +81,7 @@ app.include_router(wines.router, prefix="/api/v2/wines", tags=["Wines"])
 app.include_router(liquors.router, prefix="/api/v2/liquors", tags=["Liquors"])
 app.include_router(lwin.router, prefix="/api/v2/lwin", tags=["LWIN"])
 app.include_router(ai_wine.router, prefix="/api/v2/ai-wine", tags=["AI Wine"])
+app.include_router(barcodes.router, prefix="/api/v2/barcodes", tags=["Barcodes"])
 
 # Mount static files for ingredient images
 data_path = Path("/app/data")

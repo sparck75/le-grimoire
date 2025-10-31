@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import styles from '../../cellier.module.css'
+import Link from 'next/link'
+import styles from './page.module.css'
 
 interface Wine {
   id: string
@@ -12,42 +13,61 @@ interface Wine {
   wine_type: string
   region: string
   country: string
-  current_quantity: number
-  image_url?: string
-  rating?: number
   appellation?: string
-  alcohol_content?: number
-  tasting_notes: string
+  lwin7?: string
+  lwin11?: string
 }
 
-export default function BrowseMasterWinesPage() {
+// Translation map for wine types
+const wineTypeTranslations: { [key: string]: string } = {
+  'red': 'Rouge',
+  'white': 'Blanc',
+  'rosé': 'Rosé',
+  'rose': 'Rosé',
+  'sparkling': 'Effervescent',
+  'dessert': 'Dessert',
+  'fortified': 'Fortifié'
+}
+
+const translateWineType = (type: string): string => {
+  return wineTypeTranslations[type.toLowerCase()] || type
+}
+
+export default function BrowseLWINWinesPage() {
   const router = useRouter()
   const [wines, setWines] = useState<Wine[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
-  const [filterType, setFilterType] = useState<string>('all')
+  const [filters, setFilters] = useState({
+    country: '',
+    region: '',
+    wine_type: '',
+  })
   const [addingWineId, setAddingWineId] = useState<string | null>(null)
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
 
   useEffect(() => {
-    fetchMasterWines()
-  }, [])
+    fetchLWINWines()
+  }, [searchTerm, filters])
 
-  async function fetchMasterWines() {
+  async function fetchLWINWines() {
     setLoading(true)
     setError(null)
     
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-      const token = localStorage.getItem('access_token')
       
-      const headers: Record<string, string> = {}
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`
-      }
+      // Build query params for LWIN search
+      const params = new URLSearchParams()
+      if (searchTerm) params.append('search', searchTerm)
+      if (filters.country) params.append('country', filters.country)
+      if (filters.region) params.append('region', filters.region)
+      if (filters.wine_type) params.append('wine_type', filters.wine_type)
+      params.append('limit', '50')
       
-      const response = await fetch(`${apiUrl}/api/v2/wines/master`, { headers })
-      if (!response.ok) throw new Error('Failed to fetch master wines')
+      const response = await fetch(`${apiUrl}/api/v2/lwin/search?${params}`)
+      if (!response.ok) throw new Error('Failed to fetch LWIN wines')
       const data = await response.json()
       setWines(data)
     } catch (err) {
@@ -66,7 +86,8 @@ export default function BrowseMasterWinesPage() {
       const token = localStorage.getItem('access_token')
       
       if (!token) {
-        throw new Error('You must be logged in to add wines')
+        setError('Vous devez être connecté pour ajouter un vin')
+        return
       }
 
       const response = await fetch(
@@ -84,8 +105,8 @@ export default function BrowseMasterWinesPage() {
         throw new Error(errorData.detail || 'Failed to add wine')
       }
 
-      // Success! Show feedback and optionally navigate
       alert('✅ Vin ajouté à votre cellier!')
+      router.push('/cellier')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
     } finally {
@@ -93,127 +114,260 @@ export default function BrowseMasterWinesPage() {
     }
   }
 
-  const filteredWines = wines.filter(wine => {
-    const matchesSearch = wine.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         wine.producer?.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesType = filterType === 'all' || wine.wine_type === filterType
-    return matchesSearch && matchesType
-  })
+  const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const { name, value } = e.target
+    setFilters(prev => ({ ...prev, [name]: value }))
+  }
 
-  const wineTypes = Array.from(new Set(wines.map(w => w.wine_type)))
+  const clearFilters = () => {
+    setSearchTerm('')
+    setFilters({
+      country: '',
+      region: '',
+      wine_type: '',
+    })
+  }
 
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <button onClick={() => router.back()} className={styles.backButton}>
-          ← Retour
-        </button>
-        <h1>🍷 Catalogue de Vins</h1>
-        <p className={styles.subtitle}>
-          Parcourez notre catalogue et ajoutez des vins à votre cellier
+        <h1>🍷 Base de données LWIN</h1>
+        <p style={{ color: '#666', marginBottom: '1.5rem' }}>
+          Parcourez plus de 200,000 vins de la base de données LWIN et ajoutez-les à votre cellier
         </p>
+        <Link href="/cellier">
+          <button className={styles.backButton}>← Retour au cellier</button>
+        </Link>
       </div>
 
-      <div className={styles.controls}>
-        <input
-          type="text"
-          placeholder="🔍 Rechercher un vin..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className={styles.searchInput}
-        />
+      {error && <div className={styles.error}>{error}</div>}
 
-        <select
-          value={filterType}
-          onChange={(e) => setFilterType(e.target.value)}
-          className={styles.filterSelect}
-        >
-          <option value="all">Tous les types</option>
-          {wineTypes.map(type => (
-            <option key={type} value={type}>
-              {type.charAt(0).toUpperCase() + type.slice(1)}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {error && (
-        <div className={styles.error}>
-          <p>❌ {error}</p>
+      {/* Search and filters */}
+      <div className={styles.filterSection}>
+        <div className={styles.searchBox}>
+          <input
+            type="text"
+            placeholder="Rechercher par nom ou producteur..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className={styles.searchInput}
+          />
+          <button onClick={fetchLWINWines} className={styles.searchButton}>
+            🔍 Rechercher
+          </button>
         </div>
-      )}
 
+        <div className={styles.filters}>
+          <select
+            name="country"
+            value={filters.country}
+            onChange={handleFilterChange}
+            className={styles.filterSelect}
+          >
+            <option value="">Tous les pays</option>
+            <option value="France">France</option>
+            <option value="Italy">Italie</option>
+            <option value="Spain">Espagne</option>
+            <option value="United States">États-Unis</option>
+            <option value="Australia">Australie</option>
+            <option value="Chile">Chili</option>
+            <option value="Argentina">Argentine</option>
+          </select>
+
+          <select
+            name="region"
+            value={filters.region}
+            onChange={handleFilterChange}
+            className={styles.filterSelect}
+          >
+            <option value="">Toutes les régions</option>
+            <option value="Bordeaux">Bordeaux</option>
+            <option value="Burgundy">Bourgogne</option>
+            <option value="Champagne">Champagne</option>
+            <option value="Rhône">Rhône</option>
+            <option value="Tuscany">Toscane</option>
+            <option value="Piedmont">Piémont</option>
+            <option value="Rioja">Rioja</option>
+            <option value="Napa Valley">Napa Valley</option>
+          </select>
+
+          <select
+            name="wine_type"
+            value={filters.wine_type}
+            onChange={handleFilterChange}
+            className={styles.filterSelect}
+          >
+            <option value="">Tous les types</option>
+            <option value="red">Rouge</option>
+            <option value="white">Blanc</option>
+            <option value="rosé">Rosé</option>
+            <option value="sparkling">Effervescent</option>
+            <option value="dessert">Dessert</option>
+            <option value="fortified">Fortifié</option>
+          </select>
+
+          {(searchTerm || filters.country || filters.region || filters.wine_type) && (
+            <button onClick={clearFilters} className={styles.clearButton}>
+              ✖ Effacer
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Results */}
       {loading ? (
         <div className={styles.loading}>
-          <p>Chargement des vins...</p>
+          <div className={styles.spinner}></div>
+          <p>Chargement des vins LWIN...</p>
         </div>
-      ) : filteredWines.length === 0 ? (
-        <div className={styles.empty}>
-          <p>Aucun vin trouvé</p>
+      ) : wines.length === 0 ? (
+        <div className={styles.emptyState}>
+          <div className={styles.emptyIcon}>🍷</div>
+          <h3>Aucun vin trouvé</h3>
+          <p>Essayez de modifier vos critères de recherche</p>
         </div>
       ) : (
-        <div className={styles.grid}>
-          {filteredWines.map((wine) => (
-            <div key={wine.id} className={styles.card}>
-              <div className={styles.cardImage}>
-                {wine.image_url ? (
-                  <img src={wine.image_url} alt={wine.name} />
-                ) : (
-                  <div className={styles.placeholderImage}>🍷</div>
-                )}
-              </div>
-              
-              <div className={styles.cardContent}>
-                <h3>{wine.name}</h3>
-                
-                {wine.producer && (
-                  <p className={styles.producer}>{wine.producer}</p>
-                )}
-                
-                <div className={styles.details}>
-                  {wine.vintage && (
-                    <span className={styles.vintage}>{wine.vintage}</span>
-                  )}
-                  <span className={styles.type}>{wine.wine_type}</span>
-                </div>
-                
-                {wine.region && (
-                  <p className={styles.region}>
-                    📍 {wine.region}{wine.country ? `, ${wine.country}` : ''}
-                  </p>
-                )}
-                
-                {wine.appellation && (
-                  <p className={styles.appellation}>{wine.appellation}</p>
-                )}
-                
-                {wine.alcohol_content && (
-                  <p className={styles.alcohol}>🍷 {wine.alcohol_content}%</p>
-                )}
-                
-                {wine.rating && (
-                  <div className={styles.rating}>
-                    ⭐ {wine.rating.toFixed(1)}/5
-                  </div>
-                )}
-                
-                {wine.tasting_notes && (
-                  <p className={styles.tastingNotes}>{wine.tasting_notes}</p>
-                )}
-              </div>
-              
-              <div className={styles.cardActions}>
-                <button
-                  onClick={() => addToCellier(wine.id)}
-                  disabled={addingWineId === wine.id}
-                  className={styles.addButton}
-                >
-                  {addingWineId === wine.id ? '⏳ Ajout...' : '➕ Ajouter à mon cellier'}
-                </button>
-              </div>
+        <>
+          <div className={styles.resultsHeader}>
+            <p>{wines.length} vins trouvés</p>
+            <div className={styles.viewToggle}>
+              <button
+                className={`${styles.viewButton} ${viewMode === 'grid' ? styles.active : ''}`}
+                onClick={() => setViewMode('grid')}
+                title="Vue en grille"
+              >
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                  <rect x="2" y="2" width="7" height="7" rx="1"/>
+                  <rect x="11" y="2" width="7" height="7" rx="1"/>
+                  <rect x="2" y="11" width="7" height="7" rx="1"/>
+                  <rect x="11" y="11" width="7" height="7" rx="1"/>
+                </svg>
+              </button>
+              <button
+                className={`${styles.viewButton} ${viewMode === 'list' ? styles.active : ''}`}
+                onClick={() => setViewMode('list')}
+                title="Vue en liste"
+              >
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                  <rect x="2" y="3" width="16" height="2" rx="1"/>
+                  <rect x="2" y="9" width="16" height="2" rx="1"/>
+                  <rect x="2" y="15" width="16" height="2" rx="1"/>
+                </svg>
+              </button>
             </div>
-          ))}
-        </div>
+          </div>
+          <div className={viewMode === 'grid' ? styles.wineGrid : styles.wineList}>
+            {wines.map((wine) => (
+              <div key={wine.id} className={viewMode === 'grid' ? styles.wineCard : styles.wineListItem}>
+                {viewMode === 'grid' ? (
+                  // Grid View
+                  <>
+                    <div className={styles.wineCardHeader}>
+                      <div className={styles.wineTitleSection}>
+                        <h3 className={styles.wineName}>{wine.name}</h3>
+                        {wine.producer && (
+                          <p className={styles.wineProducer}>{wine.producer}</p>
+                        )}
+                      </div>
+                      {wine.lwin11 && (
+                        <span className={styles.lwinBadge} title="Code LWIN">
+                          {wine.lwin11}
+                        </span>
+                      )}
+                    </div>
+                    
+                    <div className={styles.wineMetaRow}>
+                      {wine.vintage && (
+                        <span className={styles.vintageBadge}>{wine.vintage}</span>
+                      )}
+                      <span className={styles.typeBadge} data-type={wine.wine_type?.toLowerCase()}>
+                        {translateWineType(wine.wine_type)}
+                      </span>
+                    </div>
+
+                    <div className={styles.wineLocation}>
+                      <span className={styles.locationIcon}>📍</span>
+                      <span>{wine.region}, {wine.country}</span>
+                    </div>
+
+                    {wine.appellation && (
+                      <div className={styles.wineAppellation}>
+                        <span className={styles.appellationIcon}>🏆</span>
+                        <span>{wine.appellation}</span>
+                      </div>
+                    )}
+
+                    <div className={styles.wineActions}>
+                      <Link href={`/cellier/wines/lwin-details/${wine.id}`}>
+                        <button className={styles.detailsButton}>
+                          📖 Détails
+                        </button>
+                      </Link>
+                      <button
+                        onClick={() => addToCellier(wine.id)}
+                        disabled={addingWineId === wine.id}
+                        className={styles.addButton}
+                      >
+                        {addingWineId === wine.id ? '⏳' : '➕'}
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  // List View
+                  <>
+                    <div className={styles.listMainInfo}>
+                      <div className={styles.listTitle}>
+                        <h3 className={styles.listWineName}>{wine.name}</h3>
+                        {wine.producer && (
+                          <p className={styles.listProducer}>{wine.producer}</p>
+                        )}
+                      </div>
+                      <div className={styles.listMeta}>
+                        {wine.vintage && (
+                          <span className={`${styles.listBadge} vintage`}>{wine.vintage}</span>
+                        )}
+                        <span className={`${styles.listBadge} type`} data-type={wine.wine_type?.toLowerCase()}>
+                          {translateWineType(wine.wine_type)}
+                        </span>
+                        <div className={styles.listLocation}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                          </svg>
+                          <span>{wine.region}, {wine.country}</span>
+                        </div>
+                        {wine.appellation && (
+                          <div className={styles.listAppellation}>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                            </svg>
+                            <span>{wine.appellation}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    {wine.lwin11 && (
+                      <span className={styles.listLwinBadge}>{wine.lwin11}</span>
+                    )}
+                    <div className={styles.listActions}>
+                      <Link href={`/cellier/wines/lwin-details/${wine.id}`}>
+                        <button className={styles.listDetailsButton}>
+                          📖 Détails
+                        </button>
+                      </Link>
+                      <button
+                        onClick={() => addToCellier(wine.id)}
+                        disabled={addingWineId === wine.id}
+                        className={styles.listAddButton}
+                      >
+                        {addingWineId === wine.id ? '⏳ Ajout...' : '➕ Ajouter'}
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+        </>
       )}
     </div>
   )

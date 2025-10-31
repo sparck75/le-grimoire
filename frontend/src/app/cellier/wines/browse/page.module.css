@@ -121,43 +121,201 @@
 
 /* Results */
 .resultsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 1.5rem;
   color: #666;
   font-size: 0.95rem;
 }
 
+.viewToggle {
+  display: flex;
+  gap: 0.5rem;
+  background: white;
+  padding: 0.3rem;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.viewButton {
+  background: transparent;
+  border: none;
+  padding: 0.6rem 0.8rem;
+  border-radius: 8px;
+  cursor: pointer;
+  color: #888;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.viewButton:hover {
+  background: #f5f5f5;
+  color: #555;
+}
+
+.viewButton.active {
+  background: #8e24aa;
+  color: white;
+}
+
+/* Grid View */
 .wineGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 1.8rem;
 }
 
 .wineCard {
   background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s, box-shadow 0.2s;
+  border-radius: 16px;
+  padding: 1.8rem;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+  position: relative;
+  overflow: hidden;
+}
+
+.wineCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #8e24aa, #ab47bc);
+  opacity: 0;
+  transition: opacity 0.3s;
 }
 
 .wineCard:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  transform: translateY(-6px);
+  box-shadow: 0 8px 24px rgba(142, 36, 170, 0.15);
+  border-color: #8e24aa;
+}
+
+.wineCard:hover::before {
+  opacity: 1;
 }
 
 .wineCardHeader {
   display: flex;
   justify-content: space-between;
-  align-items: start;
-  margin-bottom: 1rem;
+  align-items: flex-start;
+  margin-bottom: 1.2rem;
   gap: 1rem;
+}
+
+.wineTitleSection {
+  flex: 1;
+  min-width: 0;
 }
 
 .wineName {
   color: #2c3e50;
-  font-size: 1.2rem;
+  font-size: 1.3rem;
+  margin: 0 0 0.4rem 0;
+  font-weight: 700;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.wineProducer {
+  color: #7f8c8d;
+  font-size: 1rem;
   margin: 0;
-  flex: 1;
+  font-weight: 500;
+}
+
+.wineMetaRow {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.vintageBadge {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 0.4rem 0.9rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.typeBadge {
+  padding: 0.4rem 0.9rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.typeBadge[data-type="red"],
+.typeBadge[data-type="rouge"] {
+  background: #fce4ec;
+  color: #c2185b;
+}
+
+.typeBadge[data-type="white"],
+.typeBadge[data-type="blanc"] {
+  background: #fff9c4;
+  color: #f57f17;
+}
+
+.typeBadge[data-type="rosé"],
+.typeBadge[data-type="rose"] {
+  background: #fce4ec;
+  color: #e91e63;
+}
+
+.typeBadge[data-type="sparkling"],
+.typeBadge[data-type="effervescent"] {
+  background: #e0f7fa;
+  color: #00838f;
+}
+
+.wineLocation {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #555;
+  font-size: 0.95rem;
+  margin-bottom: 0.6rem;
+}
+
+.locationIcon {
+  width: 18px;
+  height: 18px;
+  color: #8e24aa;
+  flex-shrink: 0;
+}
+
+.wineAppellation {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #555;
+  font-size: 0.95rem;
+  margin-bottom: 1rem;
+}
+
+.appellationIcon {
+  width: 18px;
+  height: 18px;
+  color: #8e24aa;
+  flex-shrink: 0;
 }
 
 .lwinBadge {
@@ -168,6 +326,208 @@
   font-size: 0.75rem;
   font-weight: 500;
   white-space: nowrap;
+}
+
+/* List View */
+.wineList {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+.wineListItem {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  border: 1px solid #e0e0e0;
+}
+
+.wineListItem:hover {
+  box-shadow: 0 4px 16px rgba(142, 36, 170, 0.12);
+  border-color: #8e24aa;
+  transform: translateX(4px);
+}
+
+.listMainInfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.listTitle {
+  display: flex;
+  align-items: baseline;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.listWineName {
+  color: #2c3e50;
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.listProducer {
+  color: #7f8c8d;
+  font-size: 0.95rem;
+  font-weight: 500;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.listMeta {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.listBadge {
+  padding: 0.3rem 0.75rem;
+  border-radius: 16px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.listBadge.vintage {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 2px 6px rgba(102, 126, 234, 0.25);
+}
+
+.listLocation {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.listLocation svg {
+  width: 16px;
+  height: 16px;
+  color: #8e24aa;
+}
+
+.listAppellation {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.listAppellation svg {
+  width: 16px;
+  height: 16px;
+  color: #8e24aa;
+}
+
+.listLwinBadge {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 0.35rem 0.7rem;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.listActions {
+  display: flex;
+  gap: 0.8rem;
+  flex-shrink: 0;
+}
+
+.listDetailsButton {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+  white-space: nowrap;
+}
+
+.listDetailsButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.listAddButton {
+  background: white;
+  color: #8e24aa;
+  border: 2px solid #8e24aa;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.listAddButton:hover {
+  background: #8e24aa;
+  color: white;
+  transform: translateY(-2px);
+}
+
+/* Admin-specific list buttons */
+.listViewButton {
+  background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
+  color: white;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.listViewButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+}
+
+.listEditButton {
+  background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+  color: white;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.listEditButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3);
 }
 
 .wineDetails {
@@ -200,6 +560,25 @@
   gap: 0.5rem;
 }
 
+.detailsButton {
+  background: #f5f5f5;
+  color: #2c3e50;
+  border: 2px solid #e0e0e0;
+  padding: 0.8rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.detailsButton:hover {
+  background: #e0e0e0;
+  border-color: #8e24aa;
+  color: #8e24aa;
+}
+
 .addButton {
   flex: 1;
   background: #8e24aa;
@@ -220,6 +599,43 @@
 .addButton:disabled {
   background: #ccc;
   cursor: not-allowed;
+}
+
+/* Admin-specific buttons */
+.viewButton {
+  flex: 1;
+  background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
+  color: white;
+  border: none;
+  padding: 0.8rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.viewButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+}
+
+.editButton {
+  flex: 1;
+  background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+  color: white;
+  border: none;
+  padding: 0.8rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.editButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3);
 }
 
 /* Loading */
@@ -274,6 +690,11 @@
 
   .wineGrid {
     grid-template-columns: 1fr;
+    gap: 1.2rem;
+  }
+
+  .wineCard {
+    padding: 1.4rem;
   }
 
   .searchBox {
@@ -285,6 +706,85 @@
   }
 
   .filterSelect {
+    width: 100%;
+  }
+
+  .resultsHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .viewToggle {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+
+  /* List view mobile optimization */
+  .wineListItem {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .listMainInfo {
+    width: 100%;
+  }
+
+  .listMeta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.6rem;
+  }
+
+  .listLwinBadge {
+    margin-left: 0;
+    align-self: flex-start;
+  }
+
+  .listActions {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .listDetailsButton,
+  .listAddButton {
+    width: 100%;
+  }
+
+  .listWineName {
+    font-size: 1rem;
+  }
+
+  .listProducer {
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .header h1 {
+    font-size: 1.5rem;
+  }
+
+  .searchInput {
+    font-size: 1rem;
+  }
+
+  .wineCard {
+    padding: 1.2rem;
+  }
+
+  .wineName {
+    font-size: 1.15rem;
+  }
+
+  .wineActions {
+    flex-direction: column;
+  }
+
+  .detailsButton,
+  .addButton {
     width: 100%;
   }
 }

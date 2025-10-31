@@ -33,6 +33,45 @@ class LWINSearchResponse(BaseModel):
         from_attributes = True
 
 
+class LWINDetailResponse(BaseModel):
+    """Complete LWIN wine details"""
+    id: str
+    lwin7: Optional[str]
+    lwin11: Optional[str]
+    lwin18: Optional[str]
+    name: str
+    producer: Optional[str]
+    vintage: Optional[int]
+    wine_type: str
+    country: str
+    region: str
+    appellation: Optional[str]
+    classification: Optional[str]
+    color: Optional[str]
+    alcohol_content: Optional[float]
+    grape_varieties: List[Dict[str, Any]] = []
+    tasting_notes: Optional[str]
+    
+    # Extended LWIN data
+    lwin_status: Optional[str] = None
+    lwin_display_name: Optional[str] = None
+    producer_title: Optional[str] = None
+    sub_region: Optional[str] = None
+    site: Optional[str] = None
+    parcel: Optional[str] = None
+    sub_type: Optional[str] = None
+    designation: Optional[str] = None
+    vintage_config: Optional[str] = None
+    lwin_first_vintage: Optional[str] = None
+    lwin_final_vintage: Optional[str] = None
+    lwin_date_added: Optional[str] = None
+    lwin_date_updated: Optional[str] = None
+    lwin_reference: Optional[str] = None
+    
+    class Config:
+        from_attributes = True
+
+
 class LWINImportRequest(BaseModel):
     """Request to import LWIN data"""
     url: Optional[str] = None
@@ -99,6 +138,66 @@ async def search_lwin_wines(
         )
         for wine in wines
     ]
+
+
+@router.get("/{wine_id}", response_model=LWINDetailResponse)
+async def get_lwin_wine_details(
+    wine_id: str
+):
+    """
+    Get complete LWIN wine details by MongoDB ID
+    
+    Returns full wine information including grape varieties,
+    tasting notes, and all LWIN codes.
+    """
+    wine = await Wine.get(wine_id)
+    
+    if not wine:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Wine not found with ID {wine_id}"
+        )
+    
+    # Ensure this is a LWIN master wine
+    if wine.data_source != 'lwin' or wine.user_id is not None:
+        raise HTTPException(
+            status_code=404,
+            detail="Not a LWIN master wine"
+        )
+    
+    return LWINDetailResponse(
+        id=str(wine.id),
+        lwin7=wine.lwin7,
+        lwin11=wine.lwin11,
+        lwin18=wine.lwin18,
+        name=wine.name,
+        producer=wine.producer,
+        vintage=wine.vintage,
+        wine_type=wine.wine_type,
+        country=wine.country,
+        region=wine.region,
+        appellation=wine.appellation,
+        classification=wine.classification,
+        color=wine.color,
+        alcohol_content=wine.alcohol_content,
+        grape_varieties=[vars(gv) for gv in (wine.grape_varieties or [])],
+        tasting_notes=wine.tasting_notes,
+        # Extended LWIN fields
+        lwin_status=wine.lwin_status,
+        lwin_display_name=wine.lwin_display_name,
+        producer_title=wine.producer_title,
+        sub_region=wine.sub_region,
+        site=wine.site,
+        parcel=wine.parcel,
+        sub_type=wine.sub_type,
+        designation=wine.designation,
+        vintage_config=wine.vintage_config,
+        lwin_first_vintage=wine.lwin_first_vintage,
+        lwin_final_vintage=wine.lwin_final_vintage,
+        lwin_date_added=wine.lwin_date_added.isoformat() if wine.lwin_date_added else None,
+        lwin_date_updated=wine.lwin_date_updated.isoformat() if wine.lwin_date_updated else None,
+        lwin_reference=wine.lwin_reference
+    )
 
 
 @router.get("/code/{lwin_code}", response_model=LWINSearchResponse)

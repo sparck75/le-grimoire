@@ -1,0 +1,1531 @@
+/* Admin Wine Edit - LWIN Style Layout */
+
+.container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.backButton {
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: all 0.2s;
+  color: #2c3e50;
+  font-weight: 500;
+}
+
+.backButton:hover {
+  background: #e0e0e0;
+  border-color: #bbb;
+}
+
+.saveButton {
+  background: #8e24aa;
+  color: white;
+  border: none;
+  padding: 0.6rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.saveButton:hover:not(:disabled) {
+  background: #7b1fa2;
+  transform: translateY(-2px);
+}
+
+.saveButton:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.saveButtonLarge {
+  width: 100%;
+  background: #8e24aa;
+  color: white;
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 1.1rem;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.saveButtonLarge:hover:not(:disabled) {
+  background: #7b1fa2;
+  transform: translateY(-2px);
+}
+
+.saveButtonLarge:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Details Card - LWIN Style */
+.detailsCard {
+  background: white;
+  border-radius: 16px;
+  padding: 2.5rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.detailsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  padding-bottom: 2rem;
+  border-bottom: 2px solid #f0f0f0;
+  gap: 2rem;
+}
+
+.headerContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.nameInput {
+  color: #2c3e50;
+  font-size: 2rem;
+  font-weight: 700;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  padding: 0.5rem;
+  transition: all 0.2s;
+  background: transparent;
+}
+
+.nameInput:hover {
+  background: #f9f9f9;
+  border-color: #e0e0e0;
+}
+
+.nameInput:focus {
+  outline: none;
+  background: white;
+  border-color: #8e24aa;
+}
+
+.producerInput {
+  color: #7f8c8d;
+  font-size: 1.2rem;
+  font-weight: 500;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  padding: 0.5rem;
+  transition: all 0.2s;
+  background: transparent;
+}
+
+.producerInput:hover {
+  background: #f9f9f9;
+  border-color: #e0e0e0;
+}
+
+.producerInput:focus {
+  outline: none;
+  background: white;
+  border-color: #8e24aa;
+}
+
+.lwinBadge {
+  background: #e3f2fd;
+  color: #1565c0;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  white-space: nowrap;
+  align-self: flex-start;
+}
+
+/* Loading */
+.loading {
+  text-align: center;
+  padding: 4rem;
+}
+
+.spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #8e24aa;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.error {
+  background: #ffebee;
+  color: #c62828;
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  border-left: 4px solid #c62828;
+}
+
+/* Sections */
+.section {
+  margin-bottom: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid #f0f0f0;
+}
+
+.section:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+
+.sectionTitle {
+  color: #2c3e50;
+  font-size: 1.5rem;
+  margin: 0 0 1.5rem 0;
+  font-weight: 600;
+}
+
+/* Info Grid */
+.infoGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+}
+
+.infoItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.infoLabel {
+  color: #7f8c8d;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.input,
+.select {
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 1rem;
+  color: #2c3e50;
+  transition: all 0.2s;
+}
+
+.input:hover,
+.select:hover {
+  border-color: #8e24aa;
+}
+
+.input:focus,
+.select:focus {
+  outline: none;
+  border-color: #8e24aa;
+  box-shadow: 0 0 0 3px rgba(142, 36, 170, 0.1);
+}
+
+.textarea {
+  width: 100%;
+  padding: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 1rem;
+  color: #2c3e50;
+  font-family: inherit;
+  line-height: 1.6;
+  resize: vertical;
+  transition: all 0.2s;
+}
+
+.textarea:hover {
+  border-color: #8e24aa;
+}
+
+.textarea:focus {
+  outline: none;
+  border-color: #8e24aa;
+  box-shadow: 0 0 0 3px rgba(142, 36, 170, 0.1);
+}
+
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.checkbox input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+
+/* Source Indicator */
+.sourceIndicator {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.sourceLabel, .enrichedLabel {
+  font-weight: 600;
+  color: #555;
+  font-size: 0.9rem;
+}
+
+.sourceBadge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.sourceBadge.lwin {
+  background: #2196f3;
+  color: white;
+}
+
+.sourceBadge.vivino {
+  background: #8e24aa;
+  color: white;
+}
+
+.sourceBadge.wine_searcher {
+  background: #4caf50;
+  color: white;
+}
+
+.sourceBadge.manual {
+  background: #ff9800;
+  color: white;
+}
+
+/* Grape Varieties */
+.grapeList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.grapeItem {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  background: #f8f9fa;
+  border: 1px solid #e0e0e0;
+  padding: 0.8rem;
+  border-radius: 8px;
+}
+
+.grapeInput {
+  flex: 1;
+  padding: 0.6rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 1rem;
+  color: #2c3e50;
+}
+
+.percentInput {
+  width: 80px;
+  padding: 0.6rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 1rem;
+  color: #8e24aa;
+  font-weight: 600;
+}
+
+.removeButton {
+  background: #ffebee;
+  color: #c62828;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1.2rem;
+  transition: all 0.2s;
+}
+
+.removeButton:hover {
+  background: #c62828;
+  color: white;
+}
+
+.addButton {
+  background: #f5f5f5;
+  color: #8e24aa;
+  border: 2px dashed #8e24aa;
+  padding: 0.8rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.addButton:hover {
+  background: #f3e5f5;
+  border-style: solid;
+}
+
+/* LWIN Codes */
+.lwinCodes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.lwinCode {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: #f8f9fa;
+  padding: 1rem 1.2rem;
+  border-radius: 8px;
+}
+
+.lwinCodeLabel {
+  color: #7f8c8d;
+  font-weight: 600;
+  min-width: 80px;
+}
+
+.lwinCodeValue {
+  color: #2c3e50;
+  font-family: 'Courier New', monospace;
+  font-size: 1.1rem;
+  font-weight: 600;
+  background: white;
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+}
+
+/* Actions */
+.actions {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 2px solid #f0f0f0;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.tab {
+  padding: 1rem 2rem;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  color: #666;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tab:hover {
+  color: #8e24aa;
+  background: #f9f9f9;
+}
+
+.tab.active {
+  color: #8e24aa;
+  border-bottom-color: #8e24aa;
+  font-weight: 600;
+}
+
+.tabContent {
+  animation: fadeIn 0.3s;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Sections */
+.section {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+}
+
+.section h2 {
+  font-size: 1.3rem;
+  color: #333;
+  margin: 0 0 1.5rem 0;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.section h3 {
+  font-size: 1.1rem;
+  color: #555;
+  margin: 1.5rem 0 1rem 0;
+}
+
+/* Form Elements */
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.formGroup label {
+  font-weight: 600;
+  color: #555;
+  font-size: 0.9rem;
+}
+
+.input, .select {
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
+.input:focus, .select:focus {
+  outline: none;
+  border-color: #8e24aa;
+}
+
+/* LWIN Codes */
+.lwinCodes {
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.lwinCode {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1.5rem;
+  background: #f5f5f5;
+  border-radius: 8px;
+  border-left: 4px solid #2196f3;
+}
+
+.lwinLabel {
+  font-weight: 600;
+  color: #555;
+}
+
+.lwinCode code {
+  font-family: 'Courier New', monospace;
+  background: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-size: 1rem;
+  color: #2196f3;
+}
+
+/* Images */
+.currentImage {
+  margin-bottom: 2rem;
+}
+
+.currentImage label {
+  display: block;
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 1rem;
+}
+
+.wineImage {
+  max-width: 300px;
+  height: auto;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.noImage {
+  width: 300px;
+  height: 400px;
+  background: #f5f5f5;
+  border: 2px dashed #ddd;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  color: #ccc;
+}
+
+.imageSources {
+  margin-top: 2rem;
+}
+
+.sourceList {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+.imageSource {
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 1rem;
+  background: #fafafa;
+}
+
+.sourceHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.quality {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.thumbImage {
+  width: 100%;
+  height: 200px;
+  object-fit: contain;
+  border-radius: 4px;
+  background: white;
+  margin-bottom: 1rem;
+}
+
+.sourceNote {
+  font-size: 0.85rem;
+  color: #666;
+  font-style: italic;
+  margin-bottom: 1rem;
+}
+
+.useButton {
+  width: 100%;
+  padding: 0.75rem;
+  background: #8e24aa;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.useButton:hover {
+  background: #7b1fa2;
+  transform: translateY(-2px);
+}
+
+.noSources {
+  color: #999;
+  font-style: italic;
+  padding: 2rem;
+  text-align: center;
+  background: #f9f9f9;
+  border-radius: 8px;
+}
+
+/* Enrichment Actions */
+.enrichmentActions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+  flex-wrap: wrap;
+}
+
+.enrichButton {
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #8e24aa 0%, #6a1b9a 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.enrichButton:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(142, 36, 170, 0.3);
+}
+
+.enrichButton:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+/* Ratings */
+.ratingsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.ratingCard {
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 1.5rem;
+  text-align: center;
+  background: #fafafa;
+}
+
+.ratingScore {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #8e24aa;
+  margin: 0.5rem 0;
+}
+
+.ratingCount {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+/* Prices */
+.pricesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.priceCard {
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 1.5rem;
+  background: #fafafa;
+}
+
+.priceValue {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #4caf50;
+  margin: 0.75rem 0;
+}
+
+.stockStatus {
+  font-size: 0.9rem;
+  color: #666;
+  margin-top: 0.5rem;
+}
+
+/* Provenance Tab */
+.externalIds {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.externalId {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: #f5f5f5;
+  border-radius: 8px;
+}
+
+.externalId code {
+  font-family: 'Courier New', monospace;
+  background: white;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  flex: 1;
+}
+
+.syncGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.syncCard {
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 1.5rem;
+  background: #fafafa;
+}
+
+.syncStatus {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0.75rem 0;
+}
+
+.lastSync {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.overrides {
+  background: #fff3e0;
+  border: 1px solid #ffb74d;
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.overrideList {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.override {
+  display: flex;
+  gap: 1rem;
+  padding: 0.75rem;
+  background: white;
+  border-radius: 4px;
+}
+
+.override strong {
+  color: #ff9800;
+  min-width: 150px;
+}
+
+.override span {
+  color: #555;
+  word-break: break-all;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+  }
+
+  .detailsCard {
+    padding: 1.5rem;
+  }
+
+  .detailsHeader {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .nameInput {
+    font-size: 1.5rem;
+  }
+
+  .producerInput {
+    font-size: 1rem;
+  }
+
+  .header {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .backButton,
+  .saveButton {
+    width: 100%;
+  }
+
+  .infoGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .grapeItem {
+    flex-wrap: wrap;
+  }
+
+  .percentInput {
+    width: 100%;
+  }
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 0.5rem;
+  border-bottom: 2px solid #e0e0e0;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.tab {
+  background: none;
+  border: none;
+  padding: 1rem 1.5rem;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #666;
+  border-bottom: 3px solid transparent;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.tab:hover {
+  color: #8e24aa;
+  background: rgba(142, 36, 170, 0.05);
+}
+
+.activeTab {
+  color: #8e24aa;
+  border-bottom-color: #8e24aa;
+  font-weight: 600;
+}
+
+.tabContent {
+  padding: 1rem 0;
+}
+
+/* Read-only values */
+.readOnlyValue {
+  font-size: 1.1rem;
+  color: #2c3e50;
+  margin: 0.5rem 0;
+  line-height: 1.6;
+}
+
+/* Form elements for edit tab */
+.formGroup {
+  margin-bottom: 1.5rem;
+}
+
+.formGroup label {
+  display: block;
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+.input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 1rem;
+  transition: all 0.2s;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #8e24aa;
+  box-shadow: 0 0 0 3px rgba(142, 36, 170, 0.1);
+}
+
+/* Enrichment styles */
+.enrichmentActions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.enrichButton {
+  background: linear-gradient(135deg, #8e24aa 0%, #ab47bc 100%);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 600;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.enrichButton:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.enrichButton:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.wineImage {
+  max-width: 300px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  margin-top: 1rem;
+}
+
+.noImage {
+  background: #f5f5f5;
+  border: 2px dashed #ddd;
+  border-radius: 8px;
+  padding: 3rem;
+  text-align: center;
+  color: #999;
+  font-size: 2rem;
+  margin-top: 1rem;
+}
+
+/* Ratings and prices grids */
+.ratingsGrid,
+.pricesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.ratingCard,
+.priceCard {
+  background: #f9f9f9;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 1rem;
+  text-align: center;
+}
+
+.sourceBadge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+
+.sourceBadge.vivino {
+  background: #bb1e21;
+  color: white;
+}
+
+.sourceBadge.lwin {
+  background: #3f51b5;
+  color: white;
+}
+
+.sourceBadge.winesearcher {
+  background: #4caf50;
+  color: white;
+}
+
+.ratingScore {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #8e24aa;
+  margin: 0.5rem 0;
+}
+
+.ratingCount {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.priceValue {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin: 0.5rem 0;
+}
+
+/* Provenance tab */
+.externalIds {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.externalId {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem;
+  background: #f5f5f5;
+  border-radius: 6px;
+}
+
+.externalId code {
+  font-family: 'Courier New', monospace;
+  background: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.syncGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.syncItem {
+  padding: 0.75rem;
+  background: #f5f5f5;
+  border-radius: 6px;
+  font-size: 0.95rem;
+}
+
+.syncItem strong {
+  color: #8e24aa;
+  margin-right: 0.5rem;
+}
+
+/* Grape badge for read-only view */
+.grapeBadge {
+  display: inline-block;
+  background: linear-gradient(135deg, #8e24aa 0%, #ab47bc 100%);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  margin: 0.25rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+/* Device Information Style - Grouped Sections */
+.lwinSection {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+  overflow: hidden;
+}
+
+.lwinSectionHeader {
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.lwinSectionHeader h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #2c3e50;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.lwinGrid {
+  padding: 0;
+}
+
+.lwinRow {
+  display: flex;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #f5f5f5;
+  transition: background-color 0.2s ease;
+}
+
+.lwinRow:last-child {
+  border-bottom: none;
+}
+
+.lwinRow:hover {
+  background-color: #fafafa;
+}
+
+.lwinRowLabel {
+  flex: 0 0 200px;
+  font-weight: 600;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.lwinRowValue {
+  flex: 1;
+  color: #2c3e50;
+  font-size: 0.95rem;
+  word-break: break-word;
+}
+
+.lwinRowValue code {
+  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+  padding: 0.3rem 0.7rem;
+  border-radius: 6px;
+  font-family: 'Courier New', monospace;
+  color: #1565c0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border: 1px solid #90caf9;
+}
+
+/* Grape list styling */
+.grapeList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .lwinRowLabel {
+    flex: 0 0 140px;
+    font-size: 0.85rem;
+  }
+  
+  .lwinRowValue {
+    font-size: 0.9rem;
+  }
+  
+  .lwinSectionHeader {
+    padding: 0.875rem 1rem;
+  }
+  
+  .lwinSectionHeader h3 {
+    font-size: 1rem;
+  }
+  
+  .lwinRow {
+    padding: 0.875rem 1rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .lwinRow {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .lwinRowLabel {
+    flex: none;
+    color: #8e24aa;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+  }
+}
+
+/* Additional header styles */
+.wineName {
+  font-size: 2rem;
+  margin: 0;
+  color: #2c3e50;
+  font-weight: 600;
+}
+
+.wineProducer {
+  font-size: 1.25rem;
+  margin: 0.5rem 0 0 0;
+  color: #7f8c8d;
+  font-weight: 400;
+}
+
+/* ========================================== */
+/* Edit Tab Styles - Device Information Style */
+/* ========================================== */
+
+/* Edit Section Container */
+.editSection {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* Edit Section Header */
+.editSectionHeader {
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.editSectionHeader h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #2c3e50;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Edit Content Area */
+.editContent {
+  padding: 1.5rem;
+}
+
+/* Edit Grid - 2 column responsive layout for form fields */
+.editGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.25rem;
+  padding: 1.5rem;
+}
+
+/* Individual Edit Field */
+.editField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Edit Field Label */
+.editLabel {
+  font-weight: 600;
+  color: #555;
+  font-size: 0.9rem;
+  margin-bottom: 0.25rem;
+}
+
+/* Edit Input/Select Styling */
+.editInput {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #d0d0d0;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.editInput:focus {
+  outline: none;
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.editInput::placeholder {
+  color: #999;
+}
+
+/* Edit Textarea */
+.editTextarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #d0d0d0;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 120px;
+  transition: all 0.2s ease;
+}
+
+.editTextarea:focus {
+  outline: none;
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.editTextarea::placeholder {
+  color: #999;
+}
+
+/* Checkbox Label */
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-weight: normal;
+  color: #2c3e50;
+}
+
+.checkboxLabel input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #8b5cf6;
+}
+
+.checkboxLabel span {
+  user-select: none;
+}
+
+/* Grape Row (editable) */
+.grapeRow {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.grapeRow:last-of-type {
+  border-bottom: none;
+}
+
+/* Grape Input Fields */
+.grapeInput {
+  flex: 1;
+  padding: 0.65rem;
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  transition: border-color 0.2s ease;
+}
+
+.grapeInput:focus {
+  outline: none;
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.1);
+}
+
+.percentInput {
+  width: 80px;
+  padding: 0.65rem;
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  text-align: center;
+  transition: border-color 0.2s ease;
+}
+
+.percentInput:focus {
+  outline: none;
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.1);
+}
+
+/* Remove Grape Button */
+.removeButton {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid #e74c3c;
+  background: white;
+  color: #e74c3c;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1.2rem;
+  font-weight: bold;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.removeButton:hover {
+  background: #e74c3c;
+  color: white;
+  transform: scale(1.05);
+}
+
+/* Add Grape Button */
+.addGrapeButton {
+  margin-top: 1rem;
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(139, 92, 246, 0.2);
+}
+
+.addGrapeButton:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(139, 92, 246, 0.3);
+}
+
+.addGrapeButton:active {
+  transform: translateY(0);
+}
+
+/* Responsive Design for Edit Tab */
+@media (max-width: 768px) {
+  .editGrid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    padding: 1rem;
+  }
+  
+  .editContent {
+    padding: 1rem;
+  }
+  
+  .editSectionHeader {
+    padding: 0.875rem 1rem;
+  }
+  
+  .grapeRow {
+    flex-wrap: wrap;
+  }
+  
+  .percentInput {
+    width: 70px;
+  }
+}
+
+@media (max-width: 640px) {
+  .editSection {
+    border-radius: 8px;
+    margin-bottom: 1rem;
+  }
+  
+  .editSectionHeader h3 {
+    font-size: 1rem;
+  }
+  
+  .editInput,
+  .editTextarea {
+    font-size: 0.9rem;
+    padding: 0.65rem;
+  }
+  
+  .grapeInput {
+    min-width: 0;
+    flex: 1 1 100%;
+  }
+  
+  .percentInput {
+    width: 60px;
+  }
+  
+  .removeButton {
+    width: 32px;
+    height: 32px;
+  }
+}

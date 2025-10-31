@@ -20,6 +20,35 @@ class ProfessionalRating(BaseModel):
     year: int
 
 
+class ImageSource(BaseModel):
+    """Image from a specific data source"""
+    url: str
+    quality: Optional[str] = None  # low, medium, high
+    source: str  # lwin, vivino, wine_searcher, manual
+    updated: Optional[datetime] = None
+    note: Optional[str] = None
+
+
+class PriceInfo(BaseModel):
+    """Price information from a source"""
+    value: Optional[float] = None  # Single price or average
+    min_price: Optional[float] = None  # For ranges
+    max_price: Optional[float] = None
+    currency: str = "CAD"
+    source: str
+    in_stock: Optional[bool] = None
+    url: Optional[str] = None
+    updated: Optional[datetime] = None
+
+
+class RatingInfo(BaseModel):
+    """Rating from a specific source"""
+    score: float
+    count: Optional[int] = None  # Number of ratings
+    source: str
+    updated: Optional[datetime] = None
+
+
 class Wine(Document):
     """Wine document for MongoDB"""
     
@@ -81,14 +110,77 @@ class Wine(Document):
     lwin11: Optional[str] = None  # 11-digit code includes vintage
     lwin18: Optional[str] = None  # 18-digit code includes bottle size/pack
     
-    # External Data
+    # Extended LWIN Data (from LWIN database)
+    lwin_status: Optional[str] = None  # Live, Combined, Deleted
+    lwin_display_name: Optional[str] = None  # Official display name
+    producer_title: Optional[str] = None  # Title prefix (Château, etc)
+    sub_region: Optional[str] = None  # Sub-region (e.g., Pauillac)
+    site: Optional[str] = None  # Specific site/vineyard
+    parcel: Optional[str] = None  # Specific parcel within vineyard
+    sub_type: Optional[str] = None  # Still, Sparkling, Fortified
+    designation: Optional[str] = None  # AOP, IGP, DOC, DOCG
+    vintage_config: Optional[str] = None  # sequential, non-vintage
+    lwin_first_vintage: Optional[str] = None  # First vintage year
+    lwin_final_vintage: Optional[str] = None  # Final vintage year
+    lwin_date_added: Optional[datetime] = None  # Added to LWIN DB
+    lwin_date_updated: Optional[datetime] = None  # Updated in LWIN DB
+    lwin_reference: Optional[str] = None  # Reference to merged entries
+    
+    # Multi-Source Images
+    image_sources: dict = Field(default_factory=dict)  # source -> ImageSource
+    
+    # Multi-Source Prices
+    price_data: dict = Field(default_factory=dict)  # source -> PriceInfo
+    
+    # Multi-Source Ratings
+    ratings: dict = Field(default_factory=dict)  # source -> RatingInfo
+    
+    # Tasting Notes by Source
+    tasting_notes_sources: dict = Field(default_factory=dict)  # source -> str
+    
+    # External IDs
     vivino_id: Optional[str] = None
     wine_searcher_id: Optional[str] = None
+    external_ids: dict = Field(default_factory=dict)  # source -> external_id
+    
+    # Data Provenance
+    data_source: str = "manual"  # Primary source: manual, lwin, vivino, etc.
+    enriched_by: List[str] = Field(default_factory=list)  # Sources used
+    external_id: Optional[str] = None  # Legacy field
+    
+    # Sync Configuration (migrated from single values to multi-source dicts)
+    last_synced: dict = Field(default_factory=dict)  # source -> datetime
+    sync_enabled: dict = Field(default_factory=dict)  # source -> bool
+    
+    # Manual Overrides (admin edits)
+    manual_overrides: dict = Field(default_factory=dict)  # field -> value
+    
+    # Legacy external data
     external_data: dict = Field(default_factory=dict)
-    data_source: str = "manual"  # manual, lwin, vivino, etc.
-    external_id: Optional[str] = None
-    last_synced: Optional[datetime] = None
-    sync_enabled: bool = False
+    
+    @validator('last_synced', pre=True)
+    def migrate_last_synced(cls, v):
+        """Migrate old datetime field to dict format"""
+        if v is None:
+            return {}
+        if isinstance(v, datetime):
+            # Old format: single datetime -> New format: dict with 'default' key
+            return {'default': v}
+        if isinstance(v, dict):
+            return v
+        return {}
+    
+    @validator('sync_enabled', pre=True)
+    def migrate_sync_enabled(cls, v):
+        """Migrate old bool field to dict format"""
+        if v is None:
+            return {}
+        if isinstance(v, bool):
+            # Old format: single bool -> New format: dict with 'default' key
+            return {'default': v}
+        if isinstance(v, dict):
+            return v
+        return {}
     
     # Management
     is_public: bool = False

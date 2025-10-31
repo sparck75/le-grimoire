@@ -43,7 +43,10 @@ async def init_mongodb():
     global mongodb_client
     
     # Import here to avoid circular imports
-    from app.models.mongodb import Ingredient, Category, Recipe, AIExtractionLog, Wine, Liquor
+    from app.models.mongodb import (
+        Ingredient, Category, Recipe, AIExtractionLog,
+        Wine, Liquor, BarcodeMapping
+    )
     
     # Get MongoDB connection details from settings
     mongodb_url = getattr(settings, 'MONGODB_URL', 'mongodb://localhost:27017')
@@ -58,7 +61,10 @@ async def init_mongodb():
     # Initialize Beanie with document models
     await init_beanie(
         database=mongodb_client[mongodb_db_name],
-        document_models=[Ingredient, Category, Recipe, AIExtractionLog, Wine, Liquor]
+        document_models=[
+            Ingredient, Category, Recipe, AIExtractionLog,
+            Wine, Liquor, BarcodeMapping
+        ]
     )
 
 async def close_mongodb():

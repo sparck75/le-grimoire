@@ -1,9 +1,15 @@
 'use client';
 
+/**
+ * Admin Wines Page - Browse & Manage LWIN Database
+ * Based on the cellier/wines/browse page but with admin controls
+ */
+
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useRouter } from 'next/navigation';
+import styles from '../../cellier/wines/browse/page.module.css';
 
 interface Wine {
   id: string;
@@ -13,28 +19,26 @@ interface Wine {
   wine_type: string;
   region: string;
   country: string;
-  barcode?: string;
-  image_url?: string;
-  data_source: string;
-  created_at: string;
+  appellation?: string;
+  lwin7?: string;
+  lwin11?: string;
+  classification?: string;
 }
 
-interface Stats {
-  total: number;
-  by_type: Record<string, number>;
-  with_barcode: number;
-}
-
-export default function AdminWinesPage() {
+export default function AdminLWINBrowsePage() {
   const { user } = useAuth();
   const router = useRouter();
   const [wines, setWines] = useState<Wine[]>([]);
-  const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterType, setFilterType] = useState<string>('all');
-  const [uploadingImageFor, setUploadingImageFor] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [filters, setFilters] = useState({
+    country: '',
+    region: '',
+    wine_type: '',
+    vintage: '',
+  });
 
   const isAdmin = user && user.role === 'admin';
 
@@ -46,48 +50,32 @@ export default function AdminWinesPage() {
 
   useEffect(() => {
     if (isAdmin) {
-      fetchData();
+      fetchWines();
     }
-  }, [isAdmin]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAdmin, filters]);
 
-  const getApiUrl = () => {
-    const envUrl = process.env.NEXT_PUBLIC_API_URL;
-    if (!envUrl || envUrl.includes('localhost')) {
-      if (typeof window !== 'undefined') {
-        return window.location.origin;
-      }
-      return 'https://legrimoireonline.ca';
-    }
-    return envUrl;
-  };
-
-  async function fetchData() {
+  async function fetchWines() {
     try {
-      const apiUrl = getApiUrl();
-      const token = localStorage.getItem('access_token');
+      setLoading(true);
+      const params = new URLSearchParams({
+        limit: '50',
+        ...(searchTerm && { search: searchTerm }),
+        ...(filters.country && { country: filters.country }),
+        ...(filters.region && { region: filters.region }),
+        ...(filters.wine_type && { wine_type: filters.wine_type }),
+        ...(filters.vintage && { vintage: filters.vintage }),
+      });
+
+      const response = await fetch(`/api/v2/lwin/search?${params}`);
       
-      const headers: HeadersInit = {
-        'Content-Type': 'application/json',
-      };
-      
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
+      if (!response.ok) {
+        throw new Error('Failed to fetch wines');
       }
 
-      const [winesRes, statsRes] = await Promise.all([
-        fetch(`${apiUrl}/api/admin/wines?limit=100`, { headers }),
-        fetch(`${apiUrl}/api/admin/stats/summary`, { headers })
-      ]);
-
-      if (winesRes.ok) {
-        const winesData = await winesRes.json();
-        setWines(winesData);
-      }
-
-      if (statsRes.ok) {
-        const statsData = await statsRes.json();
-        setStats(statsData);
-      }
+      const data = await response.json();
+      setWines(data);
+      setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error loading wines');
     } finally {
@@ -95,90 +83,38 @@ export default function AdminWinesPage() {
     }
   }
 
-  async function uploadImage(wineId: string, file: File) {
-    try {
-      const apiUrl = getApiUrl();
-      const token = localStorage.getItem('access_token');
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    fetchWines();
+  };
 
-      const formData = new FormData();
-      formData.append('file', file);
+  const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFilters(prev => ({ ...prev, [name]: value }));
+  };
 
-      setUploadingImageFor(wineId);
+  const clearFilters = () => {
+    setSearchTerm('');
+    setFilters({ country: '', region: '', wine_type: '', vintage: '' });
+  };
 
-      const response = await fetch(`${apiUrl}/api/admin/wines/${wineId}/image`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        body: formData
-      });
+  const translateWineType = (type: string): string => {
+    const translations: Record<string, string> = {
+      'red': 'Rouge',
+      'white': 'Blanc',
+      'rosé': 'Rosé',
+      'rose': 'Rosé',
+      'sparkling': 'Effervescent',
+      'dessert': 'Dessert',
+      'fortified': 'Fortifié'
+    };
+    return translations[type.toLowerCase()] || type;
+  };
 
-      if (response.ok) {
-        const data = await response.json();
-        // Update wine in local state with new image_url
-        setWines(wines.map(w => w.id === wineId ? { ...w, image_url: data.url } : w));
-        alert('Image téléchargée avec succès!');
-      } else {
-        alert('Erreur lors du téléchargement de l\'image');
-      }
-    } catch (err) {
-      alert('Erreur lors du téléchargement de l\'image');
-    } finally {
-      setUploadingImageFor(null);
-    }
-  }
-
-  function handleImageUpload(wineId: string, event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (file) {
-      uploadImage(wineId, file);
-    }
-  }
-
-  async function deleteWine(id: string) {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer ce vin de la base de données maître?')) {
-      return;
-    }
-
-    try {
-      const apiUrl = getApiUrl();
-      const token = localStorage.getItem('access_token');
-
-      const response = await fetch(`${apiUrl}/api/admin/wines/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (response.ok) {
-        setWines(wines.filter(w => w.id !== id));
-        if (stats) {
-          setStats({ ...stats, total: stats.total - 1 });
-        }
-      } else {
-        alert('Erreur lors de la suppression du vin');
-      }
-    } catch (err) {
-      alert('Erreur lors de la suppression du vin');
-    }
-  }
-
-  const filteredWines = wines.filter(wine => {
-    const matchesSearch = wine.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         wine.producer?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         wine.barcode?.includes(searchTerm);
-    const matchesType = filterType === 'all' || wine.wine_type === filterType;
-    return matchesSearch && matchesType;
-  });
-
-  if (loading) {
+  if (loading && wines.length === 0) {
     return (
-      <div>
-        <div className="admin-header">
-          <h1>Gestion des Vins</h1>
-        </div>
-        <div className="loading">Chargement...</div>
+      <div className={styles.container}>
+        <div className={styles.loading}>⏳ Chargement de la base LWIN...</div>
       </div>
     );
   }
@@ -188,188 +124,242 @@ export default function AdminWinesPage() {
   }
 
   return (
-    <div>
-      <div className="admin-header">
-        <h1>🍷 Base de Données des Vins</h1>
-        <Link href="/admin/wines/new" className="btn btn-success">
-          ➕ Ajouter un Vin
+    <div className={styles.container}>
+      <div className={styles.header}>
+        <div>
+          <h1>🔐 Base de Données LWIN (Admin)</h1>
+          <p className={styles.subtitle}>
+            Gérez le catalogue master de 200K+ vins
+          </p>
+        </div>
+        <Link href="/admin/wines/new">
+          <button className={styles.addButton}>➕ Ajouter un vin</button>
         </Link>
       </div>
 
-      {stats && (
-        <div className="admin-stats">
-          <div className="stat-card">
-            <h3>Total Vins</h3>
-            <div className="stat-value">{stats.total}</div>
-          </div>
-          <div className="stat-card">
-            <h3>Avec Code-Barres</h3>
-            <div className="stat-value">{stats.with_barcode}</div>
-          </div>
-          {Object.entries(stats.by_type).map(([type, count]) => (
-            <div key={type} className="stat-card">
-              <h3 style={{ textTransform: 'capitalize' }}>{type}</h3>
-              <div className="stat-value">{count}</div>
-            </div>
-          ))}
-        </div>
-      )}
+      <div className={styles.searchBox}>
+        <form onSubmit={handleSearch} className={styles.searchForm}>
+          <input
+            type="text"
+            placeholder="Rechercher par nom, producteur, appellation..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className={styles.searchInput}
+          />
+          <button type="submit" className={styles.searchButton}>
+            🔍 Rechercher
+          </button>
+        </form>
+      </div>
 
-      <div className="admin-card">
-        <div className="card-header">
-          <h2>Filtres</h2>
-        </div>
-        <div className="card-content">
-          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-            <input
-              type="text"
-              placeholder="Rechercher par nom, producteur ou code-barres..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              style={{
-                flex: 1,
-                minWidth: '250px',
-                padding: '0.75rem',
-                border: '2px solid #e0e0e0',
-                borderRadius: '8px'
-              }}
-            />
-            <select
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value)}
-              style={{
-                padding: '0.75rem',
-                border: '2px solid #e0e0e0',
-                borderRadius: '8px'
-              }}
-            >
-              <option value="all">Tous les types</option>
-              <option value="red">Rouge</option>
-              <option value="white">Blanc</option>
-              <option value="rosé">Rosé</option>
-              <option value="sparkling">Mousseux</option>
-              <option value="dessert">Dessert</option>
-            </select>
-          </div>
-        </div>
+      <div className={styles.filters}>
+        <select
+          name="country"
+          value={filters.country}
+          onChange={handleFilterChange}
+          className={styles.filterSelect}
+        >
+          <option value="">Tous les pays</option>
+          <option value="France">France</option>
+          <option value="Italy">Italie</option>
+          <option value="Spain">Espagne</option>
+          <option value="USA">États-Unis</option>
+          <option value="Australia">Australie</option>
+          <option value="Chile">Chili</option>
+          <option value="Argentina">Argentine</option>
+        </select>
+
+        <select
+          name="region"
+          value={filters.region}
+          onChange={handleFilterChange}
+          className={styles.filterSelect}
+        >
+          <option value="">Toutes les régions</option>
+          <option value="Bordeaux">Bordeaux</option>
+          <option value="Burgundy">Bourgogne</option>
+          <option value="Champagne">Champagne</option>
+          <option value="Rhône">Rhône</option>
+          <option value="Tuscany">Toscane</option>
+          <option value="Piedmont">Piémont</option>
+          <option value="Rioja">Rioja</option>
+          <option value="Napa Valley">Napa Valley</option>
+        </select>
+
+        <select
+          name="wine_type"
+          value={filters.wine_type}
+          onChange={handleFilterChange}
+          className={styles.filterSelect}
+        >
+          <option value="">Tous les types</option>
+          <option value="red">Rouge</option>
+          <option value="white">Blanc</option>
+          <option value="rosé">Rosé</option>
+          <option value="sparkling">Effervescent</option>
+          <option value="dessert">Dessert</option>
+          <option value="fortified">Fortifié</option>
+        </select>
+
+        {(searchTerm || filters.country || filters.region || filters.wine_type) && (
+          <button onClick={clearFilters} className={styles.clearButton}>
+            ✕ Effacer les filtres
+          </button>
+        )}
       </div>
 
       {error && (
-        <div style={{
-          background: '#fee',
-          color: '#c33',
-          padding: '1rem',
-          borderRadius: '8px',
-          margin: '1rem 0'
-        }}>
-          {error}
+        <div className={styles.error}>
+          ⚠️ {error}
         </div>
       )}
 
-      <div className="admin-card">
-        <div className="card-header">
-          <h2>Vins dans la Base de Données ({filteredWines.length})</h2>
-        </div>
-        <div className="card-content">
-          {filteredWines.length === 0 ? (
-            <p style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>
-              Aucun vin trouvé. <Link href="/admin/wines/new">Ajoutez-en un!</Link>
-            </p>
-          ) : (
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ borderBottom: '2px solid #e0e0e0' }}>
-                  <th style={{ padding: '0.75rem', textAlign: 'left', width: '80px' }}>Photo</th>
-                  <th style={{ padding: '0.75rem', textAlign: 'left' }}>Nom</th>
-                  <th style={{ padding: '0.75rem', textAlign: 'left' }}>Producteur</th>
-                  <th style={{ padding: '0.75rem', textAlign: 'left' }}>Millésime</th>
-                  <th style={{ padding: '0.75rem', textAlign: 'left' }}>Type</th>
-                  <th style={{ padding: '0.75rem', textAlign: 'left' }}>Région</th>
-                  <th style={{ padding: '0.75rem', textAlign: 'left' }}>Code-Barres</th>
-                  <th style={{ padding: '0.75rem', textAlign: 'center' }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredWines.map((wine) => (
-                  <tr key={wine.id} style={{ borderBottom: '1px solid #e0e0e0' }}>
-                    <td style={{ padding: '0.75rem' }}>
-                      <div style={{ position: 'relative', width: '60px', height: '80px', background: '#f5f5f5', borderRadius: '4px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        {wine.image_url ? (
-                          <img
-                            src={getApiUrl() + wine.image_url}
-                            alt={wine.name}
-                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                          />
-                        ) : (
-                          <span style={{ fontSize: '2rem' }}>🍷</span>
-                        )}
-                        <label
-                          htmlFor={`upload-${wine.id}`}
-                          style={{
-                            position: 'absolute',
-                            bottom: 0,
-                            left: 0,
-                            right: 0,
-                            background: 'rgba(0,0,0,0.7)',
-                            color: 'white',
-                            fontSize: '0.7rem',
-                            padding: '2px',
-                            textAlign: 'center',
-                            cursor: uploadingImageFor === wine.id ? 'wait' : 'pointer'
-                          }}
-                        >
-                          {uploadingImageFor === wine.id ? '...' : '📷'}
-                        </label>
-                        <input
-                          id={`upload-${wine.id}`}
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => handleImageUpload(wine.id, e)}
-                          disabled={uploadingImageFor === wine.id}
-                          style={{ display: 'none' }}
-                        />
-                      </div>
-                    </td>
-                    <td style={{ padding: '0.75rem' }}>{wine.name}</td>
-                    <td style={{ padding: '0.75rem' }}>{wine.producer || '-'}</td>
-                    <td style={{ padding: '0.75rem' }}>{wine.vintage || 'NV'}</td>
-                    <td style={{ padding: '0.75rem' }}>
-                      <span style={{
-                        background: '#8b4513',
-                        color: 'white',
-                        padding: '0.25rem 0.5rem',
-                        borderRadius: '4px',
-                        fontSize: '0.85rem'
-                      }}>
-                        {wine.wine_type}
-                      </span>
-                    </td>
-                    <td style={{ padding: '0.75rem' }}>{wine.region || '-'}</td>
-                    <td style={{ padding: '0.75rem', fontFamily: 'monospace', fontSize: '0.9rem' }}>
-                      {wine.barcode || '-'}
-                    </td>
-                    <td style={{ padding: '0.75rem', textAlign: 'center' }}>
-                      <Link
-                        href={`/admin/wines/${wine.id}`}
-                        className="btn btn-sm btn-primary"
-                        style={{ marginRight: '0.5rem' }}
-                      >
-                        Modifier
-                      </Link>
-                      <button
-                        onClick={() => deleteWine(wine.id)}
-                        className="btn btn-sm btn-danger"
-                      >
-                        Supprimer
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+      <div className={styles.resultsHeader}>
+        <h2>{wines.length} vins trouvés</h2>
+        <div className={styles.viewToggle}>
+          <button
+            className={`${styles.viewButton} ${viewMode === 'grid' ? styles.active : ''}`}
+            onClick={() => setViewMode('grid')}
+            title="Vue en grille"
+          >
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+              <rect x="2" y="2" width="7" height="7" rx="1"/>
+              <rect x="11" y="2" width="7" height="7" rx="1"/>
+              <rect x="2" y="11" width="7" height="7" rx="1"/>
+              <rect x="11" y="11" width="7" height="7" rx="1"/>
+            </svg>
+          </button>
+          <button
+            className={`${styles.viewButton} ${viewMode === 'list' ? styles.active : ''}`}
+            onClick={() => setViewMode('list')}
+            title="Vue en liste"
+          >
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+              <rect x="2" y="3" width="16" height="2" rx="1"/>
+              <rect x="2" y="9" width="16" height="2" rx="1"/>
+              <rect x="2" y="15" width="16" height="2" rx="1"/>
+            </svg>
+          </button>
         </div>
       </div>
+
+      <div className={viewMode === 'grid' ? styles.wineGrid : styles.wineList}>
+        {wines.map((wine) => (
+          <div key={wine.id} className={viewMode === 'grid' ? styles.wineCard : styles.wineListItem}>
+            {viewMode === 'grid' ? (
+              // Grid View
+              <>
+                <div className={styles.wineCardHeader}>
+                  <div className={styles.wineTitleSection}>
+                    <h3 className={styles.wineName}>{wine.name}</h3>
+                    {wine.producer && (
+                      <p className={styles.wineProducer}>{wine.producer}</p>
+                    )}
+                  </div>
+                  {wine.lwin11 && (
+                    <span className={styles.lwinBadge} title="Code LWIN">
+                      {wine.lwin11}
+                    </span>
+                  )}
+                </div>
+                
+                <div className={styles.wineMetaRow}>
+                  {wine.vintage && (
+                    <span className={styles.vintageBadge}>{wine.vintage}</span>
+                  )}
+                  <span className={styles.typeBadge} data-type={wine.wine_type?.toLowerCase()}>
+                    {translateWineType(wine.wine_type)}
+                  </span>
+                </div>
+
+                <div className={styles.wineLocation}>
+                  <span className={styles.locationIcon}>📍</span>
+                  <span>{wine.region}, {wine.country}</span>
+                </div>
+
+                {wine.appellation && (
+                  <div className={styles.wineAppellation}>
+                    <span className={styles.appellationIcon}>🏆</span>
+                    <span>{wine.appellation}</span>
+                  </div>
+                )}
+
+                <div className={styles.wineActions}>
+                  <Link href={`/cellier/wines/lwin-details/${wine.id}`}>
+                    <button className={styles.viewButton}>
+                      📖 Détails LWIN
+                    </button>
+                  </Link>
+                  <Link href={`/admin/wines/${wine.id}/edit`}>
+                    <button className={styles.editButton}>
+                      ✏️ Gérer
+                    </button>
+                  </Link>
+                </div>
+              </>
+            ) : (
+              // List View
+              <>
+                <div className={styles.listMainInfo}>
+                  <div className={styles.listTitle}>
+                    <h3 className={styles.listWineName}>{wine.name}</h3>
+                    {wine.producer && (
+                      <p className={styles.listProducer}>{wine.producer}</p>
+                    )}
+                  </div>
+                  <div className={styles.listMeta}>
+                    {wine.vintage && (
+                      <span className={`${styles.listBadge} vintage`}>{wine.vintage}</span>
+                    )}
+                    <span className={`${styles.listBadge} type`} data-type={wine.wine_type?.toLowerCase()}>
+                      {translateWineType(wine.wine_type)}
+                    </span>
+                    <div className={styles.listLocation}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                      </svg>
+                      <span>{wine.region}, {wine.country}</span>
+                    </div>
+                    {wine.appellation && (
+                      <div className={styles.listAppellation}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                        </svg>
+                        <span>{wine.appellation}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                {wine.lwin11 && (
+                  <span className={styles.listLwinBadge}>{wine.lwin11}</span>
+                )}
+                <div className={styles.listActions}>
+                  <Link href={`/cellier/wines/lwin-details/${wine.id}`}>
+                    <button className={styles.listViewButton}>
+                      📖 Détails LWIN
+                    </button>
+                  </Link>
+                  <Link href={`/admin/wines/${wine.id}/edit`}>
+                    <button className={styles.listEditButton}>
+                      ✏️ Gérer
+                    </button>
+                  </Link>
+                </div>
+              </>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {wines.length === 0 && !loading && (
+        <div className={styles.emptyState}>
+          <h3>Aucun vin trouvé</h3>
+          <p>Essayez de modifier vos critères de recherche ou ajoutez un nouveau vin.</p>
+          <Link href="/admin/wines/new">
+            <button className={styles.addButton}>➕ Ajouter un vin</button>
+          </Link>
+        </div>
+      )}
     </div>
   );
 }
