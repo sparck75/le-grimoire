@@ -101,9 +101,14 @@ class Wine(Document):
     professional_ratings: List[ProfessionalRating] = Field(default_factory=list)
     
     # Media
-    image_url: Optional[str] = None
+    image_url: Optional[str] = None  # Legacy field
     qr_code: Optional[str] = None
     barcode: Optional[str] = None
+    
+    # Label Images (for AI extraction and detailed view)
+    front_label_image: Optional[str] = None  # Front label for OCR/AI
+    back_label_image: Optional[str] = None   # Back label for OCR/AI
+    bottle_image: Optional[str] = None       # Full bottle for catalog
     
     # LWIN (Liv-ex Wine Identification Number)
     lwin7: Optional[str] = None  # 7-digit code for wine label/producer

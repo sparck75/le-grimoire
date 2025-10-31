@@ -17,6 +17,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '../../../../../contexts/AuthContext';
 import Link from 'next/link';
 import styles from './wine-edit.module.css';
+import WineImageUpload from '../wine-image-upload';
 
 interface GrapeVariety {
   name: string;
@@ -102,6 +103,9 @@ interface Wine {
   
   // Multi-Source Data
   image_url?: string;
+  front_label_image?: string;
+  back_label_image?: string;
+  bottle_image?: string;
   image_sources: Record<string, ImageSource>;
   price_data: Record<string, PriceInfo>;
   ratings: Record<string, RatingInfo>;
@@ -169,11 +173,11 @@ export default function AdminWineEditPage() {
 
     try {
       setSaving(true);
-      const response = await fetch(`http://192.168.1.100:8000/api/v2/admin/wines/${id}`, {
+      const response = await fetch(`http://192.168.1.100:8000/api/admin/wines/${id}`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
         },
         body: JSON.stringify(wine)
       });
@@ -196,11 +200,11 @@ export default function AdminWineEditPage() {
   async function enrichFromVivino() {
     try {
       setLoading(true);
-      const response = await fetch(`http://192.168.1.100:8000/api/v2/admin/wines/${id}/enrich`, {
+      const response = await fetch(`http://192.168.1.100:8000/api/admin/wines/${id}/enrich`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
         },
         body: JSON.stringify({ sources: ['vivino'] })
       });
@@ -263,6 +267,32 @@ export default function AdminWineEditPage() {
       <div className={styles.detailsCard}>
         {/* Header with Name and LWIN Badge */}
         <div className={styles.detailsHeader}>
+          {/* Wine Image */}
+          {(wine.bottle_image || wine.front_label_image) && (
+            <div style={{ 
+              width: '120px',
+              height: '120px',
+              flexShrink: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: '#f5f5f5',
+              borderRadius: '8px',
+              overflow: 'hidden',
+              marginRight: '20px'
+            }}>
+              <img 
+                src={`http://192.168.1.100:8000/${wine.bottle_image || wine.front_label_image}`}
+                alt={wine.name}
+                style={{ 
+                  maxWidth: '100%', 
+                  maxHeight: '100%', 
+                  objectFit: 'contain' 
+                }}
+              />
+            </div>
+          )}
+          
           <div className={styles.headerContent}>
             <h1 className={styles.wineName}>{wine.name}</h1>
             {wine.producer && (
@@ -740,6 +770,25 @@ export default function AdminWineEditPage() {
                 </div>
               </div>
             </div>
+
+            {/* Image Upload Section */}
+            <WineImageUpload
+              wineId={wine.id}
+              existingImages={{
+                front_label_image: wine.front_label_image,
+                back_label_image: wine.back_label_image,
+                bottle_image: wine.bottle_image
+              }}
+              onUploadComplete={(images) => {
+                // Update wine state with new image URLs
+                setWine({
+                  ...wine,
+                  front_label_image: images.front_label_image || wine.front_label_image,
+                  back_label_image: images.back_label_image || wine.back_label_image,
+                  bottle_image: images.bottle_image || wine.bottle_image
+                });
+              }}
+            />
           </div>
         )}
 
@@ -748,15 +797,125 @@ export default function AdminWineEditPage() {
           <div className={styles.tabContent}>
             <div className={styles.section}>
               <h2 className={styles.sectionTitle}>📸 Images</h2>
-              {wine.image_url ? (
-                <img src={wine.image_url} alt={wine.name} className={styles.wineImage} />
-              ) : (
-                <div className={styles.noImage}>🍷 Aucune image</div>
-              )}
+              
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
+                gap: '20px',
+                marginBottom: '20px'
+              }}>
+                {/* Front Label */}
+                <div style={{ 
+                  border: '2px solid #e0e0e0', 
+                  borderRadius: '8px', 
+                  padding: '15px',
+                  textAlign: 'center'
+                }}>
+                  <h4 style={{ marginTop: 0, marginBottom: '10px', fontSize: '1rem' }}>
+                    Étiquette avant
+                  </h4>
+                  {wine.front_label_image ? (
+                    <img 
+                      src={`http://192.168.1.100:8000/${wine.front_label_image}`}
+                      alt="Front label" 
+                      style={{ 
+                        maxWidth: '100%', 
+                        maxHeight: '200px', 
+                        objectFit: 'contain',
+                        borderRadius: '4px'
+                      }}
+                    />
+                  ) : (
+                    <div style={{ 
+                      height: '200px', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      background: '#f5f5f5',
+                      borderRadius: '4px',
+                      color: '#999'
+                    }}>
+                      📷 Aucune image
+                    </div>
+                  )}
+                </div>
+
+                {/* Back Label */}
+                <div style={{ 
+                  border: '2px solid #e0e0e0', 
+                  borderRadius: '8px', 
+                  padding: '15px',
+                  textAlign: 'center'
+                }}>
+                  <h4 style={{ marginTop: 0, marginBottom: '10px', fontSize: '1rem' }}>
+                    Étiquette arrière
+                  </h4>
+                  {wine.back_label_image ? (
+                    <img 
+                      src={`http://192.168.1.100:8000/${wine.back_label_image}`}
+                      alt="Back label" 
+                      style={{ 
+                        maxWidth: '100%', 
+                        maxHeight: '200px', 
+                        objectFit: 'contain',
+                        borderRadius: '4px'
+                      }}
+                    />
+                  ) : (
+                    <div style={{ 
+                      height: '200px', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      background: '#f5f5f5',
+                      borderRadius: '4px',
+                      color: '#999'
+                    }}>
+                      📷 Aucune image
+                    </div>
+                  )}
+                </div>
+
+                {/* Bottle Image */}
+                <div style={{ 
+                  border: '2px solid #e0e0e0', 
+                  borderRadius: '8px', 
+                  padding: '15px',
+                  textAlign: 'center'
+                }}>
+                  <h4 style={{ marginTop: 0, marginBottom: '10px', fontSize: '1rem' }}>
+                    Bouteille complète
+                  </h4>
+                  {wine.bottle_image ? (
+                    <img 
+                      src={`http://192.168.1.100:8000/${wine.bottle_image}`}
+                      alt="Bottle" 
+                      style={{ 
+                        maxWidth: '100%', 
+                        maxHeight: '200px', 
+                        objectFit: 'contain',
+                        borderRadius: '4px'
+                      }}
+                    />
+                  ) : (
+                    <div style={{ 
+                      height: '200px', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      background: '#f5f5f5',
+                      borderRadius: '4px',
+                      color: '#999'
+                    }}>
+                      🍷 Aucune image
+                    </div>
+                  )}
+                </div>
+              </div>
               
               <div className={styles.enrichmentActions}>
-                <button onClick={enrichFromVivino} className={styles.enrichButton}>
-                  🍷 Chercher sur Vivino
+                <button disabled className={styles.enrichButton}>
+                  🍷 Chercher sur Vivino (À venir)
                 </button>
                 <button disabled className={styles.enrichButton}>
                   💰 Wine-Searcher (À venir)

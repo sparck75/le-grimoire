@@ -28,6 +28,17 @@ class LWINSearchResponse(BaseModel):
     country: str
     region: str
     appellation: Optional[str]
+    classification: Optional[str] = None
+    color: Optional[str] = None
+    sub_region: Optional[str] = None
+    site: Optional[str] = None
+    grape_varieties: List[Dict[str, Any]] = []
+    
+    # Images
+    image_url: Optional[str] = None
+    front_label_image: Optional[str] = None
+    back_label_image: Optional[str] = None
+    bottle_image: Optional[str] = None
     
     class Config:
         from_attributes = True
@@ -51,6 +62,12 @@ class LWINDetailResponse(BaseModel):
     alcohol_content: Optional[float]
     grape_varieties: List[Dict[str, Any]] = []
     tasting_notes: Optional[str]
+    
+    # Images
+    image_url: Optional[str] = None
+    front_label_image: Optional[str] = None
+    back_label_image: Optional[str] = None
+    bottle_image: Optional[str] = None
     
     # Extended LWIN data
     lwin_status: Optional[str] = None
@@ -134,7 +151,16 @@ async def search_lwin_wines(
             wine_type=wine.wine_type,
             country=wine.country,
             region=wine.region,
-            appellation=wine.appellation
+            appellation=wine.appellation,
+            classification=wine.classification,
+            color=wine.color,
+            sub_region=wine.sub_region,
+            site=wine.site,
+            grape_varieties=wine.grape_varieties,
+            image_url=wine.image_url,
+            front_label_image=wine.front_label_image,
+            back_label_image=wine.back_label_image,
+            bottle_image=wine.bottle_image
         )
         for wine in wines
     ]
@@ -182,6 +208,11 @@ async def get_lwin_wine_details(
         alcohol_content=wine.alcohol_content,
         grape_varieties=[vars(gv) for gv in (wine.grape_varieties or [])],
         tasting_notes=wine.tasting_notes,
+        # Images
+        image_url=wine.image_url,
+        front_label_image=wine.front_label_image,
+        back_label_image=wine.back_label_image,
+        bottle_image=wine.bottle_image,
         # Extended LWIN fields
         lwin_status=wine.lwin_status,
         lwin_display_name=wine.lwin_display_name,

@@ -11,6 +11,11 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import styles from '../../cellier/wines/browse/page.module.css';
 
+interface GrapeVariety {
+  name: string;
+  percentage?: number;
+}
+
 interface Wine {
   id: string;
   name: string;
@@ -22,7 +27,17 @@ interface Wine {
   appellation?: string;
   lwin7?: string;
   lwin11?: string;
+  lwin18?: string;
   classification?: string;
+  color?: string;
+  grape_varieties?: GrapeVariety[];
+  sub_region?: string;
+  site?: string;
+  parcel?: string;
+  image_url?: string;
+  front_label_image?: string;
+  back_label_image?: string;
+  bottle_image?: string;
 }
 
 export default function AdminLWINBrowsePage() {
@@ -42,6 +57,14 @@ export default function AdminLWINBrowsePage() {
 
   const isAdmin = user && user.role === 'admin';
 
+  // Format grape varieties for display
+  const formatGrapeVarieties = (grapes?: GrapeVariety[]): string => {
+    if (!grapes || grapes.length === 0) return '';
+    return grapes
+      .map(g => g.percentage ? `${g.name} (${g.percentage}%)` : g.name)
+      .join(', ');
+  };
+
   useEffect(() => {
     if (!isAdmin && !loading) {
       router.push('/admin');
@@ -58,6 +81,7 @@ export default function AdminLWINBrowsePage() {
   async function fetchWines() {
     try {
       setLoading(true);
+      const token = localStorage.getItem('access_token');
       const params = new URLSearchParams({
         limit: '50',
         ...(searchTerm && { search: searchTerm }),
@@ -67,7 +91,14 @@ export default function AdminLWINBrowsePage() {
         ...(filters.vintage && { vintage: filters.vintage }),
       });
 
-      const response = await fetch(`/api/v2/lwin/search?${params}`);
+      const response = await fetch(
+        `http://192.168.1.100:8000/api/admin/wines?${params}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
       
       if (!response.ok) {
         throw new Error('Failed to fetch wines');
@@ -249,6 +280,45 @@ export default function AdminLWINBrowsePage() {
             {viewMode === 'grid' ? (
               // Grid View
               <>
+                {/* Wine Image with Fallback */}
+                <div style={{ 
+                  width: '100%', 
+                  height: '180px', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  background: '#f5f5f5',
+                  borderRadius: '8px 8px 0 0',
+                  overflow: 'hidden',
+                  marginBottom: '12px',
+                  position: 'relative'
+                }}>
+                  {(wine.bottle_image || wine.front_label_image || wine.image_url) ? (
+                    <img 
+                      src={`http://192.168.1.100:8000/${wine.bottle_image || wine.front_label_image || wine.image_url}`}
+                      alt={wine.name}
+                      style={{ 
+                        maxWidth: '100%', 
+                        maxHeight: '100%', 
+                        objectFit: 'contain' 
+                      }}
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        const parent = e.currentTarget.parentElement;
+                        if (parent && !parent.querySelector('.fallback-icon')) {
+                          const fallback = document.createElement('div');
+                          fallback.className = 'fallback-icon';
+                          fallback.style.cssText = 'color: #999; font-size: 48px;';
+                          fallback.textContent = '🍷';
+                          parent.appendChild(fallback);
+                        }
+                      }}
+                    />
+                  ) : (
+                    <div style={{ color: '#999', fontSize: '48px' }}>🍷</div>
+                  )}
+                </div>
+                
                 <div className={styles.wineCardHeader}>
                   <div className={styles.wineTitleSection}>
                     <h3 className={styles.wineName}>{wine.name}</h3>
@@ -267,6 +337,11 @@ export default function AdminLWINBrowsePage() {
                   {wine.vintage && (
                     <span className={styles.vintageBadge}>{wine.vintage}</span>
                   )}
+                  {wine.color && (
+                    <span className={styles.colorBadge} data-color={wine.color?.toLowerCase()}>
+                      {wine.color}
+                    </span>
+                  )}
                   <span className={styles.typeBadge} data-type={wine.wine_type?.toLowerCase()}>
                     {translateWineType(wine.wine_type)}
                   </span>
@@ -274,7 +349,11 @@ export default function AdminLWINBrowsePage() {
 
                 <div className={styles.wineLocation}>
                   <span className={styles.locationIcon}>📍</span>
-                  <span>{wine.region}, {wine.country}</span>
+                  <span>
+                    {wine.sub_region || wine.region}
+                    {wine.site && ` • ${wine.site}`}
+                    {wine.country && `, ${wine.country}`}
+                  </span>
                 </div>
 
                 {wine.appellation && (
@@ -284,12 +363,21 @@ export default function AdminLWINBrowsePage() {
                   </div>
                 )}
 
+                {wine.classification && (
+                  <div className={styles.wineClassification}>
+                    <span className={styles.classificationIcon}>⭐</span>
+                    <span>{wine.classification}</span>
+                  </div>
+                )}
+
+                {wine.grape_varieties && wine.grape_varieties.length > 0 && (
+                  <div className={styles.wineGrapes}>
+                    <span className={styles.grapesIcon}>🍇</span>
+                    <span>{formatGrapeVarieties(wine.grape_varieties)}</span>
+                  </div>
+                )}
+
                 <div className={styles.wineActions}>
-                  <Link href={`/cellier/wines/lwin-details/${wine.id}`}>
-                    <button className={styles.viewButton}>
-                      📖 Détails LWIN
-                    </button>
-                  </Link>
                   <Link href={`/admin/wines/${wine.id}/edit`}>
                     <button className={styles.editButton}>
                       ✏️ Gérer
@@ -300,6 +388,45 @@ export default function AdminLWINBrowsePage() {
             ) : (
               // List View
               <>
+                {/* Wine Image in List View with Fallback */}
+                <div style={{ 
+                  width: '80px',
+                  height: '80px',
+                  flexShrink: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: '#f5f5f5',
+                  borderRadius: '8px',
+                  overflow: 'hidden',
+                  marginRight: '15px'
+                }}>
+                  {(wine.bottle_image || wine.front_label_image || wine.image_url) ? (
+                    <img 
+                      src={`http://192.168.1.100:8000/${wine.bottle_image || wine.front_label_image || wine.image_url}`}
+                      alt={wine.name}
+                      style={{ 
+                        maxWidth: '100%', 
+                        maxHeight: '100%', 
+                        objectFit: 'contain' 
+                      }}
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        const parent = e.currentTarget.parentElement;
+                        if (parent && !parent.querySelector('.fallback-icon')) {
+                          const fallback = document.createElement('div');
+                          fallback.className = 'fallback-icon';
+                          fallback.style.cssText = 'color: #999; font-size: 32px;';
+                          fallback.textContent = '🍷';
+                          parent.appendChild(fallback);
+                        }
+                      }}
+                    />
+                  ) : (
+                    <div style={{ color: '#999', fontSize: '32px' }}>🍷</div>
+                  )}
+                </div>
+                
                 <div className={styles.listMainInfo}>
                   <div className={styles.listTitle}>
                     <h3 className={styles.listWineName}>{wine.name}</h3>
@@ -311,14 +438,28 @@ export default function AdminLWINBrowsePage() {
                     {wine.vintage && (
                       <span className={`${styles.listBadge} vintage`}>{wine.vintage}</span>
                     )}
+                    {wine.color && (
+                      <span className={`${styles.listBadge} color`} data-color={wine.color?.toLowerCase()}>
+                        {wine.color}
+                      </span>
+                    )}
                     <span className={`${styles.listBadge} type`} data-type={wine.wine_type?.toLowerCase()}>
                       {translateWineType(wine.wine_type)}
                     </span>
+                    {wine.grape_varieties && wine.grape_varieties.length > 0 && (
+                      <span className={`${styles.listBadge} grapes`}>
+                        🍇 {formatGrapeVarieties(wine.grape_varieties)}
+                      </span>
+                    )}
                     <div className={styles.listLocation}>
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
                       </svg>
-                      <span>{wine.region}, {wine.country}</span>
+                      <span>
+                        {wine.sub_region || wine.region}
+                        {wine.site && ` • ${wine.site}`}
+                        {wine.country && `, ${wine.country}`}
+                      </span>
                     </div>
                     {wine.appellation && (
                       <div className={styles.listAppellation}>
@@ -328,17 +469,20 @@ export default function AdminLWINBrowsePage() {
                         <span>{wine.appellation}</span>
                       </div>
                     )}
+                    {wine.classification && (
+                      <div className={styles.listClassification}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                        </svg>
+                        <span>{wine.classification}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
                 {wine.lwin11 && (
                   <span className={styles.listLwinBadge}>{wine.lwin11}</span>
                 )}
                 <div className={styles.listActions}>
-                  <Link href={`/cellier/wines/lwin-details/${wine.id}`}>
-                    <button className={styles.listViewButton}>
-                      📖 Détails LWIN
-                    </button>
-                  </Link>
                   <Link href={`/admin/wines/${wine.id}/edit`}>
                     <button className={styles.listEditButton}>
                       ✏️ Gérer
