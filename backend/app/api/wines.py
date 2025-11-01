@@ -520,6 +520,117 @@ class ImageUploadResponse(BaseModel):
     filename: str
 
 
+class MultiImageUploadResponse(BaseModel):
+    """Multiple image upload response"""
+    front_label_image: Optional[str] = None
+    front_label_thumbnail: Optional[str] = None
+    back_label_image: Optional[str] = None
+    back_label_thumbnail: Optional[str] = None
+    bottle_image: Optional[str] = None
+    bottle_thumbnail: Optional[str] = None
+
+
+@router.post("/{wine_id}/images", response_model=MultiImageUploadResponse)
+async def upload_wine_images(
+    wine_id: str,
+    front_label: Optional[UploadFile] = File(None),
+    back_label: Optional[UploadFile] = File(None),
+    bottle: Optional[UploadFile] = File(None),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Upload multiple images for a wine (front label, back label, bottle).
+    
+    Accepts multipart/form-data with optional files:
+    - front_label: Front label image
+    - back_label: Back label image
+    - bottle: Full bottle image
+    
+    Args:
+        wine_id: Wine document ID
+        front_label: Front label image file (optional)
+        back_label: Back label image file (optional)
+        bottle: Bottle image file (optional)
+        current_user: Authenticated user
+        
+    Returns:
+        URLs for uploaded images
+    """
+    # Verify wine belongs to user
+    wine = await Wine.get(wine_id)
+    if not wine or wine.user_id != str(current_user.id):
+        raise HTTPException(status_code=404, detail="Wine not found")
+    
+    # Create uploads directory (use absolute path inside container)
+    from app.core.config import settings
+    upload_dir = Path(settings.UPLOAD_DIR) / "wines"
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    
+    response = MultiImageUploadResponse()
+    
+    # Upload front label
+    if front_label and front_label.filename:
+        if not front_label.content_type or not front_label.content_type.startswith('image/'):
+            raise HTTPException(status_code=400, detail="Front label must be an image")
+        
+        contents = await front_label.read()
+        if len(contents) > 5 * 1024 * 1024:
+            raise HTTPException(status_code=413, detail="Front label too large (max 5MB)")
+        
+        file_ext = Path(front_label.filename).suffix or '.jpg'
+        unique_filename = f"{uuid.uuid4()}{file_ext}"
+        file_path = upload_dir / unique_filename
+        
+        with open(file_path, "wb") as f:
+            f.write(contents)
+        
+        wine.front_label_image = f"/uploads/wines/{unique_filename}"
+        response.front_label_image = wine.front_label_image
+    
+    # Upload back label
+    if back_label and back_label.filename:
+        if not back_label.content_type or not back_label.content_type.startswith('image/'):
+            raise HTTPException(status_code=400, detail="Back label must be an image")
+        
+        contents = await back_label.read()
+        if len(contents) > 5 * 1024 * 1024:
+            raise HTTPException(status_code=413, detail="Back label too large (max 5MB)")
+        
+        file_ext = Path(back_label.filename).suffix or '.jpg'
+        unique_filename = f"{uuid.uuid4()}{file_ext}"
+        file_path = upload_dir / unique_filename
+        
+        with open(file_path, "wb") as f:
+            f.write(contents)
+        
+        wine.back_label_image = f"/uploads/wines/{unique_filename}"
+        response.back_label_image = wine.back_label_image
+    
+    # Upload bottle image
+    if bottle and bottle.filename:
+        if not bottle.content_type or not bottle.content_type.startswith('image/'):
+            raise HTTPException(status_code=400, detail="Bottle image must be an image")
+        
+        contents = await bottle.read()
+        if len(contents) > 5 * 1024 * 1024:
+            raise HTTPException(status_code=413, detail="Bottle image too large (max 5MB)")
+        
+        file_ext = Path(bottle.filename).suffix or '.jpg'
+        unique_filename = f"{uuid.uuid4()}{file_ext}"
+        file_path = upload_dir / unique_filename
+        
+        with open(file_path, "wb") as f:
+            f.write(contents)
+        
+        wine.bottle_image = f"/uploads/wines/{unique_filename}"
+        response.bottle_image = wine.bottle_image
+    
+    # Save wine with updated image URLs
+    await wine.save()
+    
+    return response
+
+
 @router.post("/{wine_id}/image", response_model=ImageUploadResponse)
 async def upload_wine_image(
     wine_id: str,

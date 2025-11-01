@@ -6,6 +6,8 @@ Application web moderne de gestion de recettes avec reconnaissance OCR, intégra
 
 - 🔍 **Bibliothèque de recettes** - Parcourez, recherchez et filtrez des recettes avec interface moderne
 - 🥕 **Ingrédients OpenFoodFacts** - 5,942 ingrédients multilingues (50+ langues) avec autocomplete
+- 🍷 **Cave à vin LWIN** - Intégration base de données LWIN (200,000+ vins) avec identification universelle
+- 📸 **AI Wine Extraction** - Scan d'étiquettes de vin avec GPT-4 Vision et enrichissement automatique
 - 📝 **Éditeur avancé** - Créez et modifiez des recettes avec liaison optionnelle aux ingrédients
 - 📊 **Tableau de bord admin** - Statistiques, filtres multiples, sélection et suppression en masse
 - 🛒 **Listes de courses** - Génération automatique avec intégration des spéciaux IGA/Metro
@@ -33,6 +35,7 @@ docker-compose up -d
 - **Backend**: FastAPI (Python 3.11)
 - **Base de données**: MongoDB avec Beanie ODM
 - **Ingrédients**: OpenFoodFacts Taxonomy (5,942 items)
+- **Vins**: LWIN Database (200,000+ vins avec codes universels)
 - **OCR**: Tesseract
 - **Conteneurisation**: Docker & Docker Compose
 - **Web Scraping**: BeautifulSoup4, Selenium
@@ -79,6 +82,8 @@ le-grimoire/
 
 ### Fonctionnalités
 - 🥕 [Système d'ingrédients](docs/development/INGREDIENTS.md)
+- 🍷 [Intégration LWIN (Cave à vin)](docs/features/LWIN_INTEGRATION.md)
+- 📸 [AI Wine Extraction (Scan d'étiquettes)](docs/features/AI_WINE_EXTRACTION.md)
 - 📊 [API Reference](docs/architecture/API_REFERENCE.md)
 - 🌍 [Localisation française](docs/features/FRENCH_LOCALIZATION.md)
 - 📈 [Statut du projet](docs/PROJECT_STATUS.md)
@@ -152,6 +157,8 @@ npm run dev
 ## 📊 Collections MongoDB
 
 - **ingredients** (5,942) - Taxonomie OpenFoodFacts avec noms multilingues
+- **wines** - Cave à vin avec codes LWIN et données détaillées
+- **liquors** - Cave à spiritueux
 - **recipes** - Recettes avec ingrédients et instructions
 - **users** - Utilisateurs authentifiés (OAuth)
 - **shopping_lists** - Listes de courses
@@ -162,6 +169,8 @@ npm run dev
 **v2 API**:
 - `GET /api/v2/recipes/` - Liste et recherche de recettes
 - `GET /api/v2/ingredients/?search={term}&language={lang}` - Recherche d'ingrédients
+- `GET /api/v2/lwin/search` - Recherche de vins LWIN
+- `GET /api/v2/lwin/code/{lwin}` - Recherche par code LWIN
 - `POST /api/v2/recipes/` - Créer une recette
 - `GET /api/stats/dashboard` - Statistiques
 

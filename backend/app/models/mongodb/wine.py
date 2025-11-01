@@ -20,6 +20,35 @@ class ProfessionalRating(BaseModel):
     year: int
 
 
+class ImageSource(BaseModel):
+    """Image from a specific data source"""
+    url: str
+    quality: Optional[str] = None  # low, medium, high
+    source: str  # lwin, vivino, wine_searcher, manual
+    updated: Optional[datetime] = None
+    note: Optional[str] = None
+
+
+class PriceInfo(BaseModel):
+    """Price information from a source"""
+    value: Optional[float] = None  # Single price or average
+    min_price: Optional[float] = None  # For ranges
+    max_price: Optional[float] = None
+    currency: str = "CAD"
+    source: str
+    in_stock: Optional[bool] = None
+    url: Optional[str] = None
+    updated: Optional[datetime] = None
+
+
+class RatingInfo(BaseModel):
+    """Rating from a specific source"""
+    score: float
+    count: Optional[int] = None  # Number of ratings
+    source: str
+    updated: Optional[datetime] = None
+
+
 class Wine(Document):
     """Wine document for MongoDB"""
     
@@ -72,22 +101,102 @@ class Wine(Document):
     professional_ratings: List[ProfessionalRating] = Field(default_factory=list)
     
     # Media
-    image_url: Optional[str] = None
+    image_url: Optional[str] = None  # Legacy field (primary image)
     qr_code: Optional[str] = None
     barcode: Optional[str] = None
     
-    # External Data
+    # Label Images (support MULTIPLE images per type)
+    # Legacy single image fields (for backward compatibility)
+    front_label_image: Optional[str] = None  # Primary front label
+    back_label_image: Optional[str] = None   # Primary back label  
+    bottle_image: Optional[str] = None       # Primary bottle image
+    
+    # NEW: Multiple images per type (arrays)
+    front_label_images: List[str] = Field(default_factory=list)  # Multiple front labels
+    back_label_images: List[str] = Field(default_factory=list)   # Multiple back labels
+    bottle_images: List[str] = Field(default_factory=list)       # Multiple bottle images
+    
+    # LWIN (Liv-ex Wine Identification Number)
+    lwin7: Optional[str] = None  # 7-digit code for wine label/producer
+    lwin11: Optional[str] = None  # 11-digit code includes vintage
+    lwin18: Optional[str] = None  # 18-digit code includes bottle size/pack
+    
+    # Extended LWIN Data (from LWIN database)
+    lwin_status: Optional[str] = None  # Live, Combined, Deleted
+    lwin_display_name: Optional[str] = None  # Official display name
+    producer_title: Optional[str] = None  # Title prefix (Château, etc)
+    sub_region: Optional[str] = None  # Sub-region (e.g., Pauillac)
+    site: Optional[str] = None  # Specific site/vineyard
+    parcel: Optional[str] = None  # Specific parcel within vineyard
+    sub_type: Optional[str] = None  # Still, Sparkling, Fortified
+    designation: Optional[str] = None  # AOP, IGP, DOC, DOCG
+    vintage_config: Optional[str] = None  # sequential, non-vintage
+    lwin_first_vintage: Optional[str] = None  # First vintage year
+    lwin_final_vintage: Optional[str] = None  # Final vintage year
+    lwin_date_added: Optional[datetime] = None  # Added to LWIN DB
+    lwin_date_updated: Optional[datetime] = None  # Updated in LWIN DB
+    lwin_reference: Optional[str] = None  # Reference to merged entries
+    
+    # Multi-Source Images
+    image_sources: dict = Field(default_factory=dict)  # source -> ImageSource
+    
+    # Multi-Source Prices
+    price_data: dict = Field(default_factory=dict)  # source -> PriceInfo
+    
+    # Multi-Source Ratings
+    ratings: dict = Field(default_factory=dict)  # source -> RatingInfo
+    
+    # Tasting Notes by Source
+    tasting_notes_sources: dict = Field(default_factory=dict)  # source -> str
+    
+    # External IDs
     vivino_id: Optional[str] = None
     wine_searcher_id: Optional[str] = None
+    external_ids: dict = Field(default_factory=dict)  # source -> external_id
+    
+    # Data Provenance
+    data_source: str = "manual"  # Primary source: manual, lwin, vivino, etc.
+    enriched_by: List[str] = Field(default_factory=list)  # Sources used
+    external_id: Optional[str] = None  # Legacy field
+    
+    # Sync Configuration (migrated from single values to multi-source dicts)
+    last_synced: dict = Field(default_factory=dict)  # source -> datetime
+    sync_enabled: dict = Field(default_factory=dict)  # source -> bool
+    
+    # Manual Overrides (admin edits)
+    manual_overrides: dict = Field(default_factory=dict)  # field -> value
+    
+    # Legacy external data
     external_data: dict = Field(default_factory=dict)
-    data_source: str = "manual"
-    external_id: Optional[str] = None
-    last_synced: Optional[datetime] = None
-    sync_enabled: bool = False
+    
+    @validator('last_synced', pre=True)
+    def migrate_last_synced(cls, v):
+        """Migrate old datetime field to dict format"""
+        if v is None:
+            return {}
+        if isinstance(v, datetime):
+            # Old format: single datetime -> New format: dict with 'default' key
+            return {'default': v}
+        if isinstance(v, dict):
+            return v
+        return {}
+    
+    @validator('sync_enabled', pre=True)
+    def migrate_sync_enabled(cls, v):
+        """Migrate old bool field to dict format"""
+        if v is None:
+            return {}
+        if isinstance(v, bool):
+            # Old format: single bool -> New format: dict with 'default' key
+            return {'default': v}
+        if isinstance(v, dict):
+            return v
+        return {}
     
     # Management
     is_public: bool = False
     user_id: Optional[str] = None
+    master_wine_id: Optional[str] = None  # Link to master wine (for user wines)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     
@@ -99,7 +208,10 @@ class Wine(Document):
             "region",
             "country",
             "vintage",
-            "user_id"
+            "user_id",
+            "lwin7",
+            "lwin11",
+            "lwin18"
         ]
     
     @validator('vintage')
@@ -128,6 +240,27 @@ class Wine(Document):
     def validate_quantity(cls, v):
         if v < 0:
             raise ValueError('Quantity cannot be negative')
+        return v
+    
+    @validator('lwin7')
+    def validate_lwin7(cls, v):
+        if v is not None:
+            if not v.isdigit() or len(v) != 7:
+                raise ValueError('LWIN7 must be exactly 7 digits')
+        return v
+    
+    @validator('lwin11')
+    def validate_lwin11(cls, v):
+        if v is not None:
+            if not v.isdigit() or len(v) != 11:
+                raise ValueError('LWIN11 must be exactly 11 digits')
+        return v
+    
+    @validator('lwin18')
+    def validate_lwin18(cls, v):
+        if v is not None:
+            if not v.isdigit() or len(v) != 18:
+                raise ValueError('LWIN18 must be exactly 18 digits')
         return v
     
     def __repr__(self) -> str:

@@ -5,15 +5,34 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import styles from '../wine-form.module.css'
 
+interface SuggestedImage {
+  url: string
+  thumbnail_url?: string
+  source: string
+  title?: string
+  context_url?: string
+  relevance_score: number
+}
+
 interface ExtractedWineData {
-  name?: string
+  name: string
   producer?: string
   vintage?: number
-  wine_type?: string
+  wine_type: string
   country?: string
   region?: string
   appellation?: string
   alcohol_content?: number
+  grape_varieties?: string[]
+  classification?: string
+  tasting_notes?: string
+  suggested_lwin7?: string
+  suggested_images?: SuggestedImage[]
+  confidence_score?: number
+  image_url?: string
+  front_label_image?: string
+  back_label_image?: string
+  bottle_image?: string
 }
 
 export default function NewWineAIPage() {
@@ -21,11 +40,19 @@ export default function NewWineAIPage() {
   const [loading, setLoading] = useState(false)
   const [extracting, setExtracting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [selectedImage, setSelectedImage] = useState<File | null>(null)
-  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  
+  // Multi-image support - UPDATED to support multiple files per category
+  const [frontLabelImages, setFrontLabelImages] = useState<File[]>([])
+  const [backLabelImages, setBackLabelImages] = useState<File[]>([])
+  const [bottleImages, setBottleImages] = useState<File[]>([])
+  const [frontLabelPreviews, setFrontLabelPreviews] = useState<string[]>([])
+  const [backLabelPreviews, setBackLabelPreviews] = useState<string[]>([])
+  const [bottlePreviews, setBottlePreviews] = useState<string[]>([])
+  
   const [extractedData, setExtractedData] = useState<ExtractedWineData | null>(null)
-  const [uploadingImage, setUploadingImage] = useState(false)
+  const [uploadingImages, setUploadingImages] = useState(false)
   const [showCamera, setShowCamera] = useState(false)
+  const [activeImageType, setActiveImageType] = useState<'front' | 'back' | 'bottle'>('front')
   const [stream, setStream] = useState<MediaStream | null>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -46,28 +73,53 @@ export default function NewWineAIPage() {
     rating: '',
   })
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      setSelectedImage(file)
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>, imageType: 'front' | 'back' | 'bottle') => {
+    const files = Array.from(e.target.files || [])
+    if (files.length > 0) {
       setError(null)
       
-      // Create preview
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string)
-      }
-      reader.readAsDataURL(file)
+      // Process all selected files
+      files.forEach(file => {
+        const reader = new FileReader()
+        reader.onloadend = () => {
+          const preview = reader.result as string
+          if (imageType === 'front') {
+            setFrontLabelImages(prev => [...prev, file])
+            setFrontLabelPreviews(prev => [...prev, preview])
+          } else if (imageType === 'back') {
+            setBackLabelImages(prev => [...prev, file])
+            setBackLabelPreviews(prev => [...prev, preview])
+          } else {
+            setBottleImages(prev => [...prev, file])
+            setBottlePreviews(prev => [...prev, preview])
+          }
+        }
+        reader.readAsDataURL(file)
+      })
     }
   }
 
-  const startCamera = async () => {
+  const clearImage = (imageType: 'front' | 'back' | 'bottle', index: number) => {
+    if (imageType === 'front') {
+      setFrontLabelImages(prev => prev.filter((_, i) => i !== index))
+      setFrontLabelPreviews(prev => prev.filter((_, i) => i !== index))
+    } else if (imageType === 'back') {
+      setBackLabelImages(prev => prev.filter((_, i) => i !== index))
+      setBackLabelPreviews(prev => prev.filter((_, i) => i !== index))
+    } else {
+      setBottleImages(prev => prev.filter((_, i) => i !== index))
+      setBottlePreviews(prev => prev.filter((_, i) => i !== index))
+    }
+  }
+
+  const startCamera = async (imageType: 'front' | 'back' | 'bottle') => {
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'environment' } // Use back camera on mobile
       })
       setStream(mediaStream)
       setShowCamera(true)
+      setActiveImageType(imageType)
       setError(null)
       
       if (videoRef.current) {
@@ -105,13 +157,24 @@ export default function NewWineAIPage() {
         canvas.toBlob((blob) => {
           if (blob) {
             // Create File from blob
-            const file = new File([blob], 'wine-label.jpg', { type: 'image/jpeg' })
-            setSelectedImage(file)
+            const fileName = activeImageType === 'front' ? 'front-label.jpg' : 
+                           activeImageType === 'back' ? 'back-label.jpg' : 'bottle.jpg'
+            const file = new File([blob], fileName, { type: 'image/jpeg' })
             
             // Create preview
             const reader = new FileReader()
             reader.onloadend = () => {
-              setImagePreview(reader.result as string)
+              const preview = reader.result as string
+              if (activeImageType === 'front') {
+                setFrontLabelImages(prev => [...prev, file])
+                setFrontLabelPreviews(prev => [...prev, preview])
+              } else if (activeImageType === 'back') {
+                setBackLabelImages(prev => [...prev, file])
+                setBackLabelPreviews(prev => [...prev, preview])
+              } else {
+                setBottleImages(prev => [...prev, file])
+                setBottlePreviews(prev => [...prev, preview])
+              }
             }
             reader.readAsDataURL(file)
             
@@ -124,8 +187,9 @@ export default function NewWineAIPage() {
   }
 
   const extractWineData = async () => {
-    if (!selectedImage) {
-      setError('Veuillez sélectionner une image d\'abord')
+    // Require at least one front label image
+    if (frontLabelImages.length === 0) {
+      setError('Veuillez sélectionner au moins une photo de l\'étiquette avant')
       return
     }
 
@@ -135,9 +199,16 @@ export default function NewWineAIPage() {
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
       const formDataUpload = new FormData()
-      formDataUpload.append('file', selectedImage)
+      
+      // Append all available images - send only FIRST image of each type to AI for extraction
+      // (Backend currently processes one front + one back for AI analysis)
+      if (frontLabelImages[0]) formDataUpload.append('front_label', frontLabelImages[0])
+      if (backLabelImages[0]) formDataUpload.append('back_label', backLabelImages[0])
+      if (bottleImages[0]) formDataUpload.append('bottle', bottleImages[0])
+      formDataUpload.append('enrich_with_lwin', 'true')
 
-      const response = await fetch(`${apiUrl}/api/ai/extract-wine`, {
+      // Use new AI wine extraction endpoint with LWIN enrichment and multi-image support
+      const response = await fetch(`${apiUrl}/api/v2/ai-wine/extract`, {
         method: 'POST',
         body: formDataUpload
       })
@@ -150,7 +221,7 @@ export default function NewWineAIPage() {
       const extracted = await response.json()
       setExtractedData(extracted)
       
-      // Populate form with extracted data
+      // Populate form with extracted data (enriched with LWIN if available)
       setFormData(prev => ({
         ...prev,
         name: extracted.name || prev.name,
@@ -170,23 +241,27 @@ export default function NewWineAIPage() {
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target
+    const { name, value} = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
   }
 
-  const uploadImageToWine = async (wineId: string) => {
-    if (!selectedImage) return
+  const uploadImagesToWine = async (wineId: string) => {
+    const hasImages = frontLabelImages.length > 0 || backLabelImages.length > 0 || bottleImages.length > 0
+    if (!hasImages) return
 
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
       const token = localStorage.getItem('access_token')
 
       const formDataUpload = new FormData()
-      formDataUpload.append('file', selectedImage)
+      // Upload ALL images (multiple front labels, multiple back labels, etc.)
+      frontLabelImages.forEach(img => formDataUpload.append('front_labels', img))
+      backLabelImages.forEach(img => formDataUpload.append('back_labels', img))
+      bottleImages.forEach(img => formDataUpload.append('bottles', img))
 
-      setUploadingImage(true)
+      setUploadingImages(true)
 
-      const response = await fetch(`${apiUrl}/api/v2/wines/${wineId}/image`, {
+      const response = await fetch(`${apiUrl}/api/v2/wines/${wineId}/images`, {
         method: 'POST',
         headers: token ? {
           'Authorization': `Bearer ${token}`
@@ -195,12 +270,12 @@ export default function NewWineAIPage() {
       })
 
       if (!response.ok) {
-        console.error('Failed to upload image')
+        console.error('Failed to upload images')
       }
     } catch (err) {
-      console.error('Error uploading image:', err)
+      console.error('Error uploading images:', err)
     } finally {
-      setUploadingImage(false)
+      setUploadingImages(false)
     }
   }
 
@@ -211,26 +286,32 @@ export default function NewWineAIPage() {
 
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+      const token = localStorage.getItem('access_token')
       
-      // Prepare data
-      const data: any = {
+      // Use the AI wine extraction endpoint which preserves all metadata
+      // Update extractedData with form edits (keeping all extraction data including images)
+      const updatedExtractionData = {
+        ...extractedData,
         name: formData.name,
+        producer: formData.producer || extractedData?.producer,
+        vintage: formData.vintage ? parseInt(formData.vintage) : extractedData?.vintage,
         wine_type: formData.wine_type,
-        current_quantity: parseInt(formData.current_quantity) || 0,
+        country: formData.country || extractedData?.country,
+        region: formData.region || extractedData?.region,
+        appellation: formData.appellation || extractedData?.appellation,
+        alcohol_content: formData.alcohol_content ? parseFloat(formData.alcohol_content) : extractedData?.alcohol_content,
+        current_quantity: parseInt(formData.current_quantity) || 1,
+        purchase_price: formData.purchase_price ? parseFloat(formData.purchase_price) : undefined,
+        purchase_location: formData.purchase_location || undefined,
+        cellar_location: formData.cellar_location || undefined,
+        rating: formData.rating ? parseFloat(formData.rating) : undefined,
+        // IMPORTANT: Preserve image URLs from extraction (already uploaded during extraction)
+        image_url: extractedData?.image_url,
+        front_label_image: extractedData?.front_label_image,
+        back_label_image: extractedData?.back_label_image,
+        bottle_image: extractedData?.bottle_image,
       }
 
-      if (formData.producer) data.producer = formData.producer
-      if (formData.vintage) data.vintage = parseInt(formData.vintage)
-      if (formData.country) data.country = formData.country
-      if (formData.region) data.region = formData.region
-      if (formData.appellation) data.appellation = formData.appellation
-      if (formData.alcohol_content) data.alcohol_content = parseFloat(formData.alcohol_content)
-      if (formData.purchase_price) data.purchase_price = parseFloat(formData.purchase_price)
-      if (formData.purchase_location) data.purchase_location = formData.purchase_location
-      if (formData.cellar_location) data.cellar_location = formData.cellar_location
-      if (formData.rating) data.rating = parseFloat(formData.rating)
-
-      const token = localStorage.getItem('access_token')
       const headers: HeadersInit = {
         'Content-Type': 'application/json',
       }
@@ -239,10 +320,11 @@ export default function NewWineAIPage() {
         headers['Authorization'] = `Bearer ${token}`
       }
 
-      const response = await fetch(`${apiUrl}/api/v2/wines/`, {
+      // Use the AI wine extraction endpoint to preserve LWIN data and image sources
+      const response = await fetch(`${apiUrl}/api/v2/ai-wine/create-from-extraction`, {
         method: 'POST',
         headers,
-        body: JSON.stringify(data),
+        body: JSON.stringify(updatedExtractionData),
       })
 
       if (!response.ok) {
@@ -250,14 +332,14 @@ export default function NewWineAIPage() {
         throw new Error(errorData.detail || 'Failed to create wine')
       }
 
-      const wine = await response.json()
+      const result = await response.json()
+      const wineId = result.wine_id
 
-      // Upload image if selected
-      if (selectedImage && wine.id) {
-        await uploadImageToWine(wine.id)
-      }
+      // Note: Images are already uploaded during extraction
+      // No need to upload again - they're saved during /api/v2/ai-wine/extract
+      // The extraction endpoint handles all 3 images: front_label, back_label, bottle
 
-      // Redirect to cellier main page (wine detail page doesn't exist yet)
+      // Redirect to cellier main page
       router.push(`/cellier`)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
@@ -280,9 +362,9 @@ export default function NewWineAIPage() {
         // Step 1: Upload and extract
         <div className={styles.form}>
           <div className={styles.section}>
-            <h2>📸 Photo de l&apos;étiquette</h2>
+            <h2>📸 Photos du vin</h2>
             <p style={{ color: '#666', marginBottom: '1.5rem' }}>
-              Prenez une photo claire de l&apos;étiquette du vin. L&apos;IA extraira automatiquement
+              Prenez des photos claires de votre vin. L&apos;IA extraira automatiquement
               les informations comme le nom, le producteur, le millésime, la région, etc.
             </p>
             
@@ -314,50 +396,177 @@ export default function NewWineAIPage() {
                 </div>
               </div>
             ) : (
-              <div className={styles.imageUploadArea}>
-                <div className={styles.imagePreview}>
-                  {imagePreview ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={imagePreview}
-                      alt="Aperçu"
-                    />
-                  ) : (
-                    <div className={styles.imagePreviewIcon}>🍷</div>
-                  )}
-                </div>
-                
-                <div className={styles.imageUploadControls}>
-                  <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-                    <button
-                      type="button"
-                      onClick={startCamera}
-                      className={styles.imageUploadButton}
-                    >
-                      📷 Prendre une photo
-                    </button>
-                    <label htmlFor="wine-image" className={styles.imageUploadButton}>
-                      �️ Choisir une photo
-                    </label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
+                {/* Front Label */}
+                <div className={styles.imageUploadArea}>
+                  <h3 style={{ marginBottom: '1rem', fontSize: '1rem', color: '#333' }}>Étiquette avant *</h3>
+                  <div className={styles.imagePreview}>
+                    {frontLabelPreviews.length > 0 ? (
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '8px' }}>
+                        {frontLabelPreviews.map((preview, index) => (
+                          <div key={index} style={{ position: 'relative' }}>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={preview} alt={`Étiquette avant ${index + 1}`} style={{ width: '100%', height: '100px', objectFit: 'cover', borderRadius: '4px' }} />
+                            <button
+                              type="button"
+                              onClick={() => clearImage('front', index)}
+                              style={{ position: 'absolute', top: '4px', right: '4px', background: 'rgba(255,0,0,0.8)', color: 'white', border: 'none', borderRadius: '50%', width: '24px', height: '24px', cursor: 'pointer', fontSize: '12px' }}
+                            >
+                              ✖
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className={styles.imagePreviewIcon}>🖼️</div>
+                    )}
                   </div>
-                  <input
-                    id="wine-image"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    style={{ display: 'none' }}
-                  />
-                  <p className={styles.imageUploadHint}>
-                    Prenez une photo avec votre caméra ou choisissez une image existante
-                  </p>
-                  {selectedImage && (
-                    <p className={styles.imageUploadSuccess}>
-                      ✓ {selectedImage.name}
-                    </p>
-                  )}
+                  
+                  <div className={styles.imageUploadControls}>
+                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        onClick={() => startCamera('front')}
+                        className={styles.imageUploadButton}
+                        style={{ fontSize: '0.85rem', padding: '0.5rem 0.75rem' }}
+                      >
+                        📷 Photo
+                      </button>
+                      <label htmlFor="front-label-image" className={styles.imageUploadButton} style={{ fontSize: '0.85rem', padding: '0.5rem 0.75rem' }}>
+                        🖼️ Fichier
+                      </label>
+                    </div>
+                    <input
+                      id="front-label-image"
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={(e) => handleImageChange(e, 'front')}
+                      style={{ display: 'none' }}
+                    />
+                    {frontLabelImages.length > 0 && (
+                      <p className={styles.imageUploadSuccess} style={{ fontSize: '0.85rem', marginTop: '0.5rem' }}>
+                        ✓ {frontLabelImages.length} image{frontLabelImages.length > 1 ? 's' : ''}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Back Label */}
+                <div className={styles.imageUploadArea}>
+                  <h3 style={{ marginBottom: '1rem', fontSize: '1rem', color: '#333' }}>Étiquette arrière</h3>
+                  <div className={styles.imagePreview}>
+                    {backLabelPreviews.length > 0 ? (
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '8px' }}>
+                        {backLabelPreviews.map((preview, index) => (
+                          <div key={index} style={{ position: 'relative' }}>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={preview} alt={`Étiquette arrière ${index + 1}`} style={{ width: '100%', height: '100px', objectFit: 'cover', borderRadius: '4px' }} />
+                            <button
+                              type="button"
+                              onClick={() => clearImage('back', index)}
+                              style={{ position: 'absolute', top: '4px', right: '4px', background: 'rgba(255,0,0,0.8)', color: 'white', border: 'none', borderRadius: '50%', width: '24px', height: '24px', cursor: 'pointer', fontSize: '12px' }}
+                            >
+                              ✖
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className={styles.imagePreviewIcon}>🏷️</div>
+                    )}
+                  </div>
+                  
+                  <div className={styles.imageUploadControls}>
+                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        onClick={() => startCamera('back')}
+                        className={styles.imageUploadButton}
+                        style={{ fontSize: '0.85rem', padding: '0.5rem 0.75rem' }}
+                      >
+                        📷 Photo
+                      </button>
+                      <label htmlFor="back-label-image" className={styles.imageUploadButton} style={{ fontSize: '0.85rem', padding: '0.5rem 0.75rem' }}>
+                        🖼️ Fichier
+                      </label>
+                    </div>
+                    <input
+                      id="back-label-image"
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={(e) => handleImageChange(e, 'back')}
+                      style={{ display: 'none' }}
+                    />
+                    {backLabelImages.length > 0 && (
+                      <p className={styles.imageUploadSuccess} style={{ fontSize: '0.85rem', marginTop: '0.5rem' }}>
+                        ✓ {backLabelImages.length} image{backLabelImages.length > 1 ? 's' : ''}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Full Bottle */}
+                <div className={styles.imageUploadArea}>
+                  <h3 style={{ marginBottom: '1rem', fontSize: '1rem', color: '#333' }}>Bouteille complète</h3>
+                  <div className={styles.imagePreview}>
+                    {bottlePreviews.length > 0 ? (
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '8px' }}>
+                        {bottlePreviews.map((preview, index) => (
+                          <div key={index} style={{ position: 'relative' }}>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={preview} alt={`Bouteille ${index + 1}`} style={{ width: '100%', height: '100px', objectFit: 'cover', borderRadius: '4px' }} />
+                            <button
+                              type="button"
+                              onClick={() => clearImage('bottle', index)}
+                              style={{ position: 'absolute', top: '4px', right: '4px', background: 'rgba(255,0,0,0.8)', color: 'white', border: 'none', borderRadius: '50%', width: '24px', height: '24px', cursor: 'pointer', fontSize: '12px' }}
+                            >
+                              ✖
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className={styles.imagePreviewIcon}>🍷</div>
+                    )}
+                  </div>
+                  
+                  <div className={styles.imageUploadControls}>
+                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        onClick={() => startCamera('bottle')}
+                        className={styles.imageUploadButton}
+                        style={{ fontSize: '0.85rem', padding: '0.5rem 0.75rem' }}
+                      >
+                        📷 Photo
+                      </button>
+                      <label htmlFor="bottle-image" className={styles.imageUploadButton} style={{ fontSize: '0.85rem', padding: '0.5rem 0.75rem' }}>
+                        🖼️ Fichier
+                      </label>
+                    </div>
+                    <input
+                      id="bottle-image"
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={(e) => handleImageChange(e, 'bottle')}
+                      style={{ display: 'none' }}
+                    />
+                    {bottleImages.length > 0 && (
+                      <p className={styles.imageUploadSuccess} style={{ fontSize: '0.85rem', marginTop: '0.5rem' }}>
+                        ✓ {bottleImages.length} image{bottleImages.length > 1 ? 's' : ''}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
+            
+            <p style={{ color: '#666', fontSize: '0.9rem', marginTop: '1rem', fontStyle: 'italic' }}>
+              * L&apos;étiquette avant est requise pour l&apos;extraction automatique
+            </p>
           </div>
 
           <div className={styles.actions}>
@@ -369,7 +578,7 @@ export default function NewWineAIPage() {
             <button 
               onClick={extractWineData} 
               className={styles.submitButton} 
-              disabled={!selectedImage || extracting}
+              disabled={frontLabelImages.length === 0 || extracting}
             >
               {extracting ? '🤖 Extraction en cours...' : '🤖 Extraire les informations'}
             </button>
@@ -384,7 +593,130 @@ export default function NewWineAIPage() {
               L&apos;IA a extrait les informations ci-dessous. Vous pouvez les modifier si nécessaire
               avant d&apos;ajouter le vin à votre cellier.
             </p>
+            {extractedData.confidence_score && (
+              <div style={{ marginTop: '1rem', fontSize: '0.9rem', color: '#555' }}>
+                <strong>Score de confiance:</strong> {(extractedData.confidence_score * 100).toFixed(0)}%
+                {extractedData.confidence_score < 0.7 && (
+                  <span style={{ color: '#f57c00', marginLeft: '0.5rem' }}>
+                    ⚠️ Vérifiez attentivement les données extraites
+                  </span>
+                )}
+              </div>
+            )}
           </div>
+
+          {extractedData.suggested_lwin7 && (
+            <div className={styles.section} style={{ background: '#e3f2fd', borderLeft: '4px solid #2196f3' }}>
+              <h2>🍷 Enrichissement LWIN</h2>
+              <p style={{ color: '#1565c0', marginBottom: '0.5rem' }}>
+                Ce vin a été enrichi avec la base de données LWIN (Liv-ex Wine Identification Number)
+              </p>
+              <div style={{ fontSize: '0.9rem', color: '#555' }}>
+                <strong>Code LWIN7:</strong> {extractedData.suggested_lwin7}
+              </div>
+              {extractedData.grape_varieties && extractedData.grape_varieties.length > 0 && (
+                <div style={{ fontSize: '0.9rem', color: '#555', marginTop: '0.5rem' }}>
+                  <strong>Cépages:</strong> {extractedData.grape_varieties.join(', ')}
+                </div>
+              )}
+              {extractedData.classification && (
+                <div style={{ fontSize: '0.9rem', color: '#555', marginTop: '0.5rem' }}>
+                  <strong>Classification:</strong> {extractedData.classification}
+                </div>
+              )}
+            </div>
+          )}
+
+          {extractedData.suggested_images && extractedData.suggested_images.length > 0 && (
+            <div className={styles.section} style={{ background: '#f3e5f5', borderLeft: '4px solid #9c27b0', padding: '1rem' }}>
+              <h2 style={{ marginBottom: '0.5rem' }}>📸 Images trouvées sur Internet</h2>
+              <p style={{ color: '#7b1fa2', marginBottom: '0.75rem', fontSize: '0.85rem' }}>
+                {extractedData.suggested_images.length} image(s) correspondante(s) trouvée(s) en ligne. 
+                Ces images seront enregistrées avec votre vin pour référence.
+              </p>
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))',
+                gap: '0.75rem'
+              }}>
+                {extractedData.suggested_images.map((img, index) => (
+                  <div key={index} style={{
+                    border: '2px solid #e0e0e0',
+                    borderRadius: '6px',
+                    overflow: 'hidden',
+                    background: 'white',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                    transition: 'transform 0.2s, box-shadow 0.2s',
+                    cursor: 'pointer'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'scale(1.03)'
+                    e.currentTarget.style.boxShadow = '0 3px 6px rgba(0,0,0,0.2)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'scale(1)'
+                    e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)'
+                  }}
+                  onClick={() => window.open(img.context_url || img.url, '_blank')}
+                  >
+                    <div style={{ 
+                      height: '140px',
+                      background: '#f9f9f9',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      overflow: 'hidden'
+                    }}>
+                      <img 
+                        src={img.thumbnail_url || img.url} 
+                        alt={img.title || `Wine image ${index + 1}`}
+                        style={{
+                          maxWidth: '100%',
+                          maxHeight: '100%',
+                          objectFit: 'contain'
+                        }}
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none'
+                          e.currentTarget.parentElement!.innerHTML = '<div style="color: #999; font-size: 0.7rem; text-align: center; padding: 0.5rem;">Image non disponible</div>'
+                        }}
+                      />
+                    </div>
+                    <div style={{ 
+                      padding: '0.4rem',
+                      fontSize: '0.7rem',
+                      color: '#666',
+                      borderTop: '1px solid #e0e0e0'
+                    }}>
+                      <div style={{ 
+                        fontWeight: 'bold', 
+                        marginBottom: '0.2rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.25rem'
+                      }}>
+                        {img.source === 'google' && '🔍'}
+                        {img.source === 'vivino' && '🍷'}
+                        <span style={{ color: '#4caf50', fontSize: '0.65rem' }}>
+                          {Math.round(img.relevance_score * 100)}%
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div style={{
+                marginTop: '1rem',
+                padding: '0.75rem',
+                background: 'rgba(156, 39, 176, 0.1)',
+                borderRadius: '4px',
+                fontSize: '0.85rem',
+                color: '#7b1fa2'
+              }}>
+                💡 <strong>Note:</strong> Ces images seront automatiquement enregistrées avec votre vin. 
+                Cliquez sur une image pour voir la source complète.
+              </div>
+            </div>
+          )}
 
           <div className={styles.section}>
             <h2>Informations de base</h2>
@@ -608,8 +940,8 @@ export default function NewWineAIPage() {
             >
               ← Réessayer l&apos;extraction
             </button>
-            <button type="submit" className={styles.submitButton} disabled={loading || uploadingImage}>
-              {uploadingImage ? 'Téléchargement de l\'image...' : loading ? 'Ajout en cours...' : 'Ajouter au cellier'}
+            <button type="submit" className={styles.submitButton} disabled={loading || uploadingImages}>
+              {uploadingImages ? 'Téléchargement des images...' : loading ? 'Ajout en cours...' : 'Ajouter au cellier'}
             </button>
           </div>
         </form>

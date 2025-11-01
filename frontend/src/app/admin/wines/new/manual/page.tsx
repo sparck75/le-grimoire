@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useAuth } from '../../../../contexts/AuthContext';
+import { useAuth } from '../../../../../contexts/AuthContext';
 
 export default function AdminNewWinePage() {
   const router = useRouter();
@@ -55,7 +55,6 @@ export default function AdminNewWinePage() {
     if (!selectedImage) return;
 
     try {
-      const apiUrl = getApiUrl();
       const token = localStorage.getItem('access_token');
 
       const formDataUpload = new FormData();
@@ -63,13 +62,16 @@ export default function AdminNewWinePage() {
 
       setUploadingImage(true);
 
-      const response = await fetch(`${apiUrl}/api/admin/wines/${wineId}/image`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        body: formDataUpload
-      });
+      const response = await fetch(
+        `http://192.168.1.100:8000/api/admin/wines/${wineId}/image`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          body: formDataUpload
+        }
+      );
 
       if (!response.ok) {
         console.error('Failed to upload image');
@@ -81,57 +83,57 @@ export default function AdminNewWinePage() {
     }
   };
 
-  const getApiUrl = () => {
-    const envUrl = process.env.NEXT_PUBLIC_API_URL;
-    if (!envUrl || envUrl.includes('localhost')) {
-      if (typeof window !== 'undefined') {
-        return window.location.origin;
-      }
-      return 'https://legrimoireonline.ca';
-    }
-    return envUrl;
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
     try {
-      const apiUrl = getApiUrl();
       const token = localStorage.getItem('access_token');
       
-      // Prepare data
+      // Prepare data - match AdminWineCreate model
       const data: any = {
         name: formData.name,
         wine_type: formData.wine_type,
-        is_public: true,  // Master wines are public
+        country: formData.country || '',
+        region: formData.region || '',
+        color: '',  // Required field, empty default
+        grape_varieties: [],
+        nose: [],
+        palate: [],
+        tasting_notes: formData.tasting_notes || '',
+        food_pairings: [],
       };
 
       if (formData.producer) data.producer = formData.producer;
       if (formData.vintage) data.vintage = parseInt(formData.vintage);
-      if (formData.country) data.country = formData.country;
-      if (formData.region) data.region = formData.region;
       if (formData.appellation) data.appellation = formData.appellation;
-      if (formData.alcohol_content) data.alcohol_content = parseFloat(formData.alcohol_content);
+      if (formData.alcohol_content) {
+        data.alcohol_content = parseFloat(formData.alcohol_content);
+      }
       if (formData.body) data.body = formData.body;
       if (formData.sweetness) data.sweetness = formData.sweetness;
-      if (formData.tasting_notes) data.tasting_notes = formData.tasting_notes;
       if (formData.barcode) data.barcode = formData.barcode;
       
       // Convert comma-separated food pairings to array
       if (formData.food_pairings) {
-        data.food_pairings = formData.food_pairings.split(',').map(s => s.trim()).filter(s => s);
+        data.food_pairings = formData.food_pairings
+          .split(',')
+          .map((s: string) => s.trim())
+          .filter((s: string) => s);
       }
 
-      const response = await fetch(`${apiUrl}/api/admin/wines`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(data),
-      });
+      const response = await fetch(
+        'http://192.168.1.100:8000/api/admin/wines',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(data),
+        }
+      );
 
       if (!response.ok) {
         const errorData = await response.json();
