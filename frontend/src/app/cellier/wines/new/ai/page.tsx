@@ -41,13 +41,13 @@ export default function NewWineAIPage() {
   const [extracting, setExtracting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   
-  // Multi-image support
-  const [frontLabelImage, setFrontLabelImage] = useState<File | null>(null)
-  const [backLabelImage, setBackLabelImage] = useState<File | null>(null)
-  const [bottleImage, setBottleImage] = useState<File | null>(null)
-  const [frontLabelPreview, setFrontLabelPreview] = useState<string | null>(null)
-  const [backLabelPreview, setBackLabelPreview] = useState<string | null>(null)
-  const [bottlePreview, setBottlePreview] = useState<string | null>(null)
+  // Multi-image support - UPDATED to support multiple files per category
+  const [frontLabelImages, setFrontLabelImages] = useState<File[]>([])
+  const [backLabelImages, setBackLabelImages] = useState<File[]>([])
+  const [bottleImages, setBottleImages] = useState<File[]>([])
+  const [frontLabelPreviews, setFrontLabelPreviews] = useState<string[]>([])
+  const [backLabelPreviews, setBackLabelPreviews] = useState<string[]>([])
+  const [bottlePreviews, setBottlePreviews] = useState<string[]>([])
   
   const [extractedData, setExtractedData] = useState<ExtractedWineData | null>(null)
   const [uploadingImages, setUploadingImages] = useState(false)
@@ -74,39 +74,41 @@ export default function NewWineAIPage() {
   })
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>, imageType: 'front' | 'back' | 'bottle') => {
-    const file = e.target.files?.[0]
-    if (file) {
+    const files = Array.from(e.target.files || [])
+    if (files.length > 0) {
       setError(null)
       
-      // Create preview
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        const preview = reader.result as string
-        if (imageType === 'front') {
-          setFrontLabelImage(file)
-          setFrontLabelPreview(preview)
-        } else if (imageType === 'back') {
-          setBackLabelImage(file)
-          setBackLabelPreview(preview)
-        } else {
-          setBottleImage(file)
-          setBottlePreview(preview)
+      // Process all selected files
+      files.forEach(file => {
+        const reader = new FileReader()
+        reader.onloadend = () => {
+          const preview = reader.result as string
+          if (imageType === 'front') {
+            setFrontLabelImages(prev => [...prev, file])
+            setFrontLabelPreviews(prev => [...prev, preview])
+          } else if (imageType === 'back') {
+            setBackLabelImages(prev => [...prev, file])
+            setBackLabelPreviews(prev => [...prev, preview])
+          } else {
+            setBottleImages(prev => [...prev, file])
+            setBottlePreviews(prev => [...prev, preview])
+          }
         }
-      }
-      reader.readAsDataURL(file)
+        reader.readAsDataURL(file)
+      })
     }
   }
 
-  const clearImage = (imageType: 'front' | 'back' | 'bottle') => {
+  const clearImage = (imageType: 'front' | 'back' | 'bottle', index: number) => {
     if (imageType === 'front') {
-      setFrontLabelImage(null)
-      setFrontLabelPreview(null)
+      setFrontLabelImages(prev => prev.filter((_, i) => i !== index))
+      setFrontLabelPreviews(prev => prev.filter((_, i) => i !== index))
     } else if (imageType === 'back') {
-      setBackLabelImage(null)
-      setBackLabelPreview(null)
+      setBackLabelImages(prev => prev.filter((_, i) => i !== index))
+      setBackLabelPreviews(prev => prev.filter((_, i) => i !== index))
     } else {
-      setBottleImage(null)
-      setBottlePreview(null)
+      setBottleImages(prev => prev.filter((_, i) => i !== index))
+      setBottlePreviews(prev => prev.filter((_, i) => i !== index))
     }
   }
 
@@ -164,14 +166,14 @@ export default function NewWineAIPage() {
             reader.onloadend = () => {
               const preview = reader.result as string
               if (activeImageType === 'front') {
-                setFrontLabelImage(file)
-                setFrontLabelPreview(preview)
+                setFrontLabelImages(prev => [...prev, file])
+                setFrontLabelPreviews(prev => [...prev, preview])
               } else if (activeImageType === 'back') {
-                setBackLabelImage(file)
-                setBackLabelPreview(preview)
+                setBackLabelImages(prev => [...prev, file])
+                setBackLabelPreviews(prev => [...prev, preview])
               } else {
-                setBottleImage(file)
-                setBottlePreview(preview)
+                setBottleImages(prev => [...prev, file])
+                setBottlePreviews(prev => [...prev, preview])
               }
             }
             reader.readAsDataURL(file)
@@ -185,9 +187,9 @@ export default function NewWineAIPage() {
   }
 
   const extractWineData = async () => {
-    // Require at least the front label image
-    if (!frontLabelImage) {
-      setError('Veuillez sélectionner au moins la photo de l\'étiquette avant')
+    // Require at least one front label image
+    if (frontLabelImages.length === 0) {
+      setError('Veuillez sélectionner au moins une photo de l\'étiquette avant')
       return
     }
 
@@ -198,10 +200,11 @@ export default function NewWineAIPage() {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
       const formDataUpload = new FormData()
       
-      // Append all available images
-      if (frontLabelImage) formDataUpload.append('front_label', frontLabelImage)
-      if (backLabelImage) formDataUpload.append('back_label', backLabelImage)
-      if (bottleImage) formDataUpload.append('bottle', bottleImage)
+      // Append all available images - send only FIRST image of each type to AI for extraction
+      // (Backend currently processes one front + one back for AI analysis)
+      if (frontLabelImages[0]) formDataUpload.append('front_label', frontLabelImages[0])
+      if (backLabelImages[0]) formDataUpload.append('back_label', backLabelImages[0])
+      if (bottleImages[0]) formDataUpload.append('bottle', bottleImages[0])
       formDataUpload.append('enrich_with_lwin', 'true')
 
       // Use new AI wine extraction endpoint with LWIN enrichment and multi-image support
@@ -243,16 +246,18 @@ export default function NewWineAIPage() {
   }
 
   const uploadImagesToWine = async (wineId: string) => {
-    if (!frontLabelImage && !backLabelImage && !bottleImage) return
+    const hasImages = frontLabelImages.length > 0 || backLabelImages.length > 0 || bottleImages.length > 0
+    if (!hasImages) return
 
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
       const token = localStorage.getItem('access_token')
 
       const formDataUpload = new FormData()
-      if (frontLabelImage) formDataUpload.append('front_label', frontLabelImage)
-      if (backLabelImage) formDataUpload.append('back_label', backLabelImage)
-      if (bottleImage) formDataUpload.append('bottle', bottleImage)
+      // Upload ALL images (multiple front labels, multiple back labels, etc.)
+      frontLabelImages.forEach(img => formDataUpload.append('front_labels', img))
+      backLabelImages.forEach(img => formDataUpload.append('back_labels', img))
+      bottleImages.forEach(img => formDataUpload.append('bottles', img))
 
       setUploadingImages(true)
 
@@ -396,20 +401,24 @@ export default function NewWineAIPage() {
                 <div className={styles.imageUploadArea}>
                   <h3 style={{ marginBottom: '1rem', fontSize: '1rem', color: '#333' }}>Étiquette avant *</h3>
                   <div className={styles.imagePreview}>
-                    {frontLabelPreview ? (
-                      <>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={frontLabelPreview} alt="Étiquette avant" />
-                        <button
-                          type="button"
-                          onClick={() => clearImage('front')}
-                          style={{ position: 'absolute', top: '8px', right: '8px', background: 'rgba(255,0,0,0.8)', color: 'white', border: 'none', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer' }}
-                        >
-                          ✖
-                        </button>
-                      </>
+                    {frontLabelPreviews.length > 0 ? (
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '8px' }}>
+                        {frontLabelPreviews.map((preview, index) => (
+                          <div key={index} style={{ position: 'relative' }}>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={preview} alt={`Étiquette avant ${index + 1}`} style={{ width: '100%', height: '100px', objectFit: 'cover', borderRadius: '4px' }} />
+                            <button
+                              type="button"
+                              onClick={() => clearImage('front', index)}
+                              style={{ position: 'absolute', top: '4px', right: '4px', background: 'rgba(255,0,0,0.8)', color: 'white', border: 'none', borderRadius: '50%', width: '24px', height: '24px', cursor: 'pointer', fontSize: '12px' }}
+                            >
+                              ✖
+                            </button>
+                          </div>
+                        ))}
+                      </div>
                     ) : (
-                      <div className={styles.imagePreviewIcon}>�️</div>
+                      <div className={styles.imagePreviewIcon}>🖼️</div>
                     )}
                   </div>
                   
@@ -431,12 +440,13 @@ export default function NewWineAIPage() {
                       id="front-label-image"
                       type="file"
                       accept="image/*"
+                      multiple
                       onChange={(e) => handleImageChange(e, 'front')}
                       style={{ display: 'none' }}
                     />
-                    {frontLabelImage && (
+                    {frontLabelImages.length > 0 && (
                       <p className={styles.imageUploadSuccess} style={{ fontSize: '0.85rem', marginTop: '0.5rem' }}>
-                        ✓ {frontLabelImage.name}
+                        ✓ {frontLabelImages.length} image{frontLabelImages.length > 1 ? 's' : ''}
                       </p>
                     )}
                   </div>
@@ -446,18 +456,22 @@ export default function NewWineAIPage() {
                 <div className={styles.imageUploadArea}>
                   <h3 style={{ marginBottom: '1rem', fontSize: '1rem', color: '#333' }}>Étiquette arrière</h3>
                   <div className={styles.imagePreview}>
-                    {backLabelPreview ? (
-                      <>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={backLabelPreview} alt="Étiquette arrière" />
-                        <button
-                          type="button"
-                          onClick={() => clearImage('back')}
-                          style={{ position: 'absolute', top: '8px', right: '8px', background: 'rgba(255,0,0,0.8)', color: 'white', border: 'none', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer' }}
-                        >
-                          ✖
-                        </button>
-                      </>
+                    {backLabelPreviews.length > 0 ? (
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '8px' }}>
+                        {backLabelPreviews.map((preview, index) => (
+                          <div key={index} style={{ position: 'relative' }}>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={preview} alt={`Étiquette arrière ${index + 1}`} style={{ width: '100%', height: '100px', objectFit: 'cover', borderRadius: '4px' }} />
+                            <button
+                              type="button"
+                              onClick={() => clearImage('back', index)}
+                              style={{ position: 'absolute', top: '4px', right: '4px', background: 'rgba(255,0,0,0.8)', color: 'white', border: 'none', borderRadius: '50%', width: '24px', height: '24px', cursor: 'pointer', fontSize: '12px' }}
+                            >
+                              ✖
+                            </button>
+                          </div>
+                        ))}
+                      </div>
                     ) : (
                       <div className={styles.imagePreviewIcon}>🏷️</div>
                     )}
@@ -481,12 +495,13 @@ export default function NewWineAIPage() {
                       id="back-label-image"
                       type="file"
                       accept="image/*"
+                      multiple
                       onChange={(e) => handleImageChange(e, 'back')}
                       style={{ display: 'none' }}
                     />
-                    {backLabelImage && (
+                    {backLabelImages.length > 0 && (
                       <p className={styles.imageUploadSuccess} style={{ fontSize: '0.85rem', marginTop: '0.5rem' }}>
-                        ✓ {backLabelImage.name}
+                        ✓ {backLabelImages.length} image{backLabelImages.length > 1 ? 's' : ''}
                       </p>
                     )}
                   </div>
@@ -496,18 +511,22 @@ export default function NewWineAIPage() {
                 <div className={styles.imageUploadArea}>
                   <h3 style={{ marginBottom: '1rem', fontSize: '1rem', color: '#333' }}>Bouteille complète</h3>
                   <div className={styles.imagePreview}>
-                    {bottlePreview ? (
-                      <>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={bottlePreview} alt="Bouteille" />
-                        <button
-                          type="button"
-                          onClick={() => clearImage('bottle')}
-                          style={{ position: 'absolute', top: '8px', right: '8px', background: 'rgba(255,0,0,0.8)', color: 'white', border: 'none', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer' }}
-                        >
-                          ✖
-                        </button>
-                      </>
+                    {bottlePreviews.length > 0 ? (
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '8px' }}>
+                        {bottlePreviews.map((preview, index) => (
+                          <div key={index} style={{ position: 'relative' }}>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={preview} alt={`Bouteille ${index + 1}`} style={{ width: '100%', height: '100px', objectFit: 'cover', borderRadius: '4px' }} />
+                            <button
+                              type="button"
+                              onClick={() => clearImage('bottle', index)}
+                              style={{ position: 'absolute', top: '4px', right: '4px', background: 'rgba(255,0,0,0.8)', color: 'white', border: 'none', borderRadius: '50%', width: '24px', height: '24px', cursor: 'pointer', fontSize: '12px' }}
+                            >
+                              ✖
+                            </button>
+                          </div>
+                        ))}
+                      </div>
                     ) : (
                       <div className={styles.imagePreviewIcon}>🍷</div>
                     )}
@@ -531,12 +550,13 @@ export default function NewWineAIPage() {
                       id="bottle-image"
                       type="file"
                       accept="image/*"
+                      multiple
                       onChange={(e) => handleImageChange(e, 'bottle')}
                       style={{ display: 'none' }}
                     />
-                    {bottleImage && (
+                    {bottleImages.length > 0 && (
                       <p className={styles.imageUploadSuccess} style={{ fontSize: '0.85rem', marginTop: '0.5rem' }}>
-                        ✓ {bottleImage.name}
+                        ✓ {bottleImages.length} image{bottleImages.length > 1 ? 's' : ''}
                       </p>
                     )}
                   </div>
@@ -558,7 +578,7 @@ export default function NewWineAIPage() {
             <button 
               onClick={extractWineData} 
               className={styles.submitButton} 
-              disabled={!frontLabelImage || extracting}
+              disabled={frontLabelImages.length === 0 || extracting}
             >
               {extracting ? '🤖 Extraction en cours...' : '🤖 Extraire les informations'}
             </button>

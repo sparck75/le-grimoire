@@ -151,6 +151,7 @@ async def list_master_wines(
     country: Optional[str] = None,
     search: Optional[str] = None,
     barcode: Optional[str] = None,
+    data_source: Optional[str] = None,
     current_user: User = Depends(require_admin)
 ):
     """
@@ -167,6 +168,8 @@ async def list_master_wines(
         query["country"] = country
     if barcode:
         query["barcode"] = barcode
+    if data_source:
+        query["data_source"] = data_source
     if search:
         query["$or"] = [
             {"name": {"$regex": search, "$options": "i"}},

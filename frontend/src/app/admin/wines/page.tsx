@@ -53,6 +53,7 @@ export default function AdminLWINBrowsePage() {
     region: '',
     wine_type: '',
     vintage: '',
+    data_source: '',
   });
 
   const isAdmin = user && user.role === 'admin';
@@ -89,6 +90,7 @@ export default function AdminLWINBrowsePage() {
         ...(filters.region && { region: filters.region }),
         ...(filters.wine_type && { wine_type: filters.wine_type }),
         ...(filters.vintage && { vintage: filters.vintage }),
+        ...(filters.data_source && { data_source: filters.data_source }),
       });
 
       const response = await fetch(
@@ -126,7 +128,7 @@ export default function AdminLWINBrowsePage() {
 
   const clearFilters = () => {
     setSearchTerm('');
-    setFilters({ country: '', region: '', wine_type: '', vintage: '' });
+    setFilters({ country: '', region: '', wine_type: '', vintage: '', data_source: '' });
   };
 
   const translateWineType = (type: string): string => {
@@ -380,7 +382,30 @@ export default function AdminLWINBrowsePage() {
             <option value="fortified">🛡️ Fortifié</option>
           </select>
 
-          {(searchTerm || filters.country || filters.region || filters.wine_type) && (
+          <select
+            name="data_source"
+            value={filters.data_source}
+            onChange={handleFilterChange}
+            style={{
+              padding: '10px 16px',
+              border: '2px solid #e0e0e0',
+              borderRadius: '8px',
+              fontSize: '0.95rem',
+              background: 'white',
+              cursor: 'pointer',
+              outline: 'none',
+              transition: 'border-color 0.2s'
+            }}
+            onFocus={(e) => e.currentTarget.style.borderColor = '#667eea'}
+            onBlur={(e) => e.currentTarget.style.borderColor = '#e0e0e0'}
+          >
+            <option value="">📊 Toutes les sources</option>
+            <option value="ai">🤖 Extrait par IA</option>
+            <option value="lwin">📚 Base LWIN</option>
+            <option value="manual">✏️ Ajout manuel</option>
+          </select>
+
+          {(searchTerm || filters.country || filters.region || filters.wine_type || filters.data_source) && (
             <button onClick={clearFilters} style={{
               background: '#ff6b6b',
               color: 'white',

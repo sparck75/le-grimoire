@@ -20,7 +20,11 @@ interface Wine {
   tasting_notes: string;
   food_pairings: string[];
   barcode?: string;
-  image_url?: string;
+  image_url?: string;  // Legacy field
+  // Multiple images per type
+  front_label_images?: string[];
+  back_label_images?: string[];
+  bottle_images?: string[];
 }
 
 export default function AdminEditWinePage() {
@@ -269,51 +273,132 @@ export default function AdminEditWinePage() {
 
       <div className="admin-card" style={{ marginBottom: '1.5rem' }}>
         <div className="card-header">
-          <h2>Photo de la Bouteille</h2>
+          <h2>Images du Vin</h2>
         </div>
         <div className="card-content">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
-            <div style={{ 
-              width: '150px', 
-              height: '200px', 
-              background: '#f5f5f5', 
-              borderRadius: '8px', 
-              overflow: 'hidden',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              border: '2px solid #e0e0e0'
-            }}>
-              {wine.image_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={getApiUrl() + wine.image_url}
-                  alt={wine.name}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                />
+          {/* Front Label Images */}
+          <div style={{ marginBottom: '2rem' }}>
+            <h3 style={{ fontSize: '1rem', marginBottom: '1rem', color: '#333' }}>Étiquette avant</h3>
+            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+              {wine.front_label_images && wine.front_label_images.length > 0 ? (
+                wine.front_label_images.map((imgUrl, index) => (
+                  <div key={index} style={{ 
+                    width: '120px', 
+                    height: '160px', 
+                    background: '#f5f5f5', 
+                    borderRadius: '8px', 
+                    overflow: 'hidden',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: '2px solid #e0e0e0'
+                  }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={getApiUrl() + imgUrl}
+                      alt={`Étiquette avant ${index + 1}`}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  </div>
+                ))
               ) : (
-                <span style={{ fontSize: '4rem' }}>🍷</span>
+                <div style={{ 
+                  width: '120px', 
+                  height: '160px', 
+                  background: '#f5f5f5', 
+                  borderRadius: '8px', 
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  border: '2px solid #e0e0e0'
+                }}>
+                  <span style={{ fontSize: '3rem' }}>�️</span>
+                </div>
               )}
             </div>
-            <div>
-              <label 
-                htmlFor="wine-image-upload"
-                className="btn btn-primary"
-                style={{ cursor: uploadingImage ? 'wait' : 'pointer' }}
-              >
-                {uploadingImage ? 'Téléchargement...' : '📷 Télécharger une photo'}
-              </label>
-              <input
-                id="wine-image-upload"
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                disabled={uploadingImage}
-                style={{ display: 'none' }}
-              />
-              <p style={{ marginTop: '0.5rem', color: '#666', fontSize: '0.9rem' }}>
-                Formats acceptés: JPG, PNG, GIF (max 5MB)
-              </p>
+          </div>
+
+          {/* Back Label Images */}
+          <div style={{ marginBottom: '2rem' }}>
+            <h3 style={{ fontSize: '1rem', marginBottom: '1rem', color: '#333' }}>Étiquette arrière</h3>
+            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+              {wine.back_label_images && wine.back_label_images.length > 0 ? (
+                wine.back_label_images.map((imgUrl, index) => (
+                  <div key={index} style={{ 
+                    width: '120px', 
+                    height: '160px', 
+                    background: '#f5f5f5', 
+                    borderRadius: '8px', 
+                    overflow: 'hidden',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: '2px solid #e0e0e0'
+                  }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={getApiUrl() + imgUrl}
+                      alt={`Étiquette arrière ${index + 1}`}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  </div>
+                ))
+              ) : (
+                <div style={{ 
+                  width: '120px', 
+                  height: '160px', 
+                  background: '#f5f5f5', 
+                  borderRadius: '8px', 
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  border: '2px solid #e0e0e0'
+                }}>
+                  <span style={{ fontSize: '3rem' }}>🏷️</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Bottle Images */}
+          <div>
+            <h3 style={{ fontSize: '1rem', marginBottom: '1rem', color: '#333' }}>Bouteille complète</h3>
+            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+              {wine.bottle_images && wine.bottle_images.length > 0 ? (
+                wine.bottle_images.map((imgUrl, index) => (
+                  <div key={index} style={{ 
+                    width: '120px', 
+                    height: '160px', 
+                    background: '#f5f5f5', 
+                    borderRadius: '8px', 
+                    overflow: 'hidden',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: '2px solid #e0e0e0'
+                  }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={getApiUrl() + imgUrl}
+                      alt={`Bouteille ${index + 1}`}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  </div>
+                ))
+              ) : (
+                <div style={{ 
+                  width: '120px', 
+                  height: '160px', 
+                  background: '#f5f5f5', 
+                  borderRadius: '8px', 
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  border: '2px solid #e0e0e0'
+                }}>
+                  <span style={{ fontSize: '3rem' }}>🍷</span>
+                </div>
+              )}
             </div>
           </div>
         </div>

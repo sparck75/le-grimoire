@@ -317,6 +317,10 @@ async def create_wine_from_extraction(
             'front_label_image': extraction_data.front_label_image,
             'back_label_image': extraction_data.back_label_image,
             'bottle_image': extraction_data.bottle_image,
+            # NEW: Populate image arrays (support multiple images)
+            'front_label_images': [extraction_data.front_label_image] if extraction_data.front_label_image else [],
+            'back_label_images': [extraction_data.back_label_image] if extraction_data.back_label_image else [],
+            'bottle_images': [extraction_data.bottle_image] if extraction_data.bottle_image else [],
             'data_source': 'ai',
             'user_id': None,  # Master wine - no owner
             'is_public': True,  # Available to all users
@@ -339,6 +343,10 @@ async def create_wine_from_extraction(
             'front_label_image': extraction_data.front_label_image,
             'back_label_image': extraction_data.back_label_image,
             'bottle_image': extraction_data.bottle_image,
+            # NEW: Populate image arrays (support multiple images)
+            'front_label_images': [extraction_data.front_label_image] if extraction_data.front_label_image else [],
+            'back_label_images': [extraction_data.back_label_image] if extraction_data.back_label_image else [],
+            'bottle_images': [extraction_data.bottle_image] if extraction_data.bottle_image else [],
             'data_source': 'ai',
             'user_id': str(current_user.id),  # Personal wine
             'is_public': False,  # User's private inventory
@@ -393,42 +401,117 @@ async def create_wine_from_extraction(
             user_wine_data['image_sources'] = image_sources
             logger.info(f"Added {len(image_sources)} images to wines")
         
-        # Check if master wine already exists (avoid duplicates)
+        # Check if master wine already exists (ENHANCED DUPLICATE DETECTION)
         existing_master = None
+        duplicate_matches = []
+        
+        # Strategy 1: LWIN7 exact match (highest confidence)
         if extraction_data.suggested_lwin7:
-            # Try to find by LWIN7
             existing_master = await Wine.find_one({
                 'lwin7': extraction_data.suggested_lwin7,
                 'user_id': None
             })
+            if existing_master:
+                duplicate_matches.append(
+                    f"LWIN7 match: {existing_master.lwin7}"
+                )
+                logger.info(
+                    f"Found duplicate by LWIN7: {existing_master.name} "
+                    f"(ID: {existing_master.id})"
+                )
         
-        if not existing_master and extraction_data.name:
-            # Try to find by name, producer, vintage (fuzzy match)
+        # Strategy 2: Exact name + producer + vintage match
+        if not existing_master and extraction_data.name and extraction_data.producer:
             query = {
-                'name': extraction_data.name,
+                'name': {'$regex': f'^{extraction_data.name}$', '$options': 'i'},
+                'producer': {'$regex': f'^{extraction_data.producer}$', '$options': 'i'},
                 'user_id': None
             }
-            if extraction_data.producer:
-                query['producer'] = extraction_data.producer
             if extraction_data.vintage:
                 query['vintage'] = extraction_data.vintage
             
             existing_master = await Wine.find_one(query)
+            if existing_master:
+                duplicate_matches.append(
+                    f"Exact match: {existing_master.producer} "
+                    f"{existing_master.name} {existing_master.vintage or ''}"
+                )
+                logger.info(
+                    f"Found duplicate by exact match: {existing_master.name} "
+                    f"(ID: {existing_master.id})"
+                )
         
-        # Create or update master wine
+        # Strategy 3: Fuzzy name + producer match (case-insensitive substring)
+        if not existing_master and extraction_data.name and extraction_data.producer:
+            potential_duplicates = await Wine.find({
+                'name': {'$regex': extraction_data.name, '$options': 'i'},
+                'producer': {'$regex': extraction_data.producer, '$options': 'i'},
+                'user_id': None
+            }).to_list(length=5)  # Check top 5 matches
+            
+            # Filter by vintage if provided
+            if extraction_data.vintage and potential_duplicates:
+                vintage_matches = [
+                    w for w in potential_duplicates
+                    if w.vintage == extraction_data.vintage
+                ]
+                if vintage_matches:
+                    existing_master = vintage_matches[0]
+                    duplicate_matches.append(
+                        f"Fuzzy match: {existing_master.producer} "
+                        f"{existing_master.name} {existing_master.vintage}"
+                    )
+                    logger.warning(
+                        f"Found potential duplicate by fuzzy match: "
+                        f"{existing_master.name} (ID: {existing_master.id})"
+                    )
+        
+        # Create or reuse master wine
         if existing_master:
-            logger.info(
-                f"Master wine exists: {existing_master.name}, "
-                f"using ID {existing_master.id}"
-            )
             master_wine_id = str(existing_master.id)
+            logger.info(
+                f"Reusing existing master wine: {existing_master.name} "
+                f"(ID: {master_wine_id}), Matched by: {', '.join(duplicate_matches)}"
+            )
+            
+            # Update existing master wine with new images if we have better ones
+            update_data = {}
+            if extraction_data.front_label_image and not existing_master.front_label_image:
+                update_data['front_label_image'] = extraction_data.front_label_image
+            if extraction_data.back_label_image and not existing_master.back_label_image:
+                update_data['back_label_image'] = extraction_data.back_label_image
+            if extraction_data.bottle_image and not existing_master.bottle_image:
+                update_data['bottle_image'] = extraction_data.bottle_image
+            
+            # Merge suggested images
+            if extraction_data.suggested_images:
+                from app.models.mongodb.wine import ImageSource
+                from datetime import datetime
+                
+                existing_image_sources = existing_master.image_sources or {}
+                for idx, img in enumerate(extraction_data.suggested_images):
+                    source_key = f"{img.source}_{idx}"
+                    if source_key not in existing_image_sources:
+                        existing_image_sources[source_key] = ImageSource(
+                            url=img.url,
+                            quality='medium',
+                            source=img.source,
+                            updated=datetime.utcnow(),
+                            note=img.title or f"Found via {img.source} search"
+                        )
+                update_data['image_sources'] = existing_image_sources
+            
+            # Apply updates if any
+            if update_data:
+                await existing_master.set(update_data)
+                logger.info(f"Updated master wine with new images/data")
         else:
             # Create new master wine for global database
             master_wine = Wine(**master_wine_data)
             await master_wine.insert()
             master_wine_id = str(master_wine.id)
             logger.info(
-                f"Created master wine: {master_wine.name} "
+                f"Created NEW master wine: {master_wine.name} "
                 f"(ID: {master_wine_id})"
             )
         
@@ -444,11 +527,25 @@ async def create_wine_from_extraction(
             f"for user {current_user.id}"
         )
         
+        # Build response message
+        if existing_master and duplicate_matches:
+            message = f"✓ Vin ajouté à votre cellier. Lié à la base existante ({', '.join(duplicate_matches)})"
+            is_duplicate = True
+        else:
+            message = '✓ Vin ajouté à votre cellier et à la base de données'
+            is_duplicate = False
+        
         return {
             'success': True,
             'wine_id': str(user_wine.id),
             'master_wine_id': master_wine_id,
-            'message': 'Wine added to cellar and database',
+            'message': message,
+            'is_duplicate': is_duplicate,
+            'duplicate_info': {
+                'matched': existing_master is not None,
+                'match_method': ', '.join(duplicate_matches) if duplicate_matches else None,
+                'existing_wine_id': master_wine_id if existing_master else None
+            },
             'wine': {
                 'id': str(user_wine.id),
                 'name': user_wine.name,
