@@ -57,6 +57,10 @@ class Settings(BaseSettings):
     GOOGLE_AI_API_KEY: str = ""
     GEMINI_MODEL: str = "gemini-1.5-flash"
     
+    # Google Custom Search API (for wine image search)
+    GOOGLE_API_KEY: str = ""
+    GOOGLE_SEARCH_ENGINE_ID: str = ""
+    
     # Scraper
     SCRAPER_USER_AGENT: str = "Mozilla/5.0 (compatible; LeGrimoire/1.0)"
     SCRAPER_RATE_LIMIT_SECONDS: int = 2

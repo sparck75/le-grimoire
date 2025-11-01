@@ -52,6 +52,7 @@ class AdminWineResponse(BaseModel):
     front_label_image: Optional[str] = None
     back_label_image: Optional[str] = None
     bottle_image: Optional[str] = None
+    image_sources: dict = {}  # External images from Google/AI
     
     # LWIN codes
     lwin7: Optional[str] = None
@@ -221,6 +222,95 @@ async def list_master_wines(
     ]
 
 
+@router.get("/wines/all", response_model=List[AdminWineResponse])
+async def list_all_wines(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=100),
+    wine_type: Optional[str] = None,
+    region: Optional[str] = None,
+    country: Optional[str] = None,
+    search: Optional[str] = None,
+    data_source: Optional[str] = None,
+    has_user: Optional[bool] = None,
+    current_user: User = Depends(require_admin)
+):
+    """
+    List ALL wines (master + user wines) - admin only
+    
+    Filters:
+    - data_source: manual, ai, lwin, vivino
+    - has_user: True (user wines only), False (master wines only), None (all)
+    """
+    query = {}  # No user_id filter - show all wines
+    
+    if wine_type:
+        query["wine_type"] = wine_type
+    if region:
+        query["region"] = region
+    if country:
+        query["country"] = country
+    if data_source:
+        query["data_source"] = data_source
+    if search:
+        query["$or"] = [
+            {"name": {"$regex": search, "$options": "i"}},
+            {"producer": {"$regex": search, "$options": "i"}}
+        ]
+    if has_user is not None:
+        if has_user:
+            query["user_id"] = {"$ne": None}  # User wines only
+        else:
+            query["user_id"] = None  # Master wines only
+    
+    wines = await Wine.find(query).skip(skip).limit(limit).to_list()
+    
+    return [
+        AdminWineResponse(
+            id=str(wine.id),
+            name=wine.name,
+            producer=wine.producer,
+            vintage=wine.vintage,
+            wine_type=wine.wine_type,
+            region=wine.region,
+            country=wine.country,
+            appellation=wine.appellation,
+            classification=wine.classification,
+            color=wine.color,
+            alcohol_content=wine.alcohol_content,
+            grape_varieties=wine.grape_varieties,
+            tasting_notes=wine.tasting_notes,
+            food_pairings=wine.food_pairings,
+            is_public=wine.is_public,
+            data_source=wine.data_source,
+            barcode=wine.barcode,
+            image_url=wine.image_url,
+            front_label_image=wine.front_label_image,
+            back_label_image=wine.back_label_image,
+            bottle_image=wine.bottle_image,
+            lwin7=wine.lwin7,
+            lwin11=wine.lwin11,
+            lwin18=wine.lwin18,
+            lwin_status=wine.lwin_status,
+            lwin_display_name=wine.lwin_display_name,
+            producer_title=wine.producer_title,
+            sub_region=wine.sub_region,
+            site=wine.site,
+            parcel=wine.parcel,
+            sub_type=wine.sub_type,
+            designation=wine.designation,
+            vintage_config=wine.vintage_config,
+            lwin_first_vintage=wine.lwin_first_vintage,
+            lwin_final_vintage=wine.lwin_final_vintage,
+            lwin_date_added=wine.lwin_date_added,
+            lwin_date_updated=wine.lwin_date_updated,
+            lwin_reference=wine.lwin_reference,
+            created_at=wine.created_at,
+            updated_at=wine.updated_at
+        )
+        for wine in wines
+    ]
+
+
 @router.get("/wines/{wine_id}", response_model=AdminWineResponse)
 async def get_master_wine(
     wine_id: str,
@@ -251,6 +341,7 @@ async def get_master_wine(
         front_label_image=wine.front_label_image,
         back_label_image=wine.back_label_image,
         bottle_image=wine.bottle_image,
+        image_sources=wine.image_sources or {},
         created_at=wine.created_at,
         updated_at=wine.updated_at
     )

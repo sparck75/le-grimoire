@@ -68,7 +68,12 @@ export default function AdminWineEditPage() {
   async function fetchWine() {
     try {
       setLoading(true);
-      const response = await fetch(`/api/v2/lwin/${id}`);
+      const token = localStorage.getItem('access_token');
+      const response = await fetch(`/api/admin/wines/${id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       
       if (!response.ok) {
         throw new Error('Failed to fetch wine');

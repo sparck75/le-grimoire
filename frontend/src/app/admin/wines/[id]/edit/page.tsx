@@ -111,6 +111,10 @@ interface Wine {
   ratings: Record<string, RatingInfo>;
   tasting_notes_sources: Record<string, string>;
   
+  // External IDs
+  vivino_id?: string;
+  wine_searcher_id?: string;
+  
   // Provenance
   data_source: string;
   enriched_by: string[];
@@ -140,7 +144,12 @@ export default function AdminWineEditPage() {
   const fetchWine = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch(`http://192.168.1.100:8000/api/v2/lwin/${id}`);
+      const token = localStorage.getItem('access_token');
+      const response = await fetch(`http://192.168.1.100:8000/api/admin/wines/${id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       
       if (!response.ok) {
         throw new Error('Failed to fetch wine');
@@ -192,6 +201,54 @@ export default function AdminWineEditPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error saving wine');
       alert(`❌ Erreur: ${err instanceof Error ? err.message : 'Error saving wine'}`);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (!wine) return;
+
+    // Show confirmation dialog
+    const confirmed = window.confirm(
+      `⚠️ ATTENTION: Voulez-vous vraiment supprimer ce vin?\n\n` +
+      `Vin: ${wine.name}\n` +
+      `Producteur: ${wine.producer || 'N/A'}\n` +
+      `Millésime: ${wine.vintage || 'N/A'}\n\n` +
+      `Cette action est IRRÉVERSIBLE!`
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setSaving(true);
+      const token = localStorage.getItem('access_token');
+      const response = await fetch(
+        `http://192.168.1.100:8000/api/admin/wines/${id}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => 
+          ({ detail: 'Failed to delete wine' })
+        );
+        throw new Error(errorData.detail || 'Failed to delete wine');
+      }
+
+      alert('✅ Vin supprimé avec succès');
+      router.push('/admin/wines');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error deleting wine');
+      alert(
+        `❌ Erreur lors de la suppression: ${
+          err instanceof Error ? err.message : 'Error deleting wine'
+        }`
+      );
     } finally {
       setSaving(false);
     }
@@ -255,20 +312,53 @@ export default function AdminWineEditPage() {
         <Link href="/admin/wines">
           <button className={styles.backButton}>← Retour au catalogue admin</button>
         </Link>
-        <button 
-          onClick={handleSave} 
-          disabled={saving}
-          className={styles.saveButton}
-        >
-          {saving ? '💾 Enregistrement...' : '💾 Enregistrer les modifications'}
-        </button>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button 
+            onClick={handleDelete}
+            disabled={saving}
+            style={{
+              background: '#dc3545',
+              color: 'white',
+              border: 'none',
+              padding: '12px 24px',
+              borderRadius: '8px',
+              fontSize: '1rem',
+              fontWeight: '600',
+              cursor: saving ? 'not-allowed' : 'pointer',
+              opacity: saving ? 0.6 : 1,
+              transition: 'all 0.2s',
+              boxShadow: '0 2px 4px rgba(220,53,69,0.2)'
+            }}
+            onMouseOver={(e) => {
+              if (!saving) {
+                e.currentTarget.style.background = '#c82333';
+                e.currentTarget.style.transform = 'translateY(-1px)';
+                e.currentTarget.style.boxShadow = '0 4px 8px rgba(220,53,69,0.3)';
+              }
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.background = '#dc3545';
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 2px 4px rgba(220,53,69,0.2)';
+            }}
+          >
+            {saving ? '⏳ Traitement...' : '🗑️ Supprimer ce vin'}
+          </button>
+          <button 
+            onClick={handleSave} 
+            disabled={saving}
+            className={styles.saveButton}
+          >
+            {saving ? '💾 Enregistrement...' : '💾 Enregistrer les modifications'}
+          </button>
+        </div>
       </div>
 
       <div className={styles.detailsCard}>
         {/* Header with Name and LWIN Badge */}
         <div className={styles.detailsHeader}>
           {/* Wine Image */}
-          {(wine.bottle_image || wine.front_label_image) && (
+          {(wine.bottle_image || wine.front_label_image || wine.image_url) && (
             <div style={{ 
               width: '120px',
               height: '120px',
@@ -282,7 +372,7 @@ export default function AdminWineEditPage() {
               marginRight: '20px'
             }}>
               <img 
-                src={`http://192.168.1.100:8000/${wine.bottle_image || wine.front_label_image}`}
+                src={`http://192.168.1.100:8000${wine.bottle_image || wine.front_label_image || wine.image_url}`}
                 alt={wine.name}
                 style={{ 
                   maxWidth: '100%', 
@@ -298,6 +388,38 @@ export default function AdminWineEditPage() {
             {wine.producer && (
               <h2 className={styles.wineProducer}>{wine.producer}</h2>
             )}
+            {/* Data Source Badge */}
+            <div style={{ marginTop: '10px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <span style={{
+                background: wine.data_source === 'ai' ? 
+                  'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 
+                  wine.data_source === 'lwin' ? '#28a745' : '#6c757d',
+                color: 'white',
+                padding: '4px 12px',
+                borderRadius: '12px',
+                fontSize: '0.85rem',
+                fontWeight: '600',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px'
+              }}>
+                {wine.data_source === 'ai' && '🤖 Extrait par IA'}
+                {wine.data_source === 'lwin' && '📚 Base LWIN'}
+                {wine.data_source === 'manual' && '✏️ Manuel'}
+                {!wine.data_source && '❓ Source inconnue'}
+              </span>
+              {wine.enriched_by && wine.enriched_by.length > 0 && (
+                <span style={{
+                  background: '#17a2b8',
+                  color: 'white',
+                  padding: '4px 12px',
+                  borderRadius: '12px',
+                  fontSize: '0.75rem',
+                  fontWeight: '600'
+                }}>
+                  ➕ Enrichi ({wine.enriched_by.length})
+                </span>
+              )}
+            </div>
           </div>
           {wine.lwin11 && (
             <div className={styles.lwinBadge} title="Code LWIN">
@@ -316,7 +438,7 @@ export default function AdminWineEditPage() {
             className={`${styles.tab} ${activeTab === 'lwin' ? styles.activeTab : ''}`}
             onClick={() => setActiveTab('lwin')}
           >
-            📖 Données LWIN
+            � Sources de données
           </button>
           <button 
             className={`${styles.tab} ${activeTab === 'edit' ? styles.activeTab : ''}`}
@@ -338,25 +460,85 @@ export default function AdminWineEditPage() {
           </button>
         </div>
 
-        {/* LWIN Data Tab (Read-Only View) */}
+        {/* Data Sources Tab */}
         {activeTab === 'lwin' && (
           <div className={styles.tabContent}>
-            {/* Device Information style grouped sections */}
+            
+            {/* Data Provenance Header */}
+            <div style={{ 
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              color: 'white',
+              marginBottom: '30px',
+              borderRadius: '12px',
+              padding: '20px',
+              boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+            }}>
+              <h2 style={{ margin: 0, marginBottom: '15px', fontSize: '1.5rem' }}>
+                📊 Sources de données
+              </h2>
+              <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', fontSize: '0.95rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontWeight: 'bold', opacity: 0.9 }}>Source principale:</span>
+                  <span style={{ 
+                    background: 'rgba(255,255,255,0.25)',
+                    padding: '6px 14px',
+                    borderRadius: '16px',
+                    textTransform: 'uppercase',
+                    fontWeight: 'bold',
+                    letterSpacing: '0.5px'
+                  }}>
+                    {wine.data_source || 'manual'}
+                  </span>
+                </div>
+                {wine.enriched_by && wine.enriched_by.length > 0 && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <span style={{ fontWeight: 'bold', opacity: 0.9 }}>Enrichi par:</span>
+                    {wine.enriched_by.map((source: string) => (
+                      <span key={source} style={{ 
+                        background: 'rgba(255,255,255,0.2)',
+                        padding: '4px 12px',
+                        borderRadius: '12px',
+                        fontSize: '0.85rem'
+                      }}>
+                        {source}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
             
             {/* General Information */}
             <div className={styles.lwinSection}>
               <div className={styles.lwinSectionHeader}>
-                <h3>📋 Informations générales</h3>
+                <h3>📋 Métadonnées</h3>
               </div>
               <div className={styles.lwinGrid}>
                 <div className={styles.lwinRow}>
-                  <span className={styles.lwinRowLabel}>Statut LWIN</span>
-                  <span className={styles.lwinRowValue}>{wine.lwin_status || 'N/A'}</span>
+                  <span className={styles.lwinRowLabel}>Source principale</span>
+                  <span className={styles.lwinRowValue}>
+                    <code style={{ 
+                      background: '#f0f0f0', 
+                      padding: '2px 8px', 
+                      borderRadius: '4px',
+                      color: '#d63384'
+                    }}>
+                      {wine.data_source || 'manual'}
+                    </code>
+                  </span>
                 </div>
-                <div className={styles.lwinRow}>
-                  <span className={styles.lwinRowLabel}>Nom d&apos;affichage</span>
-                  <span className={styles.lwinRowValue}>{wine.lwin_display_name || 'N/A'}</span>
-                </div>
+                {wine.lwin_status && (
+                  <div className={styles.lwinRow}>
+                    <span className={styles.lwinRowLabel}>Statut LWIN</span>
+                    <span className={styles.lwinRowValue}>{wine.lwin_status}</span>
+                  </div>
+                )}
+                {wine.lwin_display_name && (
+                  <div className={styles.lwinRow}>
+                    <span className={styles.lwinRowLabel}>Nom d&apos;affichage LWIN</span>
+                    <span className={styles.lwinRowValue}>{wine.lwin_display_name}</span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -518,6 +700,122 @@ export default function AdminWineEditPage() {
                       <span className={styles.lwinRowValue}>{wine.lwin_final_vintage}</span>
                     </div>
                   )}
+                </div>
+              </div>
+            )}
+
+            {/* External IDs */}
+            {(wine.vivino_id || wine.wine_searcher_id || (wine.external_ids && Object.keys(wine.external_ids).length > 0)) && (
+              <div className={styles.lwinSection}>
+                <div className={styles.lwinSectionHeader}>
+                  <h3>🔗 Identifiants externes</h3>
+                </div>
+                <div className={styles.lwinGrid}>
+                  {wine.vivino_id && (
+                    <div className={styles.lwinRow}>
+                      <span className={styles.lwinRowLabel}>Vivino ID</span>
+                      <span className={styles.lwinRowValue}>
+                        <code style={{ background: '#f0f0f0', padding: '2px 8px', borderRadius: '4px' }}>
+                          {wine.vivino_id}
+                        </code>
+                      </span>
+                    </div>
+                  )}
+                  {wine.wine_searcher_id && (
+                    <div className={styles.lwinRow}>
+                      <span className={styles.lwinRowLabel}>Wine-Searcher ID</span>
+                      <span className={styles.lwinRowValue}>
+                        <code style={{ background: '#f0f0f0', padding: '2px 8px', borderRadius: '4px' }}>
+                          {wine.wine_searcher_id}
+                        </code>
+                      </span>
+                    </div>
+                  )}
+                  {wine.external_ids && Object.entries(wine.external_ids).map(([source, id]) => (
+                    <div key={source} className={styles.lwinRow}>
+                      <span className={styles.lwinRowLabel}>{source}</span>
+                      <span className={styles.lwinRowValue}>
+                        <code style={{ background: '#f0f0f0', padding: '2px 8px', borderRadius: '4px' }}>
+                          {String(id)}
+                        </code>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Multi-Source Ratings */}
+            {wine.ratings && Object.keys(wine.ratings).length > 0 && (
+              <div className={styles.lwinSection}>
+                <div className={styles.lwinSectionHeader}>
+                  <h3>⭐ Évaluations multi-sources</h3>
+                </div>
+                <div className={styles.lwinGrid}>
+                  {Object.entries(wine.ratings).map(([source, rating]: [string, any]) => (
+                    <div key={source} className={styles.lwinRow}>
+                      <span className={styles.lwinRowLabel}>
+                        {source}
+                        {rating.updated && (
+                          <span style={{ fontSize: '0.75rem', opacity: 0.6, marginLeft: '5px' }}>
+                            ({new Date(rating.updated).toLocaleDateString('fr-FR')})
+                          </span>
+                        )}
+                      </span>
+                      <span className={styles.lwinRowValue}>
+                        <strong>{rating.score}</strong>
+                        {rating.count && (
+                          <span style={{ fontSize: '0.85rem', opacity: 0.7, marginLeft: '5px' }}>
+                            ({rating.count} avis)
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Multi-Source Prices */}
+            {wine.price_data && Object.keys(wine.price_data).length > 0 && (
+              <div className={styles.lwinSection}>
+                <div className={styles.lwinSectionHeader}>
+                  <h3>💰 Prix multi-sources</h3>
+                </div>
+                <div className={styles.lwinGrid}>
+                  {Object.entries(wine.price_data).map(([source, price]: [string, any]) => (
+                    <div key={source} className={styles.lwinRow}>
+                      <span className={styles.lwinRowLabel}>
+                        {source}
+                        {price.updated && (
+                          <span style={{ fontSize: '0.75rem', opacity: 0.6, marginLeft: '5px' }}>
+                            ({new Date(price.updated).toLocaleDateString('fr-FR')})
+                          </span>
+                        )}
+                      </span>
+                      <span className={styles.lwinRowValue}>
+                        {price.value ? (
+                          <strong>{price.value} {price.currency || 'CAD'}</strong>
+                        ) : (
+                          price.min_price && price.max_price && (
+                            <strong>{price.min_price} - {price.max_price} {price.currency || 'CAD'}</strong>
+                          )
+                        )}
+                        {price.in_stock !== undefined && (
+                          <span style={{ 
+                            fontSize: '0.75rem',
+                            marginLeft: '8px',
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            background: price.in_stock ? '#d4edda' : '#f8d7da',
+                            color: price.in_stock ? '#155724' : '#721c24'
+                          }}>
+                            {price.in_stock ? '✓ En stock' : '✗ Rupture'}
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
@@ -804,6 +1102,30 @@ export default function AdminWineEditPage() {
                 gap: '20px',
                 marginBottom: '20px'
               }}>
+                {/* Primary Image (uploaded photo) */}
+                {wine.image_url && (
+                  <div style={{ 
+                    border: '2px solid #4CAF50', 
+                    borderRadius: '8px', 
+                    padding: '15px',
+                    textAlign: 'center'
+                  }}>
+                    <h4 style={{ marginTop: 0, marginBottom: '10px', fontSize: '1rem' }}>
+                      📸 Photo téléchargée
+                    </h4>
+                    <img 
+                      src={`http://192.168.1.100:8000${wine.image_url}`}
+                      alt="Uploaded photo" 
+                      style={{ 
+                        maxWidth: '100%', 
+                        maxHeight: '200px', 
+                        objectFit: 'contain',
+                        borderRadius: '4px'
+                      }}
+                    />
+                  </div>
+                )}
+                
                 {/* Front Label */}
                 <div style={{ 
                   border: '2px solid #e0e0e0', 
@@ -816,7 +1138,7 @@ export default function AdminWineEditPage() {
                   </h4>
                   {wine.front_label_image ? (
                     <img 
-                      src={`http://192.168.1.100:8000/${wine.front_label_image}`}
+                      src={`http://192.168.1.100:8000${wine.front_label_image}`}
                       alt="Front label" 
                       style={{ 
                         maxWidth: '100%', 
@@ -852,7 +1174,7 @@ export default function AdminWineEditPage() {
                   </h4>
                   {wine.back_label_image ? (
                     <img 
-                      src={`http://192.168.1.100:8000/${wine.back_label_image}`}
+                      src={`http://192.168.1.100:8000${wine.back_label_image}`}
                       alt="Back label" 
                       style={{ 
                         maxWidth: '100%', 
@@ -888,7 +1210,7 @@ export default function AdminWineEditPage() {
                   </h4>
                   {wine.bottle_image ? (
                     <img 
-                      src={`http://192.168.1.100:8000/${wine.bottle_image}`}
+                      src={`http://192.168.1.100:8000${wine.bottle_image}`}
                       alt="Bottle" 
                       style={{ 
                         maxWidth: '100%', 
@@ -912,6 +1234,60 @@ export default function AdminWineEditPage() {
                   )}
                 </div>
               </div>
+
+              {/* External Images from AI/Google Search */}
+              {wine.image_sources && Object.keys(wine.image_sources).length > 0 && (
+                <div style={{ marginTop: '30px' }}>
+                  <h3 style={{ marginBottom: '15px', fontSize: '1.1rem' }}>
+                    🌐 Images externes trouvées par l&apos;IA ({Object.keys(wine.image_sources).length})
+                  </h3>
+                  <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', 
+                    gap: '15px'
+                  }}>
+                    {Object.entries(wine.image_sources).map(([key, imgSource]) => (
+                      <div key={key} style={{ 
+                        border: '1px solid #ddd', 
+                        borderRadius: '8px', 
+                        padding: '10px',
+                        textAlign: 'center',
+                        background: '#fff'
+                      }}>
+                        <img 
+                          src={imgSource.url}
+                          alt={`External ${key}`}
+                          style={{ 
+                            width: '100%', 
+                            height: '150px', 
+                            objectFit: 'contain',
+                            borderRadius: '4px',
+                            marginBottom: '8px'
+                          }}
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            const parent = e.currentTarget.parentElement;
+                            if (parent) {
+                              const fallback = document.createElement('div');
+                              fallback.style.cssText = 'height: 150px; display: flex; align-items: center; justify-content: center; color: #999; font-size: 32px;';
+                              fallback.textContent = '🖼️';
+                              parent.insertBefore(fallback, e.currentTarget.nextSibling);
+                            }
+                          }}
+                        />
+                        <div style={{ fontSize: '0.8rem', color: '#666' }}>
+                          {imgSource.source || 'google'}
+                        </div>
+                        {imgSource.quality && (
+                          <div style={{ fontSize: '0.75rem', color: '#999', marginTop: '4px' }}>
+                            Qualité: {imgSource.quality}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
               
               <div className={styles.enrichmentActions}>
                 <button disabled className={styles.enrichButton}>

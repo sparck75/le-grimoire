@@ -156,87 +156,247 @@ export default function AdminLWINBrowsePage() {
 
   return (
     <div className={styles.container}>
-      <div className={styles.header}>
-        <div>
-          <h1>🔐 Base de Données LWIN (Admin)</h1>
-          <p className={styles.subtitle}>
-            Gérez le catalogue master de 200K+ vins
-          </p>
+      {/* Enhanced Admin Header */}
+      <div style={{
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        color: 'white',
+        padding: '30px',
+        borderRadius: '12px',
+        marginBottom: '30px',
+        boxShadow: '0 4px 15px rgba(0,0,0,0.1)'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '20px' }}>
+          <div>
+            <h1 style={{ margin: 0, fontSize: '2rem', fontWeight: 'bold' }}>
+              🍷 Base de Données LWIN (Admin)
+            </h1>
+            <p style={{ margin: '10px 0 0 0', fontSize: '1.1rem', opacity: 0.95 }}>
+              Gérez le catalogue master de 200K+ vins professionnels
+            </p>
+            <div style={{ 
+              marginTop: '15px',
+              display: 'flex',
+              gap: '15px',
+              flexWrap: 'wrap',
+              fontSize: '0.95rem'
+            }}>
+              <div style={{ 
+                background: 'rgba(255,255,255,0.2)',
+                padding: '6px 14px',
+                borderRadius: '20px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}>
+                <span>📚</span>
+                <span><strong>{wines.length}</strong> vins chargés</span>
+              </div>
+              <div style={{ 
+                background: 'rgba(255,255,255,0.2)',
+                padding: '6px 14px',
+                borderRadius: '20px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}>
+                <span>🔍</span>
+                <span>Recherche avancée</span>
+              </div>
+              <div style={{ 
+                background: 'rgba(255,255,255,0.2)',
+                padding: '6px 14px',
+                borderRadius: '20px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}>
+                <span>📊</span>
+                <span>Multi-sources</span>
+              </div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '10px', flexDirection: 'column' }}>
+            <Link href="/admin/wines/new">
+              <button style={{
+                background: 'rgba(255,255,255,0.95)',
+                color: '#667eea',
+                border: 'none',
+                padding: '12px 24px',
+                borderRadius: '8px',
+                fontSize: '1rem',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                transition: 'all 0.2s',
+                whiteSpace: 'nowrap'
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
+              }}>
+                ➕ Ajouter un vin
+              </button>
+            </Link>
+          </div>
         </div>
-        <Link href="/admin/wines/new">
-          <button className={styles.addButton}>➕ Ajouter un vin</button>
-        </Link>
       </div>
 
-      <div className={styles.searchBox}>
-        <form onSubmit={handleSearch} className={styles.searchForm}>
+      {/* Enhanced Search Box */}
+      <div style={{
+        background: 'white',
+        padding: '25px',
+        borderRadius: '12px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+        marginBottom: '25px'
+      }}>
+        <form onSubmit={handleSearch} style={{ display: 'flex', gap: '10px' }}>
           <input
             type="text"
-            placeholder="Rechercher par nom, producteur, appellation..."
+            placeholder="🔍 Rechercher par nom, producteur, appellation, LWIN..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className={styles.searchInput}
+            style={{
+              flex: 1,
+              padding: '14px 18px',
+              border: '2px solid #e0e0e0',
+              borderRadius: '8px',
+              fontSize: '1rem',
+              transition: 'border-color 0.2s',
+              outline: 'none'
+            }}
+            onFocus={(e) => e.currentTarget.style.borderColor = '#667eea'}
+            onBlur={(e) => e.currentTarget.style.borderColor = '#e0e0e0'}
           />
-          <button type="submit" className={styles.searchButton}>
-            🔍 Rechercher
+          <button type="submit" style={{
+            background: '#667eea',
+            color: 'white',
+            border: 'none',
+            padding: '14px 32px',
+            borderRadius: '8px',
+            fontSize: '1rem',
+            fontWeight: '600',
+            cursor: 'pointer',
+            transition: 'background 0.2s',
+            whiteSpace: 'nowrap'
+          }}
+          onMouseOver={(e) => e.currentTarget.style.background = '#5568d3'}
+          onMouseOut={(e) => e.currentTarget.style.background = '#667eea'}>
+            Rechercher
           </button>
         </form>
       </div>
 
-      <div className={styles.filters}>
-        <select
-          name="country"
-          value={filters.country}
-          onChange={handleFilterChange}
-          className={styles.filterSelect}
-        >
-          <option value="">Tous les pays</option>
-          <option value="France">France</option>
-          <option value="Italy">Italie</option>
-          <option value="Spain">Espagne</option>
-          <option value="USA">États-Unis</option>
-          <option value="Australia">Australie</option>
-          <option value="Chile">Chili</option>
-          <option value="Argentina">Argentine</option>
-        </select>
+      {/* Enhanced Filters */}
+      <div style={{
+        background: 'white',
+        padding: '20px',
+        borderRadius: '12px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+        marginBottom: '25px'
+      }}>
+        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
+          <select
+            name="country"
+            value={filters.country}
+            onChange={handleFilterChange}
+            style={{
+              padding: '10px 16px',
+              border: '2px solid #e0e0e0',
+              borderRadius: '8px',
+              fontSize: '0.95rem',
+              background: 'white',
+              cursor: 'pointer',
+              outline: 'none',
+              transition: 'border-color 0.2s'
+            }}
+            onFocus={(e) => e.currentTarget.style.borderColor = '#667eea'}
+            onBlur={(e) => e.currentTarget.style.borderColor = '#e0e0e0'}
+          >
+            <option value="">🌍 Tous les pays</option>
+            <option value="France">🇫🇷 France</option>
+            <option value="Italy">🇮🇹 Italie</option>
+            <option value="Spain">🇪🇸 Espagne</option>
+            <option value="USA">🇺🇸 États-Unis</option>
+            <option value="Australia">🇦🇺 Australie</option>
+            <option value="Chile">🇨🇱 Chili</option>
+            <option value="Argentina">🇦🇷 Argentine</option>
+          </select>
 
-        <select
-          name="region"
-          value={filters.region}
-          onChange={handleFilterChange}
-          className={styles.filterSelect}
-        >
-          <option value="">Toutes les régions</option>
-          <option value="Bordeaux">Bordeaux</option>
-          <option value="Burgundy">Bourgogne</option>
-          <option value="Champagne">Champagne</option>
-          <option value="Rhône">Rhône</option>
-          <option value="Tuscany">Toscane</option>
-          <option value="Piedmont">Piémont</option>
-          <option value="Rioja">Rioja</option>
-          <option value="Napa Valley">Napa Valley</option>
-        </select>
+          <select
+            name="region"
+            value={filters.region}
+            onChange={handleFilterChange}
+            style={{
+              padding: '10px 16px',
+              border: '2px solid #e0e0e0',
+              borderRadius: '8px',
+              fontSize: '0.95rem',
+              background: 'white',
+              cursor: 'pointer',
+              outline: 'none',
+              transition: 'border-color 0.2s'
+            }}
+            onFocus={(e) => e.currentTarget.style.borderColor = '#667eea'}
+            onBlur={(e) => e.currentTarget.style.borderColor = '#e0e0e0'}
+          >
+            <option value="">📍 Toutes les régions</option>
+            <option value="Bordeaux">Bordeaux</option>
+            <option value="Burgundy">Bourgogne</option>
+            <option value="Champagne">Champagne</option>
+            <option value="Rhône">Rhône</option>
+            <option value="Tuscany">Toscane</option>
+            <option value="Piedmont">Piémont</option>
+            <option value="Rioja">Rioja</option>
+            <option value="Napa Valley">Napa Valley</option>
+          </select>
 
-        <select
-          name="wine_type"
-          value={filters.wine_type}
-          onChange={handleFilterChange}
-          className={styles.filterSelect}
-        >
-          <option value="">Tous les types</option>
-          <option value="red">Rouge</option>
-          <option value="white">Blanc</option>
-          <option value="rosé">Rosé</option>
-          <option value="sparkling">Effervescent</option>
-          <option value="dessert">Dessert</option>
-          <option value="fortified">Fortifié</option>
-        </select>
+          <select
+            name="wine_type"
+            value={filters.wine_type}
+            onChange={handleFilterChange}
+            style={{
+              padding: '10px 16px',
+              border: '2px solid #e0e0e0',
+              borderRadius: '8px',
+              fontSize: '0.95rem',
+              background: 'white',
+              cursor: 'pointer',
+              outline: 'none',
+              transition: 'border-color 0.2s'
+            }}
+            onFocus={(e) => e.currentTarget.style.borderColor = '#667eea'}
+            onBlur={(e) => e.currentTarget.style.borderColor = '#e0e0e0'}
+          >
+            <option value="">🍷 Tous les types</option>
+            <option value="red">🔴 Rouge</option>
+            <option value="white">⚪ Blanc</option>
+            <option value="rosé">🌸 Rosé</option>
+            <option value="sparkling">✨ Effervescent</option>
+            <option value="dessert">🍰 Dessert</option>
+            <option value="fortified">🛡️ Fortifié</option>
+          </select>
 
-        {(searchTerm || filters.country || filters.region || filters.wine_type) && (
-          <button onClick={clearFilters} className={styles.clearButton}>
-            ✕ Effacer les filtres
-          </button>
-        )}
+          {(searchTerm || filters.country || filters.region || filters.wine_type) && (
+            <button onClick={clearFilters} style={{
+              background: '#ff6b6b',
+              color: 'white',
+              border: 'none',
+              padding: '10px 20px',
+              borderRadius: '6px',
+              fontSize: '0.95rem',
+              cursor: 'pointer',
+              transition: 'background 0.2s'
+            }}
+            onMouseOver={(e) => e.currentTarget.style.background = '#ee5a52'}
+            onMouseOut={(e) => e.currentTarget.style.background = '#ff6b6b'}>
+              ✕ Effacer les filtres
+            </button>
+          )}
+        </div>
       </div>
 
       {error && (
@@ -295,7 +455,7 @@ export default function AdminLWINBrowsePage() {
                 }}>
                   {(wine.bottle_image || wine.front_label_image || wine.image_url) ? (
                     <img 
-                      src={`http://192.168.1.100:8000/${wine.bottle_image || wine.front_label_image || wine.image_url}`}
+                      src={`http://192.168.1.100:8000${wine.bottle_image || wine.front_label_image || wine.image_url}`}
                       alt={wine.name}
                       style={{ 
                         maxWidth: '100%', 
@@ -403,7 +563,7 @@ export default function AdminLWINBrowsePage() {
                 }}>
                   {(wine.bottle_image || wine.front_label_image || wine.image_url) ? (
                     <img 
-                      src={`http://192.168.1.100:8000/${wine.bottle_image || wine.front_label_image || wine.image_url}`}
+                      src={`http://192.168.1.100:8000${wine.bottle_image || wine.front_label_image || wine.image_url}`}
                       alt={wine.name}
                       style={{ 
                         maxWidth: '100%', 

@@ -190,6 +190,7 @@ class Wine(Document):
     # Management
     is_public: bool = False
     user_id: Optional[str] = None
+    master_wine_id: Optional[str] = None  # Link to master wine (for user wines)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     

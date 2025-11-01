@@ -93,6 +93,9 @@ services:
       OPENAI_MAX_TOKENS: ${OPENAI_MAX_TOKENS:-2000}
       GOOGLE_AI_API_KEY: ${GOOGLE_AI_API_KEY:-}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-1.5-flash}
+      # Google Custom Search for wine image search
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+      GOOGLE_SEARCH_ENGINE_ID: ${GOOGLE_SEARCH_ENGINE_ID:-}
     volumes:
       - ./backend:/app
       - ./data:/app/data

@@ -20,6 +20,16 @@ from app.core.config import settings
 logger = logging.getLogger(__name__)
 
 
+class SuggestedImage(BaseModel):
+    """Suggested wine image from internet search"""
+    url: str
+    thumbnail_url: Optional[str] = None
+    source: str
+    title: Optional[str] = None
+    context_url: Optional[str] = None
+    relevance_score: float = 1.0
+
+
 class ExtractedWineData(BaseModel):
     """Structured wine data extracted from image"""
     name: str = Field(..., description="Wine name")
@@ -35,20 +45,38 @@ class ExtractedWineData(BaseModel):
     tasting_notes: Optional[str] = Field(None, description="Tasting notes from label")
     winery_notes: Optional[str] = Field(None, description="Winery description")
     suggested_lwin7: Optional[str] = Field(None, description="Suggested LWIN7 code if recognizable")
+    suggested_images: List[SuggestedImage] = Field(default_factory=list, description="Suggested images from internet")
     confidence_score: Optional[float] = Field(None, description="Extraction confidence 0-1")
     image_url: Optional[str] = Field(None, description="URL of uploaded image")
+    front_label_image: Optional[str] = Field(None, description="URL of front label image")
+    back_label_image: Optional[str] = Field(None, description="URL of back label image")
+    bottle_image: Optional[str] = Field(None, description="URL of bottle image")
     extraction_method: str = Field("ai", description="Method: 'ai' or 'manual'")
     raw_text: Optional[str] = Field(None, description="Raw text extracted from label")
     model_metadata: Optional[Dict[str, Any]] = Field(None, description="AI model response metadata")
+    
+    # User-provided cellar information (added by frontend after extraction)
+    current_quantity: Optional[int] = Field(None, description="Number of bottles in cellar")
+    purchase_price: Optional[float] = Field(None, description="Purchase price")
+    purchase_location: Optional[str] = Field(None, description="Where wine was purchased")
+    cellar_location: Optional[str] = Field(None, description="Location in cellar")
+    rating: Optional[float] = Field(None, description="User rating 0-5")
 
 
 class AIWineExtractionService:
     """Service for AI-powered wine data extraction from label images"""
     
     WINE_EXTRACTION_PROMPT = """
-You are a wine expert and sommelier. Analyze this wine label image and extract ALL information in a structured format.
+You are a wine expert and sommelier. Analyze the wine label image(s) provided and extract ALL information in a structured format.
 
-Extract the following information from the wine label:
+IMPORTANT: You may receive multiple images (front label, back label, etc.). Analyze ALL images together to extract complete information. Back labels often contain:
+- Alcohol content
+- Detailed tasting notes
+- Winemaking techniques
+- Food pairing suggestions
+- Grape variety percentages
+
+Extract the following information from ALL wine label images:
 
 1. **name**: Wine name (string) - The main wine name on the label
 2. **producer**: Producer/winery name (string or null if not found)
@@ -183,14 +211,17 @@ Example for Château Margaux 2015:
         self,
         image_path: Optional[str] = None,
         image_bytes: Optional[bytes] = None,
+        additional_images: Optional[list[bytes]] = None,
         model: Optional[str] = None
     ) -> ExtractedWineData:
         """
-        Extract wine data from image using GPT-4 Vision
+        Extract wine data from image(s) using GPT-4 Vision
         
         Args:
-            image_path: Path to image file
-            image_bytes: Image as bytes (alternative to path)
+            image_path: Path to primary image file
+            image_bytes: Primary image as bytes (alternative to path)
+            additional_images: List of additional image bytes
+                              (e.g., back label)
             model: OpenAI model to use (default: gpt-4o)
             
         Returns:
@@ -201,16 +232,21 @@ Example for Château Margaux 2015:
             ValueError: If neither path nor bytes provided
         """
         if not self.is_available():
-            raise RuntimeError("AI wine extraction service is not available (missing API key)")
+            raise RuntimeError(
+                "AI wine extraction service is not available "
+                "(missing API key)"
+            )
         
         if not image_path and not image_bytes:
-            raise ValueError("Either image_path or image_bytes must be provided")
+            raise ValueError(
+                "Either image_path or image_bytes must be provided"
+            )
         
         # Get model from settings or use default
         model_name = model or getattr(settings, 'OPENAI_MODEL', 'gpt-4o')
         
         try:
-            # Encode image
+            # Encode primary image
             if image_bytes:
                 # Resize if needed
                 image_bytes = self._resize_image_if_needed(image_bytes)
@@ -218,26 +254,50 @@ Example for Château Margaux 2015:
             else:
                 base64_image = self._encode_image(image_path)
             
+            # Build content array with all images
+            content = [
+                {
+                    "type": "text",
+                    "text": self.WINE_EXTRACTION_PROMPT
+                },
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": (f"data:image/jpeg;base64,"
+                                f"{base64_image}"),
+                        "detail": "high"
+                    }
+                }
+            ]
+            
+            # Add additional images if provided
+            if additional_images:
+                num_images = len(additional_images)
+                logger.info(f"Adding {num_images} additional image(s)")
+                for idx, img_bytes in enumerate(additional_images):
+                    resized = self._resize_image_if_needed(img_bytes)
+                    b64 = self._encode_image_bytes(resized)
+                    content.append({
+                        "type": "image_url",
+                        "image_url": {
+                            "url": (f"data:image/jpeg;base64,{b64}"),
+                            "detail": "high"
+                        }
+                    })
+            
             # Make API call
-            logger.info(f"Extracting wine data using {model_name}")
+            img_count = 1 + (len(additional_images) if additional_images
+                             else 0)
+            logger.info(
+                f"Extracting wine data using {model_name} "
+                f"with {img_count} image(s)"
+            )
             response = self.client.chat.completions.create(
                 model=model_name,
                 messages=[
                     {
                         "role": "user",
-                        "content": [
-                            {
-                                "type": "text",
-                                "text": self.WINE_EXTRACTION_PROMPT
-                            },
-                            {
-                                "type": "image_url",
-                                "image_url": {
-                                    "url": f"data:image/jpeg;base64,{base64_image}",
-                                    "detail": "high"
-                                }
-                            }
-                        ]
+                        "content": content
                     }
                 ],
                 max_tokens=2000,
@@ -260,11 +320,26 @@ Example for Château Margaux 2015:
             # Parse JSON
             wine_data = json.loads(content)
             
-            # Add metadata
+            # Add metadata with cost calculation
             wine_data['extraction_method'] = 'ai'
+            
+            # Calculate cost based on model pricing
+            prompt_tokens = response.usage.prompt_tokens
+            completion_tokens = response.usage.completion_tokens
+            total_tokens = response.usage.total_tokens
+            
+            # GPT-4o pricing: $2.50 per 1M input, $10.00 per 1M output
+            estimated_cost = (
+                (prompt_tokens / 1_000_000 * 2.50) +
+                (completion_tokens / 1_000_000 * 10.00)
+            )
+            
             wine_data['model_metadata'] = {
                 'model': model_name,
-                'tokens_used': response.usage.total_tokens,
+                'prompt_tokens': prompt_tokens,
+                'completion_tokens': completion_tokens,
+                'total_tokens': total_tokens,
+                'estimated_cost': estimated_cost,
                 'finish_reason': response.choices[0].finish_reason
             }
             
@@ -307,7 +382,7 @@ Example for Château Margaux 2015:
         lwin_service
     ) -> Optional[Dict[str, Any]]:
         """
-        Attempt to match extracted wine to LWIN database
+        Attempt to match extracted wine to LWIN database using multi-field scoring
         
         Args:
             extracted_wine: Extracted wine data
@@ -316,49 +391,191 @@ Example for Château Margaux 2015:
         Returns:
             Matched LWIN wine data or None
         """
-        # Try by suggested LWIN7
+        from app.models.mongodb.wine import Wine
+        
+        # Step 1: Try by suggested LWIN7 (exact match)
         if extracted_wine.suggested_lwin7:
-            logger.info(f"Trying LWIN7 match: {extracted_wine.suggested_lwin7}")
+            logger.info(f"Trying LWIN7 exact match: {extracted_wine.suggested_lwin7}")
             lwin_wine = await lwin_service.search_by_lwin(extracted_wine.suggested_lwin7)
             if lwin_wine:
-                logger.info(f"Matched to LWIN wine: {lwin_wine.name}")
+                logger.info(f"✅ Matched via LWIN7: {lwin_wine.name}")
                 return lwin_wine
         
-        # Try by name and vintage
-        if extracted_wine.name and extracted_wine.vintage:
-            logger.info(f"Trying name+vintage match: {extracted_wine.name} {extracted_wine.vintage}")
-            # Import here to avoid circular dependency
-            from app.models.mongodb.wine import Wine
+        # Step 2: Build targeted search query
+        # Strategy: Search primarily by NAME and PRODUCER (most specific)
+        #           Then use other fields for scoring
+        candidates = []
+        
+        primary_conditions = []
+        
+        # Name-based searches (primary)
+        if extracted_wine.name:
+            name_lower = extracted_wine.name.lower()
             
-            lwin_wine = await Wine.find_one({
-                'name': {'$regex': f'^{extracted_wine.name}', '$options': 'i'},
-                'vintage': extracted_wine.vintage,
-                'user_id': None,
-                'data_source': 'lwin'
+            # Direct name match
+            primary_conditions.append({
+                'name': {'$regex': extracted_wine.name, '$options': 'i'}
             })
             
-            if lwin_wine:
-                logger.info(f"Matched to LWIN wine by name+vintage: {lwin_wine.name}")
-                return lwin_wine
+            # Strip common prefixes for alternate matches
+            for prefix in ['château', 'chateau', 'domaine', 'bodega', 'casa']:
+                if name_lower.startswith(prefix):
+                    stripped = name_lower[len(prefix):].strip()
+                    if stripped and len(stripped) > 2:
+                        primary_conditions.append({
+                            'name': {'$regex': stripped, '$options': 'i'}
+                        })
+                    break
         
-        # Try by producer and name
-        if extracted_wine.producer and extracted_wine.name:
-            logger.info(f"Trying producer+name match: {extracted_wine.producer}")
-            from app.models.mongodb.wine import Wine
-            
-            lwin_wine = await Wine.find_one({
-                'producer': {'$regex': extracted_wine.producer, '$options': 'i'},
-                'name': {'$regex': extracted_wine.name, '$options': 'i'},
-                'user_id': None,
-                'data_source': 'lwin'
+        # Producer-based searches (primary)
+        if extracted_wine.producer:
+            primary_conditions.append({
+                'producer': {'$regex': extracted_wine.producer, '$options': 'i'}
             })
-            
-            if lwin_wine:
-                logger.info(f"Matched to LWIN wine by producer: {lwin_wine.name}")
-                return lwin_wine
+            # Check producer_title for "Château" etc.
+            primary_conditions.append({
+                'producer_title': {'$regex': extracted_wine.producer, '$options': 'i'}
+            })
         
-        logger.info("No LWIN match found")
-        return None
+        # Region as primary if name is very generic or missing producer
+        if extracted_wine.region and len(extracted_wine.region) > 4:
+            primary_conditions.append({
+                'region': {'$regex': extracted_wine.region, '$options': 'i'}
+            })
+            primary_conditions.append({
+                'sub_region': {'$regex': extracted_wine.region, '$options': 'i'}
+            })
+        
+        if not primary_conditions:
+            logger.warning("No name or producer to search with")
+            return None
+        
+        # Execute search - use AND with country if available to narrow
+        base_query = {
+            '$or': primary_conditions,
+            'user_id': None,
+            'data_source': 'lwin'
+        }
+        
+        # Add country as filter if provided (narrows results)
+        if extracted_wine.country:
+            base_query['country'] = {
+                '$regex': extracted_wine.country,
+                '$options': 'i'
+            }
+        
+        logger.info(
+            f"Searching LWIN: {len(primary_conditions)} conditions, "
+            f"country filter: {extracted_wine.country or 'none'}"
+        )
+        
+        candidates = await Wine.find(base_query).limit(100).to_list()
+        
+        if not candidates:
+            logger.warning("No candidate wines found in LWIN database")
+            return None
+        
+        logger.info(f"Found {len(candidates)} candidates, scoring...")
+        
+        # Step 3: Score each candidate
+        scored_candidates = []
+        for candidate in candidates:
+            score = 0.0
+            match_details = []
+            
+            # Name matching (40 points max)
+            if extracted_wine.name and candidate.name:
+                name_lower = extracted_wine.name.lower()
+                cand_name_lower = candidate.name.lower()
+                if name_lower == cand_name_lower:
+                    score += 40
+                    match_details.append("name_exact")
+                elif name_lower in cand_name_lower or cand_name_lower in name_lower:
+                    score += 30
+                    match_details.append("name_partial")
+                elif any(word in cand_name_lower for word in name_lower.split() if len(word) > 3):
+                    score += 20
+                    match_details.append("name_words")
+            
+            # Producer matching (25 points max)
+            if extracted_wine.producer and candidate.producer:
+                prod_lower = extracted_wine.producer.lower()
+                cand_prod_lower = candidate.producer.lower()
+                if prod_lower == cand_prod_lower:
+                    score += 25
+                    match_details.append("producer_exact")
+                elif prod_lower in cand_prod_lower or cand_prod_lower in prod_lower:
+                    score += 20
+                    match_details.append("producer_partial")
+            
+            # Vintage matching (15 points max)
+            # Note: LWIN database wines often don't have vintages
+            if extracted_wine.vintage and candidate.vintage:
+                if extracted_wine.vintage == candidate.vintage:
+                    score += 15
+                    match_details.append("vintage_exact")
+                elif abs(extracted_wine.vintage - candidate.vintage) <= 1:
+                    score += 5
+                    match_details.append("vintage_close")
+            elif extracted_wine.vintage and not candidate.vintage:
+                # Don't penalize LWIN wines without vintage
+                pass
+            
+            # Region matching (10 points max)
+            if extracted_wine.region:
+                region_lower = extracted_wine.region.lower()
+                if candidate.region and region_lower in candidate.region.lower():
+                    score += 10
+                    match_details.append("region")
+                elif candidate.sub_region and region_lower in candidate.sub_region.lower():
+                    score += 8
+                    match_details.append("sub_region")
+            
+            # Appellation matching (5 points max)
+            if extracted_wine.appellation:
+                app_lower = extracted_wine.appellation.lower()
+                if candidate.appellation and app_lower in candidate.appellation.lower():
+                    score += 5
+                    match_details.append("appellation")
+                elif candidate.designation and app_lower in candidate.designation.lower():
+                    score += 3
+                    match_details.append("designation")
+            
+            # Country matching (5 points max)
+            if extracted_wine.country and candidate.country:
+                if extracted_wine.country.lower() == candidate.country.lower():
+                    score += 5
+                    match_details.append("country")
+            
+            if score > 0:
+                scored_candidates.append({
+                    'wine': candidate,
+                    'score': score,
+                    'matches': match_details
+                })
+        
+        if not scored_candidates:
+            logger.info("No wines scored above 0")
+            return None
+        
+        # Step 4: Sort by score and return best match if confidence threshold met
+        scored_candidates.sort(key=lambda x: x['score'], reverse=True)
+        best_match = scored_candidates[0]
+        
+        # Require minimum score of 50 for confident match
+        if best_match['score'] >= 50:
+            logger.info(
+                f"✅ Best match: {best_match['wine'].name} "
+                f"(score: {best_match['score']:.1f}, "
+                f"matches: {', '.join(best_match['matches'])})"
+            )
+            return best_match['wine']
+        else:
+            logger.info(
+                f"⚠️ Best match score too low: {best_match['wine'].name} "
+                f"(score: {best_match['score']:.1f}, threshold: 50)"
+            )
+            return None
     
     async def enrich_from_lwin(
         self,

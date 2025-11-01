@@ -288,7 +288,7 @@ export default function CellierPage() {
                 <div className={styles.cardImage}>
                 {wine.image_url ? (
                   <img 
-                    src={wine.image_url} 
+                    src={wine.image_url.startsWith('http') ? wine.image_url : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}${wine.image_url}`} 
                     alt={wine.name}
                     onError={(e) => {
                       e.currentTarget.style.display = 'none';
@@ -332,7 +332,7 @@ export default function CellierPage() {
                 <div className={styles.cardImage}>
                   {liquor.image_url ? (
                     <img 
-                      src={liquor.image_url} 
+                      src={liquor.image_url.startsWith('http') ? liquor.image_url : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}${liquor.image_url}`} 
                       alt={liquor.name}
                       onError={(e) => {
                         e.currentTarget.style.display = 'none';

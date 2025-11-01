@@ -46,6 +46,20 @@ interface ExtractionStats {
   by_method: {
     [key: string]: number;
   };
+  by_type: {
+    [key: string]: {
+      count: number;
+      successful: number;
+      failed: number;
+      total_tokens: number;
+      total_cost_usd: number;
+      total_processing_time_ms: number;
+      average_tokens: number;
+      average_cost_usd: number;
+      average_processing_time_ms: number;
+      average_confidence: number;
+    };
+  };
   tokens: {
     total: number;
     prompt: number;
@@ -70,11 +84,21 @@ interface ExtractionStats {
 
 interface ExtractionLog {
   id: string;
+  extraction_type: string; // 'recipe' or 'wine'
   extraction_method: string;
   provider: string | null;
   model_name: string | null;
+  
+  // Recipe fields
   recipe_title: string | null;
   recipe_id: string | null;
+  
+  // Wine fields
+  wine_name: string | null;
+  wine_producer: string | null;
+  wine_id: string | null;
+  
+  // Common fields
   confidence_score: number | null;
   success: boolean;
   error_message: string | null;
@@ -94,9 +118,11 @@ export default function AIStatsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [days, setDays] = useState(30);
+  const [extractionType, setExtractionType] = useState<string>(''); // '', 'recipe', 'wine'
   const [logsLimit, setLogsLimit] = useState(50);
   const [logsProvider, setLogsProvider] = useState<string>('');
   const [logsSuccess, setLogsSuccess] = useState<string>('');
+  const [logsExtractionType, setLogsExtractionType] = useState<string>(''); // For logs filter
   const [searchQuery, setSearchQuery] = useState('');
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [refreshInterval, setRefreshInterval] = useState(60); // seconds
@@ -113,6 +139,8 @@ export default function AIStatsPage() {
     const query = searchQuery.toLowerCase();
     return logs.filter(log => 
       log.recipe_title?.toLowerCase().includes(query) ||
+      log.wine_name?.toLowerCase().includes(query) ||
+      log.wine_producer?.toLowerCase().includes(query) ||
       log.extraction_method.toLowerCase().includes(query) ||
       log.provider?.toLowerCase().includes(query)
     );
@@ -180,7 +208,10 @@ export default function AIStatsPage() {
     if (filteredLogs.length === 0) return;
     exportToCSV(filteredLogs.map(log => ({
       date: new Date(log.created_at).toISOString(),
-      recipe_title: log.recipe_title || 'Sans titre',
+      type: log.extraction_type || 'recipe',
+      recipe_title: log.recipe_title || '',
+      wine_name: log.wine_name || '',
+      wine_producer: log.wine_producer || '',
       method: log.extraction_method,
       provider: log.provider || '',
       model: log.model_name || '',
@@ -216,7 +247,8 @@ export default function AIStatsPage() {
         const apiUrl = getApiUrl();
         
         // Fetch stats
-        const statsUrl = `${apiUrl}/api/admin/ai/stats?days=${days}`;
+        let statsUrl = `${apiUrl}/api/admin/ai/stats?days=${days}`;
+        if (extractionType) statsUrl += `&extraction_type=${extractionType}`;
         const statsRes = await fetch(statsUrl);
         if (statsRes.ok) {
           setStats(await statsRes.json());
@@ -226,6 +258,7 @@ export default function AIStatsPage() {
         let logsUrl = `${apiUrl}/api/admin/ai/logs?limit=${logsLimit}`;
         if (logsProvider) logsUrl += `&provider=${logsProvider}`;
         if (logsSuccess) logsUrl += `&success_only=${logsSuccess}`;
+        if (logsExtractionType) logsUrl += `&extraction_type=${logsExtractionType}`;
         
         const logsRes = await fetch(logsUrl);
         if (logsRes.ok) {
@@ -240,7 +273,7 @@ export default function AIStatsPage() {
     }
 
     fetchData();
-  }, [days, logsLimit, logsProvider, logsSuccess]);
+  }, [days, logsLimit, logsProvider, logsSuccess, extractionType, logsExtractionType]);
 
   // Auto-refresh effect
   useEffect(() => {
@@ -250,7 +283,8 @@ export default function AIStatsPage() {
       try {
         const apiUrl = getApiUrl();
         
-        const statsUrl = `${apiUrl}/api/admin/ai/stats?days=${days}`;
+        let statsUrl = `${apiUrl}/api/admin/ai/stats?days=${days}`;
+        if (extractionType) statsUrl += `&extraction_type=${extractionType}`;
         const statsRes = await fetch(statsUrl);
         if (statsRes.ok) {
           setStats(await statsRes.json());
@@ -259,6 +293,7 @@ export default function AIStatsPage() {
         let logsUrl = `${apiUrl}/api/admin/ai/logs?limit=${logsLimit}`;
         if (logsProvider) logsUrl += `&provider=${logsProvider}`;
         if (logsSuccess) logsUrl += `&success_only=${logsSuccess}`;
+        if (logsExtractionType) logsUrl += `&extraction_type=${logsExtractionType}`;
         
         const logsRes = await fetch(logsUrl);
         if (logsRes.ok) {
@@ -270,7 +305,7 @@ export default function AIStatsPage() {
     }, refreshInterval * 1000);
 
     return () => clearInterval(interval);
-  }, [autoRefresh, refreshInterval, days, logsLimit, logsProvider, logsSuccess]);
+  }, [autoRefresh, refreshInterval, days, logsLimit, logsProvider, logsSuccess, extractionType, logsExtractionType]);
 
   if (!isAdmin) {
     return null;
@@ -444,25 +479,50 @@ export default function AIStatsPage() {
           </div>
         ) : (
           <>
-            {/* Period Selector */}
-            <div style={{ marginBottom: '1.5rem', backgroundColor: 'rgba(255, 255, 255, 0.95)', backdropFilter: 'blur(10px)', padding: '1.5rem', borderRadius: '20px', boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)', border: '1px solid rgba(255, 255, 255, 0.3)' }}>
-              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', color: '#2C1810', marginBottom: '0.75rem' }}>
-                Période d&apos;analyse
-              </label>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                <select
-                  value={days}
-                  onChange={(e) => setDays(Number(e.target.value))}
-                  style={{ padding: '0.75rem 1rem', border: '2px solid #D4A373', borderRadius: '8px', backgroundColor: 'white', fontSize: '0.875rem', color: '#2C1810', cursor: 'pointer' }}
-                >
-                  <option value={7}>7 derniers jours</option>
-                  <option value={30}>30 derniers jours</option>
-                  <option value={90}>90 derniers jours</option>
-                  <option value={365}>1 an</option>
-                </select>
-                <div style={{ fontSize: '0.875rem', color: '#5C4033' }}>
-                  Du {new Date(stats.period.start_date).toLocaleDateString('fr-FR')} au {new Date(stats.period.end_date).toLocaleDateString('fr-FR')}
+            {/* Filters */}
+            <div style={{ marginBottom: '1.5rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
+              {/* Period Selector */}
+              <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', backdropFilter: 'blur(10px)', padding: '1.5rem', borderRadius: '20px', boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)', border: '1px solid rgba(255, 255, 255, 0.3)' }}>
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', color: '#2C1810', marginBottom: '0.75rem' }}>
+                  Période d&apos;analyse
+                </label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  <select
+                    value={days}
+                    onChange={(e) => setDays(Number(e.target.value))}
+                    style={{ padding: '0.75rem 1rem', border: '2px solid #D4A373', borderRadius: '8px', backgroundColor: 'white', fontSize: '0.875rem', color: '#2C1810', cursor: 'pointer' }}
+                  >
+                    <option value={7}>7 derniers jours</option>
+                    <option value={30}>30 derniers jours</option>
+                    <option value={90}>90 derniers jours</option>
+                    <option value={365}>1 an</option>
+                  </select>
+                  <div style={{ fontSize: '0.875rem', color: '#5C4033' }}>
+                    Du {new Date(stats.period.start_date).toLocaleDateString('fr-FR')} au {new Date(stats.period.end_date).toLocaleDateString('fr-FR')}
+                  </div>
                 </div>
+              </div>
+
+              {/* Extraction Type Filter */}
+              <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', backdropFilter: 'blur(10px)', padding: '1.5rem', borderRadius: '20px', boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)', border: '1px solid rgba(255, 255, 255, 0.3)' }}>
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', color: '#2C1810', marginBottom: '0.75rem' }}>
+                  Type d&apos;extraction
+                </label>
+                <select
+                  value={extractionType}
+                  onChange={(e) => setExtractionType(e.target.value)}
+                  style={{ padding: '0.75rem 1rem', border: '2px solid #D4A373', borderRadius: '8px', backgroundColor: 'white', fontSize: '0.875rem', color: '#2C1810', cursor: 'pointer', width: '100%' }}
+                >
+                  <option value="">Tous les types</option>
+                  <option value="recipe">🍽️ Recettes</option>
+                  <option value="wine">🍷 Vins</option>
+                </select>
+                {stats.by_type && (
+                  <div style={{ fontSize: '0.875rem', color: '#5C4033', marginTop: '0.75rem' }}>
+                    {stats.by_type.recipe && <div>Recettes: {stats.by_type.recipe.count}</div>}
+                    {stats.by_type.wine && <div>Vins: {stats.by_type.wine.count}</div>}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -549,6 +609,168 @@ export default function AIStatsPage() {
                       <div>• Coût par extraction: ${costProjections.perExtraction.toFixed(4)}</div>
                     </div>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* By-Type Breakdown */}
+            {stats.by_type && Object.keys(stats.by_type).length > 1 && (
+              <div style={{ marginBottom: '2rem' }}>
+                <h2 style={{ fontSize: '1.5rem', fontWeight: '700', background: 'linear-gradient(135deg, #8B5A3C 0%, #A67C52 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', marginBottom: '1rem' }}>
+                  Statistiques par type
+                </h2>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
+                  {/* Recipe Stats */}
+                  {stats.by_type.recipe && (
+                    <div style={{ backgroundColor: 'rgba(220, 252, 231, 0.3)', backdropFilter: 'blur(10px)', padding: '1.5rem', borderRadius: '20px', boxShadow: '0 10px 30px rgba(0, 0, 0, 0.1)', border: '2px solid #dcfce7' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+                        <span style={{ fontSize: '2rem' }}>🍽️</span>
+                        <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#166534' }}>Recettes</h3>
+                      </div>
+                      <div style={{ display: 'grid', gap: '0.75rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '0.875rem', color: '#166534' }}>Total extractions:</span>
+                          <span style={{ fontSize: '1.125rem', fontWeight: '600', color: '#166534' }}>{stats.by_type.recipe.count}</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '0.875rem', color: '#166534' }}>Réussies:</span>
+                          <span style={{ fontSize: '1rem', fontWeight: '500', color: '#16a34a' }}>{stats.by_type.recipe.successful}</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '0.875rem', color: '#166534' }}>Échouées:</span>
+                          <span style={{ fontSize: '1rem', fontWeight: '500', color: '#dc2626' }}>{stats.by_type.recipe.failed}</span>
+                        </div>
+                        <div style={{ height: '1px', backgroundColor: '#dcfce7', marginTop: '0.25rem', marginBottom: '0.25rem' }}></div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '0.875rem', color: '#166534' }}>Taux de réussite:</span>
+                          <span style={{ fontSize: '1rem', fontWeight: '600', color: '#16a34a' }}>
+                            {stats.by_type.recipe.count > 0 
+                              ? ((stats.by_type.recipe.successful / stats.by_type.recipe.count) * 100).toFixed(1)
+                              : '0'}%
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '0.875rem', color: '#166534' }}>Confiance moyenne:</span>
+                          <span style={{ fontSize: '1rem', fontWeight: '500', color: '#166534' }}>
+                            {(stats.by_type.recipe.average_confidence * 100).toFixed(1)}%
+                          </span>
+                        </div>
+                        <div style={{ height: '1px', backgroundColor: '#dcfce7', marginTop: '0.25rem', marginBottom: '0.25rem' }}></div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '0.875rem', color: '#166534' }}>💰 Coût total:</span>
+                          <span style={{ fontSize: '1rem', fontWeight: '600', color: '#8B5A3C' }}>
+                            ${stats.by_type.recipe.total_cost_usd.toFixed(4)}
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>Coût moyen:</span>
+                          <span style={{ fontSize: '0.875rem', color: '#8B5A3C' }}>
+                            ${stats.by_type.recipe.average_cost_usd.toFixed(4)}
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '0.875rem', color: '#166534' }}>🪙 Tokens totaux:</span>
+                          <span style={{ fontSize: '1rem', fontWeight: '600', color: '#6f42c1' }}>
+                            {stats.by_type.recipe.total_tokens.toLocaleString()}
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>Tokens moyens:</span>
+                          <span style={{ fontSize: '0.875rem', color: '#6f42c1' }}>
+                            {stats.by_type.recipe.average_tokens.toLocaleString()}
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '0.875rem', color: '#166534' }}>⏱️ Temps total:</span>
+                          <span style={{ fontSize: '1rem', fontWeight: '600', color: '#166534' }}>
+                            {(stats.by_type.recipe.total_processing_time_ms / 1000).toFixed(1)}s
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>Temps moyen:</span>
+                          <span style={{ fontSize: '0.875rem', color: '#166534' }}>
+                            {(stats.by_type.recipe.average_processing_time_ms / 1000).toFixed(1)}s
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Wine Stats */}
+                  {stats.by_type.wine && (
+                    <div style={{ backgroundColor: 'rgba(219, 234, 254, 0.3)', backdropFilter: 'blur(10px)', padding: '1.5rem', borderRadius: '20px', boxShadow: '0 10px 30px rgba(0, 0, 0, 0.1)', border: '2px solid #dbeafe' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+                        <span style={{ fontSize: '2rem' }}>🍷</span>
+                        <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#1e40af' }}>Vins</h3>
+                      </div>
+                      <div style={{ display: 'grid', gap: '0.75rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '0.875rem', color: '#1e40af' }}>Total extractions:</span>
+                          <span style={{ fontSize: '1.125rem', fontWeight: '600', color: '#1e40af' }}>{stats.by_type.wine.count}</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '0.875rem', color: '#1e40af' }}>Réussies:</span>
+                          <span style={{ fontSize: '1rem', fontWeight: '500', color: '#16a34a' }}>{stats.by_type.wine.successful}</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '0.875rem', color: '#1e40af' }}>Échouées:</span>
+                          <span style={{ fontSize: '1rem', fontWeight: '500', color: '#dc2626' }}>{stats.by_type.wine.failed}</span>
+                        </div>
+                        <div style={{ height: '1px', backgroundColor: '#dbeafe', marginTop: '0.25rem', marginBottom: '0.25rem' }}></div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '0.875rem', color: '#1e40af' }}>Taux de réussite:</span>
+                          <span style={{ fontSize: '1rem', fontWeight: '600', color: '#16a34a' }}>
+                            {stats.by_type.wine.count > 0 
+                              ? ((stats.by_type.wine.successful / stats.by_type.wine.count) * 100).toFixed(1)
+                              : '0'}%
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '0.875rem', color: '#1e40af' }}>Confiance moyenne:</span>
+                          <span style={{ fontSize: '1rem', fontWeight: '500', color: '#1e40af' }}>
+                            {(stats.by_type.wine.average_confidence * 100).toFixed(1)}%
+                          </span>
+                        </div>
+                        <div style={{ height: '1px', backgroundColor: '#dbeafe', marginTop: '0.25rem', marginBottom: '0.25rem' }}></div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '0.875rem', color: '#1e40af' }}>💰 Coût total:</span>
+                          <span style={{ fontSize: '1rem', fontWeight: '600', color: '#8B5A3C' }}>
+                            ${stats.by_type.wine.total_cost_usd.toFixed(4)}
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>Coût moyen:</span>
+                          <span style={{ fontSize: '0.875rem', color: '#8B5A3C' }}>
+                            ${stats.by_type.wine.average_cost_usd.toFixed(4)}
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '0.875rem', color: '#1e40af' }}>🪙 Tokens totaux:</span>
+                          <span style={{ fontSize: '1rem', fontWeight: '600', color: '#6f42c1' }}>
+                            {stats.by_type.wine.total_tokens.toLocaleString()}
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>Tokens moyens:</span>
+                          <span style={{ fontSize: '0.875rem', color: '#6f42c1' }}>
+                            {stats.by_type.wine.average_tokens.toLocaleString()}
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '0.875rem', color: '#1e40af' }}>⏱️ Temps total:</span>
+                          <span style={{ fontSize: '1rem', fontWeight: '600', color: '#1e40af' }}>
+                            {(stats.by_type.wine.total_processing_time_ms / 1000).toFixed(1)}s
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>Temps moyen:</span>
+                          <span style={{ fontSize: '0.875rem', color: '#1e40af' }}>
+                            {(stats.by_type.wine.average_processing_time_ms / 1000).toFixed(1)}s
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -759,13 +981,22 @@ export default function AIStatsPage() {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="🔍 Rechercher par recette, méthode, fournisseur..."
+                  placeholder="🔍 Rechercher par recette, vin, méthode, fournisseur..."
                   style={{ width: '100%', padding: '0.75rem 1rem', border: '2px solid #D4A373', borderRadius: '8px', fontSize: '0.875rem', backgroundColor: 'white' }}
                 />
               </div>
               
               {/* Filters */}
               <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                <select
+                  value={logsExtractionType}
+                  onChange={(e) => setLogsExtractionType(e.target.value)}
+                  style={{ padding: '0.5rem 0.75rem', border: '2px solid #D4A373', borderRadius: '8px', fontSize: '0.875rem', backgroundColor: 'white' }}
+                >
+                  <option value="">Tous les types</option>
+                  <option value="recipe">🍽️ Recettes</option>
+                  <option value="wine">🍷 Vins</option>
+                </select>
                 <select
                   value={logsProvider}
                   onChange={(e) => setLogsProvider(e.target.value)}
@@ -806,7 +1037,10 @@ export default function AIStatsPage() {
                     Date
                   </th>
                   <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.875rem', fontWeight: '600', color: 'white', textTransform: 'uppercase', letterSpacing: '1px', background: 'linear-gradient(135deg, #8B5A3C 0%, #A67C52 100%)' }}>
-                    Recette
+                    Type
+                  </th>
+                  <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.875rem', fontWeight: '600', color: 'white', textTransform: 'uppercase', letterSpacing: '1px', background: 'linear-gradient(135deg, #8B5A3C 0%, #A67C52 100%)' }}>
+                    Détails
                   </th>
                   <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.875rem', fontWeight: '600', color: 'white', textTransform: 'uppercase', letterSpacing: '1px', background: 'linear-gradient(135deg, #8B5A3C 0%, #A67C52 100%)' }}>
                     Méthode
@@ -839,19 +1073,49 @@ export default function AIStatsPage() {
                         minute: '2-digit'
                       })}
                     </td>
+                    <td style={{ padding: '1rem', whiteSpace: 'nowrap' }}>
+                      {log.extraction_type === 'wine' ? (
+                        <span style={{ display: 'inline-block', padding: '0.25rem 0.75rem', backgroundColor: '#dbeafe', color: '#1e40af', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: '500' }}>
+                          🍷 Vin
+                        </span>
+                      ) : (
+                        <span style={{ display: 'inline-block', padding: '0.25rem 0.75rem', backgroundColor: '#dcfce7', color: '#166534', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: '500' }}>
+                          🍽️ Recette
+                        </span>
+                      )}
+                    </td>
                     <td style={{ padding: '1rem', color: '#2C1810', maxWidth: '300px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{log.recipe_title || 'Sans titre'}</span>
-                        {log.recipe_id && (
-                          <Link 
-                            href={`/recipes/${log.recipe_id}`}
-                            style={{ color: '#8B5A3C', textDecoration: 'none', flexShrink: 0, fontWeight: '600' }}
-                            title="Voir la recette"
-                          >
-                            →
-                          </Link>
-                        )}
-                      </div>
+                      {log.extraction_type === 'wine' ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {log.wine_name && log.wine_producer 
+                              ? `${log.wine_producer} - ${log.wine_name}`
+                              : log.wine_name || log.wine_producer || 'Sans titre'}
+                          </div>
+                          {log.wine_id && (
+                            <Link 
+                              href={`/cellier/wines/${log.wine_id}`}
+                              style={{ color: '#8B5A3C', textDecoration: 'none', flexShrink: 0, fontWeight: '600' }}
+                              title="Voir le vin"
+                            >
+                              →
+                            </Link>
+                          )}
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{log.recipe_title || 'Sans titre'}</span>
+                          {log.recipe_id && (
+                            <Link 
+                              href={`/recipes/${log.recipe_id}`}
+                              style={{ color: '#8B5A3C', textDecoration: 'none', flexShrink: 0, fontWeight: '600' }}
+                              title="Voir la recette"
+                            >
+                              →
+                            </Link>
+                          )}
+                        </div>
+                      )}
                     </td>
                     <td style={{ padding: '1rem', whiteSpace: 'nowrap' }}>
                       <span style={{ textTransform: 'capitalize', fontWeight: '500', color: '#2C1810' }}>
@@ -910,8 +1174,23 @@ export default function AIStatsPage() {
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
                   <div style={{ flex: 1 }}>
+                    <div style={{ marginBottom: '0.5rem' }}>
+                      {log.extraction_type === 'wine' ? (
+                        <span style={{ display: 'inline-block', padding: '0.25rem 0.75rem', backgroundColor: '#dbeafe', color: '#1e40af', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: '500' }}>
+                          🍷 Vin
+                        </span>
+                      ) : (
+                        <span style={{ display: 'inline-block', padding: '0.25rem 0.75rem', backgroundColor: '#dcfce7', color: '#166534', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: '500' }}>
+                          🍽️ Recette
+                        </span>
+                      )}
+                    </div>
                     <div style={{ fontWeight: '500', color: '#2C1810', marginBottom: '0.25rem' }}>
-                      {log.recipe_title || 'Sans titre'}
+                      {log.extraction_type === 'wine'
+                        ? (log.wine_name && log.wine_producer 
+                            ? `${log.wine_producer} - ${log.wine_name}`
+                            : log.wine_name || log.wine_producer || 'Sans titre')
+                        : (log.recipe_title || 'Sans titre')}
                     </div>
                     <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>
                       {new Date(log.created_at).toLocaleString('fr-FR')}
@@ -957,13 +1236,13 @@ export default function AIStatsPage() {
                       <div style={{ fontWeight: '500', color: '#2C1810' }}>{(log.processing_time_ms / 1000).toFixed(1)}s</div>
                     </div>
                   )}
-                  {log.recipe_id && (
+                  {(log.recipe_id || log.wine_id) && (
                     <div className="col-span-2">
                       <Link 
-                        href={`/recipes/${log.recipe_id}`}
+                        href={log.extraction_type === 'wine' ? `/cellier/wines/${log.wine_id}` : `/recipes/${log.recipe_id}`}
                         className="text-blue-600 hover:text-blue-800 text-sm font-medium"
                       >
-                        Voir la recette →
+                        {log.extraction_type === 'wine' ? 'Voir le vin →' : 'Voir la recette →'}
                       </Link>
                     </div>
                   )}

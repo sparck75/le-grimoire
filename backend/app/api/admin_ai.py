@@ -54,11 +54,21 @@ class OpenAIUsageResponse(BaseModel):
 class ExtractionLogResponse(BaseModel):
     """Single extraction log entry"""
     id: str
+    extraction_type: str
     extraction_method: str
     provider: Optional[str] = None
     model_name: Optional[str] = None
+    
+    # Recipe fields
     recipe_title: Optional[str] = None
     recipe_id: Optional[str] = None
+    
+    # Wine fields
+    wine_name: Optional[str] = None
+    wine_producer: Optional[str] = None
+    wine_id: Optional[str] = None
+    
+    # Common fields
     confidence_score: Optional[float] = None
     success: bool
     error_message: Optional[str] = None
@@ -245,7 +255,8 @@ async def list_available_providers():
 @router.get("/stats")
 async def get_extraction_stats(
     days: int = 30,
-    provider: Optional[str] = None
+    provider: Optional[str] = None,
+    extraction_type: Optional[str] = None
 ):
     """
     Get AI extraction usage statistics
@@ -253,6 +264,7 @@ async def get_extraction_stats(
     Args:
         days: Number of days to include in stats (default: 30)
         provider: Filter by provider (openai, tesseract, etc.)
+        extraction_type: Filter by type (recipe, wine, or null for all)
         
     Returns:
         Comprehensive usage statistics including costs, tokens, and success rates
@@ -267,6 +279,8 @@ async def get_extraction_stats(
     query = {"created_at": {"$gte": start_date}}
     if provider:
         query["provider"] = provider
+    if extraction_type:
+        query["extraction_type"] = extraction_type
     
     # Get all logs in date range
     logs = await AIExtractionLog.find(query).to_list()
@@ -323,6 +337,76 @@ async def get_extraction_stats(
             by_method[method] = 0
         by_method[method] += 1
     
+    # By extraction type (recipe vs wine)
+    by_type = {}
+    for log in logs:
+        ext_type = log.extraction_type or "recipe"
+        if ext_type not in by_type:
+            by_type[ext_type] = {
+                "count": 0,
+                "successful": 0,
+                "failed": 0,
+                "total_tokens": 0,
+                "total_cost_usd": 0,
+                "total_processing_time_ms": 0,
+                "average_confidence": 0,
+                "confidence_sum": 0,
+                "confidence_count": 0
+            }
+        by_type[ext_type]["count"] += 1
+        if log.success:
+            by_type[ext_type]["successful"] += 1
+        else:
+            by_type[ext_type]["failed"] += 1
+        
+        # Aggregate metrics
+        if log.total_tokens:
+            by_type[ext_type]["total_tokens"] += log.total_tokens
+        if log.estimated_cost_usd:
+            by_type[ext_type]["total_cost_usd"] += log.estimated_cost_usd
+        if log.processing_time_ms:
+            by_type[ext_type]["total_processing_time_ms"] += (
+                log.processing_time_ms
+            )
+        if log.confidence_score is not None:
+            by_type[ext_type]["confidence_sum"] += log.confidence_score
+            by_type[ext_type]["confidence_count"] += 1
+
+    # Calculate averages per type
+    for ext_type in by_type:
+        count = by_type[ext_type]["count"]
+        total_cost = by_type[ext_type]["total_cost_usd"]
+        total_tokens = by_type[ext_type]["total_tokens"]
+        total_time = by_type[ext_type]["total_processing_time_ms"]
+
+        if count > 0:
+            by_type[ext_type]["average_cost_usd"] = round(
+                total_cost / count, 4
+            )
+            by_type[ext_type]["average_tokens"] = round(
+                total_tokens / count, 0
+            )
+            by_type[ext_type]["average_processing_time_ms"] = round(
+                total_time / count, 0
+            )
+        else:
+            by_type[ext_type]["average_cost_usd"] = 0
+            by_type[ext_type]["average_tokens"] = 0
+            by_type[ext_type]["average_processing_time_ms"] = 0
+
+        conf_count = by_type[ext_type]["confidence_count"]
+        conf_sum = by_type[ext_type]["confidence_sum"]
+        if conf_count > 0:
+            by_type[ext_type]["average_confidence"] = round(
+                conf_sum / conf_count, 3
+            )
+        else:
+            by_type[ext_type]["average_confidence"] = 0
+
+        # Clean up temporary fields
+        del by_type[ext_type]["confidence_sum"]
+        del by_type[ext_type]["confidence_count"]
+    
     # Daily breakdown (last 7 days for chart)
     daily_stats = []
     for i in range(min(7, days)):
@@ -354,6 +438,7 @@ async def get_extraction_stats(
         },
         "by_provider": by_provider,
         "by_method": by_method,
+        "by_type": by_type,
         "tokens": {
             "total": total_tokens,
             "prompt": total_prompt_tokens,
@@ -382,7 +467,8 @@ async def get_extraction_logs(
     limit: int = Query(50, ge=1, le=500),
     skip: int = Query(0, ge=0),
     success_only: Optional[bool] = None,
-    provider: Optional[str] = None
+    provider: Optional[str] = None,
+    extraction_type: Optional[str] = None
 ):
     """
     Get recent extraction logs with full details
@@ -392,6 +478,7 @@ async def get_extraction_logs(
         skip: Number of logs to skip for pagination
         success_only: Filter by success status (true/false/null for all)
         provider: Filter by provider (openai, tesseract, etc.)
+        extraction_type: Filter by type (recipe, wine, or null for all)
         
     Returns:
         List of extraction log entries with full details
@@ -404,6 +491,8 @@ async def get_extraction_logs(
         query["success"] = success_only
     if provider:
         query["provider"] = provider
+    if extraction_type:
+        query["extraction_type"] = extraction_type
     
     # Get logs sorted by most recent first
     logs = await AIExtractionLog.find(query).sort("-created_at").skip(skip).limit(limit).to_list()
@@ -412,11 +501,15 @@ async def get_extraction_logs(
     return [
         ExtractionLogResponse(
             id=str(log.id),
+            extraction_type=log.extraction_type or "recipe",
             extraction_method=log.extraction_method,
             provider=log.provider,
             model_name=log.model_name,
             recipe_title=log.recipe_title,
             recipe_id=log.recipe_id,
+            wine_name=log.wine_name,
+            wine_producer=log.wine_producer,
+            wine_id=log.wine_id,
             confidence_score=log.confidence_score,
             success=log.success,
             error_message=log.error_message,

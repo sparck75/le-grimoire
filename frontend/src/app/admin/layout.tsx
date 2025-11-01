@@ -51,6 +51,16 @@ export default function AdminLayout({
             <span>Recettes</span>
           </Link>
           
+          <Link href="/admin/wines" className="nav-item" onClick={() => setIsSidebarOpen(false)}>
+            <span className="nav-icon">🍷</span>
+            <span>Vins (Base de Données)</span>
+          </Link>
+          
+          <Link href="/admin/ai" className="nav-item" onClick={() => setIsSidebarOpen(false)}>
+            <span className="nav-icon">🤖</span>
+            <span>Intelligence Artificielle</span>
+          </Link>
+          
           <Link href="/admin/users" className="nav-item" onClick={() => setIsSidebarOpen(false)}>
             <span className="nav-icon">👥</span>
             <span>Utilisateurs</span>
